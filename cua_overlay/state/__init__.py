@@ -7,5 +7,22 @@ this module.
 """
 from __future__ import annotations
 
-# Task 2 + 3 will populate the explicit re-exports below.
-__all__: list[str] = []
+from cua_overlay.state.graph import (
+    Bbox,
+    Capability,
+    Edge,
+    EdgeKind,
+    Source,
+    StateGraph,
+    UIElement,
+)
+
+__all__ = [
+    "Bbox",
+    "Capability",
+    "Edge",
+    "EdgeKind",
+    "Source",
+    "StateGraph",
+    "UIElement",
+]
