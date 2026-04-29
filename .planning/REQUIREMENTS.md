@@ -140,17 +140,87 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 
 ## Traceability
 
-Filled by roadmapper.
+Phase mapping (filled by roadmapper, 2026-04-29):
 
 | Requirement | Phase | Status |
 |---|---|---|
-| (Pending roadmap creation) | — | — |
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| STATE-01 | Phase 1 | Pending |
+| STATE-02 | Phase 1 | Pending |
+| STATE-03 | Phase 1 | Pending |
+| STATE-04 | Phase 4 | Pending |
+| TRANS-01 | Phase 2 | Pending |
+| TRANS-02 | Phase 2 | Pending |
+| TRANS-03 | Phase 2 | Pending |
+| TRANS-04 | Phase 2 | Pending |
+| TRANS-05 | Phase 2 | Pending |
+| ACT-01 | Phase 2 | Pending |
+| ACT-02 | Phase 2 | Pending |
+| ACT-03 | Phase 2 | Pending |
+| ACT-04 | Phase 2 | Pending |
+| VERIFY-01 | Phase 1 | Pending |
+| VERIFY-02 | Phase 1 | Pending |
+| VERIFY-03 | Phase 1 | Pending |
+| VERIFY-04 | Phase 1 | Pending |
+| VERIFY-05 | Phase 1 | Pending |
+| VERIFY-06 | Phase 1 | Pending |
+| VERIFY-07 | Phase 1 | Pending |
+| HEAL-01 | Phase 3 | Pending |
+| HEAL-02 | Phase 3 | Pending |
+| HEAL-03 | Phase 3 | Pending |
+| HEAL-04 | Phase 3 | Pending |
+| HEAL-05 | Phase 3 | Pending |
+| CACHE-01 | Phase 3 | Pending |
+| CACHE-02 | Phase 3 | Pending |
+| CACHE-03 | Phase 3 | Pending |
+| LEARN-01 | Phase 4 | Pending |
+| LEARN-02 | Phase 4 | Pending |
+| LEARN-03 | Phase 4 | Pending |
+| LEARN-04 | Phase 4 | Pending |
+| LEARN-05 | Phase 4 | Pending |
+| COG-01 | Phase 4 | Pending |
+| COG-02 | Phase 4 | Pending |
+| COG-03 | Phase 4 | Pending |
+| COG-04 | Phase 4 | Pending |
+| COG-05 | Phase 4 | Pending |
+| COG-06 | Phase 4 | Pending |
+| COG-07 | Phase 4 | Pending |
+| COG-08 | Phase 4 | Pending |
+| PERSIST-01 | Phase 1 | Pending |
+| PERSIST-02 | Phase 1 | Pending |
+| PERSIST-03 | Phase 1 | Pending |
+| VIS-01 | Phase 5 | Pending |
+| VIS-02 | Phase 5 | Pending |
+| VIS-03 | Phase 5 | Pending |
+| VIS-04 | Phase 5 | Pending |
+| VIS-05 | Phase 5 | Pending |
+| VIS-06 | Phase 5 | Pending |
+| OBS-01 | Phase 5 | Pending |
+| OBS-02 | Phase 5 | Pending |
+| OBS-03 | Phase 5 | Pending |
+| OBS-04 | Phase 5 | Pending |
+| OBS-05 | Phase 5 | Pending |
+| OBS-06 | Phase 5 | Pending |
+| SPI-01 | Phase 6 | Pending |
+| SPI-02 | Phase 6 | Pending |
+| SPI-03 | Phase 6 | Pending |
+| SPI-04 | Phase 6 | Pending |
+| SPI-05 | Phase 6 | Pending |
+| SPI-06 | Phase 6 | Pending |
+| SPI-07 | Phase 6 | Pending |
+| SPI-08 | Phase 6 | Pending |
+| MCP-01 | Phase 1 | Pending |
+| MCP-02 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 79 total
-- Mapped to phases: 0 (pending)
-- Unmapped: 79
+- v1 requirements: 79 total (counting PERSIST-01..03 as 3 entries, durability hardening continues into Phase 6)
+- Mapped to phases: 79
+- Unmapped: 0
+
+**Note on PERSIST:** PERSIST-01..03 are scoped to Phase 1 (baseline durable persistence + session structure + crash-resume scaffold). Phase 6 hardens the durability story (LangGraph PostgresSaver wrapper, full crash → resume from last verified step under load) but does not introduce new PERSIST-* requirements.
 
 ---
 *Requirements defined: 2026-04-29*
-*Last updated: 2026-04-29 after initial definition*
+*Last updated: 2026-04-29 — traceability filled by roadmapper (6 phases, 79/79 mapped)*
