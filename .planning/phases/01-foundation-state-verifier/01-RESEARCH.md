@@ -670,8 +670,8 @@ PyObjC's `AXObserverCreate` requires a `CFRunLoop` to deliver callbacks. Asyncio
 ```python
 # overlay/ax/observer.py
 import threading
-from PyObjC.CoreFoundation import CFRunLoopRun, CFRunLoopGetCurrent, kCFRunLoopDefaultMode, CFRunLoopAddSource
-from PyObjC.HIServices import (
+from CoreFoundation import CFRunLoopRun, CFRunLoopGetCurrent, kCFRunLoopDefaultMode, CFRunLoopAddSource
+from HIServices import (
     AXObserverCreate,
     AXObserverAddNotification,
     AXObserverGetRunLoopSource,
@@ -849,7 +849,7 @@ Per VERIFY-05 and PROJECT.md L1 spec, three sub-checks run in parallel:
 
 ```python
 # verifier/ensemble/l1_cheap.py
-from PyObjC.Quartz import (
+from Quartz import (
     CGWindowListCopyWindowInfo,
     kCGWindowListOptionOnScreenOnly,
     kCGWindowListExcludeDesktopElements,
@@ -882,7 +882,7 @@ def cgwindowlist_diff(before: dict, after: dict) -> dict:
 #### L1b: NSPasteboard.changeCount
 
 ```python
-from PyObjC.AppKit import NSPasteboard
+from AppKit import NSPasteboard
 
 def pasteboard_change_count() -> int:
     return NSPasteboard.generalPasteboard().changeCount()
@@ -1084,7 +1084,7 @@ async def has_blocking_modal(pid: int) -> Optional[UIElement]:
 
 ```python
 # overlay/profile/tcc.py
-from PyObjC.HIServices import AXIsProcessTrusted
+from HIServices import AXIsProcessTrusted
 
 class TCCMonitor:
     async def check(self) -> bool:
@@ -1543,7 +1543,9 @@ CLAUDE.md directives that the planner MUST verify compliance with:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All planning-blocking questions resolved during /gsd-plan-phase. Items marked **DEFERRED** are explicitly out of Phase 1 scope and are tracked for Phase 2.
 
 ### Q1: cua-driver's MCP transport binding
 
@@ -1551,11 +1553,15 @@ CLAUDE.md directives that the planner MUST verify compliance with:
 **What's unclear:** Does cua-driver run as a standalone MCP server (own stdio/socket) OR is it loaded as a library by trycua's Python `mcp_server`?
 **Recommendation:** Planner reads `~/thinker/research-clones/trycua-cua/libs/cua-driver/Sources/CuaDriverServer/main.swift` (or `Package.swift` to find the executable target) to confirm. Then locks A1 vs A2 proxy strategy.
 
+**RESOLVED:** Plan 08 confirms cua-driver ships a standalone `cua-driver mcp` executable using StdioTransport (per `~/thinker/research-clones/trycua-cua/Sources/CuaDriverCLI/Commands/CuaDriverCommand.swift` and trycua's `mcp_server/server.py` pattern). Plan 08 Task 1 spawns it via `mcp.client.stdio.stdio_client` from the Python overlay's MCP proxy. Strategy = A2 (proxy at MCP-transport level).
+
 ### Q2: Pydantic discriminated union for ActionCanonical?
 
 **What we know:** ActionCanonical needs a `kind: Literal["READ", "MUTATE"]` for speculation safety (Pitfall 22). It also needs typed `payload` per `action_type`.
 **What's unclear:** Use a single `ActionCanonical` class with `payload: dict` (loose), OR `ActionCanonical = Union[ClickAction, TypeAction, ScrollAction, ...]` discriminated union (typed)?
 **Recommendation:** Discriminated union per `action_type`. mypy + Pydantic v2 validate. Phase 2 translators read `action.payload.x` with full type safety.
+
+**RESOLVED:** Plan 01 Task 3 locks `ActionCanonical` as a single Pydantic model with `kind: Literal["READ","MUTATE"]` and `payload: dict` (loose). Discriminated unions per `action_type` are Phase 2 work — Phase 1 only needs the kind gate and the dict for forward-compat. The HoarePre + HoarePost contracts ARE strict though.
 
 ### Q3: Where does the asyncio loop run?
 
@@ -1563,17 +1569,55 @@ CLAUDE.md directives that the planner MUST verify compliance with:
 **What's unclear:** Does FastMCP's `run_stdio_async()` own the main loop, or do we need to compose with our own?
 **Recommendation:** FastMCP exposes `run_stdio_async()` as the top-level coroutine [VERIFIED: trycua/mcp_server/server.py uses `await server.run_stdio_async()` pattern]. We `asyncio.run(main())` where main starts the AX bridge thread, sets up Postgres, then awaits FastMCP.
 
+**RESOLVED:** Plan 08 Task 1 wires this exactly as the recommendation said: `asyncio.run(main())` is the entry point; `main()` starts AXEventBridge (CFRunLoop dedicated thread) + AXObserverManager dispatcher task + DurableExecutor (Postgres) + spawns the upstream cua-driver via stdio_client; then `await server.run_stdio_async()` blocks on the proxy's stdio loop.
+
 ### Q4: NDJSON action_log format vs cassette format
 
 **What we know:** action_log.ndjson is the live event stream; cassettes are the verified-step replay tape (Phase 3).
 **What's unclear:** Should action_log entries include all 4 tier signals + raw observer events, or just the aggregated HoarePost?
 **Recommendation:** Include both — the NDJSON has `{step_idx, hoare_pre, action, hoare_post, raw_signals: {...}, observer_events: [...]}`. Cassettes (Phase 3) extract the durable subset.
 
+**RESOLVED:** Plan 07 (SessionWriter) writes the full superset to `~/.cua/sessions/<session_id>/action_log.ndjson`: `{step_idx, hoare_pre, action, hoare_post, raw_signals, observer_events, elapsed_ms}`. Cassette JSONL extraction is Phase 3 (downstream consumer of the same NDJSON file).
+
 ### Q5: AppProfile probe timeouts
 
 **What we know:** Total budget <500ms first-probe.
 **What's unclear:** Per-probe timeouts to avoid one slow probe blocking total. AS .sdef parse can be 100-300ms on first call (loads OSAKit framework).
 **Recommendation:** Each probe wrapped with `asyncio.wait_for(probe, timeout=0.2)`; on timeout, mark capability `unknown` and re-probe later in session. Cache the unknown state to avoid re-probing on every call.
+
+**RESOLVED:** Plan 02 Task 2 caps each capability probe at `asyncio.wait_for(probe, timeout=0.2)` (200ms per probe), runs the probes in parallel via `anyio.create_task_group`, and falls open to `unknown` on per-probe timeout (cached so the session does not re-probe in a tight loop). Total first-probe budget remains <500ms.
+
+### A1: 4px grid for bbox_centroid
+
+**RESOLVED:** Plan 01 Task 2 implements `Bbox.centroid` as `(round((x + w/2) / 4) * 4, round((y + h/2) / 4) * 4)` (the 4px-grid rounding). Plan 09 Task 2 includes `test_state_graph_roundtrip` which double-probes Calculator's "5" button across 1-3px jitter and asserts identical composite_key (Test 9 in Plan 01 Task 2 covers the unit case directly).
+
+### A2: Tauri/Wails detection via WebKit.framework
+
+**DEFERRED:** Plan 02 Task 2 implements the heuristic and emits a structlog warning when it fires (`tauri_or_wails_heuristic_fired`). 30-min spike on a real Tauri app is scheduled for Phase 2; Plan 02 returns `unknown`-flavored output (i.e. flags `tauri_or_wails=True`) for Tauri-shaped bundles for now. Mis-classification risk is bounded because translator priority falls back to T4/T5 (Vision/Pixel) when AX/AS/CDP all degrade.
+
+### A3: Token-bucket rate (20/sec/pid)
+
+**RESOLVED:** Plan 03 Task 1 sets `TokenBucket(rate_per_sec=20.0, capacity=20)`. cmux #2985 thread cited in PITFALLS.md (saturation at 30/sec). Test `test_initial_burst_grants_20` and `test_21st_call_in_first_second_returns_false` verify both the headroom and the cap.
+
+### A4: Aggregator weight values
+
+**RESOLVED:** Plan 05 Task 2 ships the starting heuristics + present-signal renormalization in `WeightedVote.aggregate()`. Phase 3 tunes against real failure data; Phase 1 demo passes deterministically because Calculator click reliably emits `ax.value_changed` (which alone clears 0.50 under renormalization).
+
+### A5: 0.30 L3 escalation threshold
+
+**RESOLVED:** Plan 05 exports `L3_ESCALATE_THRESHOLD = 0.30` and Plan 06 Task 3 enforces the ladder. Phase 4 calibration is on the roadmap; Phase 1 Calculator demo asserts L3 is never reached.
+
+### A6: Pattern A (CFRunLoop thread) vs Pattern B (libdispatch)
+
+**DEFERRED:** Plan 04 Task 1 commits to Pattern A — dedicated `threading.Thread` running `CFRunLoopRun()`, with cross-thread handoff via `loop.call_soon_threadsafe(queue.put_nowait, event)`. This is the well-trodden path. An optional libdispatch spike is tracked for Phase 2 if Pattern A shows latency or stability issues; nothing in Phase 1 forces Pattern B.
+
+### A7: 5ms guard for stale notifications
+
+**RESOLVED:** Plan 04 Task 1 sets `_GUARD_NS = 5_000_000` (5ms) in `cua_overlay/verifier/axobserver.py`. Test `test_filter_drops_pre_subscription_events` exercises the boundary with 2ms (drops) and 6ms (keeps) deltas.
+
+### A8: Proxy approach (A2 over A1)
+
+**RESOLVED:** See Q1 above. Plan 08 verifies cua-driver exposes a standalone `cua-driver mcp` stdio executable; A2 (transport-level proxy) locks in.
 
 ---
 

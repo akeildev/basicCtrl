@@ -33,7 +33,16 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. L0 push + L1 cheap diff (CGWindowList, NSPasteboard.changeCount, dHash) verifies a click in <50ms with no AX subtree walk
   5. AX rate-limiter caps at 20 calls/sec/pid; depth-limited subtree (3 levels max) prevents Safari hangs
   6. Existing trycua MCP server surface still works; healing wrapper exposed as additional MCP tools so Claude Code / Cursor / Codex can invoke it
-**Plans**: TBD
+**Plans**: 9 plans
+- [ ] 01-01-PLAN.md — Project scaffold + Pydantic state-graph contracts (UIElement, ActionCanonical, HoarePre/Post, EdgeKind, StateGraph, TemporalRingBuffer, CausalDAG)
+- [ ] 01-02-PLAN.md — AppProfile classifier with parallel capability probe + per-bundle disk cache + TCC monitor
+- [ ] 01-03-PLAN.md — AX safety primitives: TokenBucket rate limiter, depth-limited walker, modal probe, typed AX errors
+- [ ] 01-04-PLAN.md — AXObserver bridge (CFRunLoop thread + asyncio Queue) + AXObserverManager.expect (subscribe-before-fire) + NSWorkspace + kqueue
+- [ ] 01-05-PLAN.md — L0 push + L1 cheap-diff (CGWindowList + NSPasteboard.changeCount + ImageHash dHash) + WeightedVote + Aggregator
+- [ ] 01-06-PLAN.md — L2 medium tier (ocrmac + walker delegation) + L3 LLM stub + escalation ladder wiring
+- [ ] 01-07-PLAN.md — Persistence: SessionWriter ~/.cua/sessions/<id>/ tree + LangGraph PostgresSaver wrapper + crash-resume contract
+- [ ] 01-08-PLAN.md — Python MCP server proxying cua-driver mcp via stdio + click_with_healing tool
+- [ ] 01-09-PLAN.md — Calculator click <50ms end-to-end demo + 6 ROADMAP success criteria pytest gate + PHASE-1-DEMO.md runbook
 
 ### Phase 2: Translators + Racing
 **Goal**: Drive any of trycua's covered apps via the BEST translator for that bundle, racing 5 channels in parallel with atomic idempotency — no double-clicks, no double-submits, ever.
@@ -115,7 +124,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + State + Verifier | 0/TBD | Not started | - |
+| 1. Foundation + State + Verifier | 0/9 | Not started | - |
 | 2. Translators + Racing | 0/TBD | Not started | - |
 | 3. Recovery + Cache Write-Back | 0/TBD | Not started | - |
 | 4. Cognition + Learning + Episodic | 0/TBD | Not started | - |
