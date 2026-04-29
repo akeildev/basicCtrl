@@ -35,7 +35,7 @@ class ActionCanonical(BaseModel):
     kind: Literal["READ", "MUTATE"]  # P22 speculation-safety gate
     target_key: str
     action_type: str  # "click" | "type" | "scroll" | "set_value" | ...
-    payload: dict
+    payload: dict[str, object]
     tier: Optional[Literal["T1", "T2", "T3", "T4", "T5"]] = None
     channel: Optional[Literal["C1", "C2", "C3", "C4", "C5"]] = None
     timestamp_ns: int
