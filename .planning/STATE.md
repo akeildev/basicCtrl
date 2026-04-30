@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-05-PLAN.md (T1AXTranslator + C2AXPressChannel)
-last_updated: "2026-04-30T07:16:56.559Z"
+stopped_at: Completed 02-06-PLAN.md (T2 CDP + C5 CDP Input.dispatchMouseEvent)
+last_updated: "2026-04-30T07:27:01.175Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 14
-  percent: 67
+  completed_plans: 15
+  percent: 71
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 6 of 12
+Plan: 7 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P03 | 4min | 2 tasks | 3 files |
 | Phase 02 P04 | 4min | 2 tasks | 8 files |
 | Phase 02 P05 | 16m | 2 tasks | 7 files |
+| Phase 02 P06 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Two-bucket TokenBucket pattern in T1: 200/sec resolution bucket + 20/sec action-time validate bucket
 - [Phase 02]: T1 _MAX_DEPTH=6 with load-bearing _MAX_NODES_T1=200 cap; CLAUDE.md max-3 rule applies to walk_subtree, not translator-layer walkers (per Phase 1 demo precedent)
 - [Phase 02]: Module-scoped calculator_session_pid fixture for tests that need warm Calculator across multiple sequential test functions
+- [Phase 02]: T2 ws_url stashed in TranslatorTarget.extras for C5 cross-fire re-attach (Phase 2 trades 10ms socket re-open for clean per-fire CDPClient lifecycle)
+- [Phase 02]: T2/C5 validate() does cheap struct check (no live DOM round-trip) — channel fails fast on stale session at dispatch time
+- [Phase 02]: D-03 hard rule grep-enforced: zero occurrences of literal 'browser_harness' substring in t2_cdp.py source
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T07:16:47.793Z
-Stopped at: Completed 02-05-PLAN.md (T1AXTranslator + C2AXPressChannel)
+Last session: 2026-04-30T07:27:01.173Z
+Stopped at: Completed 02-06-PLAN.md (T2 CDP + C5 CDP Input.dispatchMouseEvent)
 Resume file: None
