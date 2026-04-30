@@ -70,7 +70,16 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Bounded recovery: max 2 cycles → escalate to user with actionable message (never silent abandon)
   5. Every heal emits `HealEvent{old_locator, new_locator, reason, trace_id, ts}` to `~/.cua/sessions/<id>/heals.ndjson`; heal-rate budget pauses auto-heal at >5%/session
   6. Coordinate-based or vision-based heals are session-only — only stable-tier locators (AXIdentifier, AXLabel, AXTitle) write back to canonical cassette
-**Plans**: TBD
+**Plans**: 9 plans
+- [x] 03-01-PLAN.md — Recovery scaffold + FailureCtx contract + 6-class FailureClass enum
+- [x] 03-02-PLAN.md — FailureClassifier with decision tree routing to branches
+- [x] 03-03-PLAN.md — CircuitBreaker per-(bundle_id, target_key) with 60s window and translator reordering
+- [x] 03-04-PLAN.md — 5 recovery branches (B1 rescroll, B2 OCR regrounding, B3/B4 stubs, B5 AppleScript) with RecoveryBranch Protocol
+- [x] 03-05-PLAN.md — RecoveryOrchestrator coordinating parallel branch fanout with bounded cycles + heal-rate budget
+- [ ] 03-06-PLAN.md — HealEvent emission + heals.ndjson stream + heal-rate budget metrics
+- [ ] 03-07-PLAN.md — AgentCache + cassette replay engine
+- [ ] 03-08-PLAN.md — WriteBack + stable-locator gate + atomic cassette replace
+- [ ] 03-09-PLAN.md — Phase 3 demo: stale selector → heal → cassette updated
 
 ### Phase 4: Cognition + Learning + Episodic
 **Goal**: Plan with multiple agents in parallel, predict ahead read-only, learn from observed user actions via CGEvent tap, and retrieve "last time we did this" from episodic memory before any LLM call.
