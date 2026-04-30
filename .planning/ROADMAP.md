@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + State + Verifier | 9/9 | Complete | 2026-04-30 |
-| 2. Translators + Racing | 9/12 | In progress | - |
+| 2. Translators + Racing | 12/12 | Complete | 2026-04-30 |
 | 3. Recovery + Cache Write-Back | 0/TBD | Not started | - |
 | 4. Cognition + Learning + Episodic | 0/TBD | Not started | - |
 | 5. Visualizer + Full Transparency | 0/TBD | Not started | - |
