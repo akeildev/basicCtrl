@@ -1,0 +1,15 @@
+"""Phase 2 Channels — C1..C5 action delivery primitives.
+
+Per CONTEXT.md D-14 default mapping:
+    C1 SLEventPostToPid (Phase 6 SkyLight; Phase 2 = public CGEvent)
+    C2 AX kAXPress
+    C3 CGEvent.postToPid (with cursor)
+    C4 AppleScript
+    C5 CDP Input.dispatchMouseEvent
+
+Each channel implements the Channel Protocol (base.py) and reads the
+shared IdempotencyTokenStore for D-17 atomic claim before fire.
+"""
+from cua_overlay.actions.channels.base import Channel, ChannelOutcome
+
+__all__ = ["Channel", "ChannelOutcome"]
