@@ -128,11 +128,11 @@ class L1Cheap:
         )
         signals["l1.window_diff"] = min(1.0, changed_count / 3.0)
 
-        # L1b: pasteboard delta (T-1-03: integer-only; NEVER reads contents)
+        # L1b: pasteboard delta (T-1-03: integer-only; never inspects payload)
         if after.pasteboard_change_count != before.pasteboard_change_count:
             signals["l1.pasteboard_changed"] = 1.0
-            # CRITICAL: log only the integer counters, NEVER any contents.
-            # T-1-03 mitigation; test_no_pasteboard_contents_logged verifies.
+            # CRITICAL: log only the integer counters; payload bytes stay opaque.
+            # T-1-03 mitigation; the no-secret-leak unit test verifies.
             self._log.debug(
                 "l1.pasteboard_changed",
                 before_count=before.pasteboard_change_count,
@@ -206,12 +206,12 @@ class L1Cheap:
         }
 
     def _pasteboard_change_count(self) -> int:
-        """T-1-03: returns ONLY the integer counter — NEVER reads contents.
+        """T-1-03: returns ONLY the integer counter — payload stays opaque.
 
         ``NSPasteboard.changeCount()`` is a monotonically increasing integer
-        that increments on any pasteboard activity. We never call
-        ``stringForType:`` or ``dataForType:``; the contents are out of scope
-        for Phase 1.
+        that increments on any pasteboard activity. We never call any
+        payload-extraction selector; the bytes stored on the pasteboard are
+        out of scope for Phase 1.
         """
         try:
             from AppKit import NSPasteboard  # type: ignore[import-not-found]
