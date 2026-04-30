@@ -19,17 +19,18 @@
 
 ## State (snapshot)
 
-**Last update:** 2026-04-30T06:50:00Z
+**Last update:** 2026-04-30T16:30:00Z
 **Last iteration:** 1
-**Current phase:** 2 (planning complete, executing now)
+**Current phase:** 2 (verifying — gsd-verifier running async, agentId=ab566a12d3a5d8e49)
 **Phases done:** 1 (of 6)
 **Phases planned:** 1, 2 (of 6)
-**Phases executed:** 1 (of 6)
+**Phases executed:** 1 (of 6) + Phase 2 plans 1-12 of 12 ✓
+**Subagent model rule (per user 2026-04-30):** ALL subagents use `model="sonnet"`, normal context window. NOT opus, NOT 1M.
 
 | Phase | Discuss | Plan | Execute | Verify | Notes |
 |-------|---------|------|---------|--------|-------|
 | 1 | n/a | done | done (9/9) | done | Foundation + state graph + verifier |
-| 2 | done (D-01..D-31) | done (12 plans) | **NEXT** | pending | Translators + Racing |
+| 2 | done (D-01..D-31) | done (12 plans) | done (12/12) | RUNNING | Translators + Racing — sequential mode (worktrees off); verifier dispatched on sonnet |
 | 3 | pending | pending | pending | pending | Recovery + Cache |
 | 4 | pending | pending | pending | pending | Cognition + Learning + Episodic |
 | 5 | pending | pending | pending | pending | Visualizer + Transparency |
@@ -109,3 +110,6 @@ When all criteria met, append a `## DONE` section to the bottom of this file wit
 
 (Append entries below this line each iteration with format `- {ISO-8601-Z} — {one-line summary}`)
 - 2026-04-30T06:25:18Z — stop-hook iter=1 state=[status: executing|stopped_at: Phase 2 context gathered|last_activity: 2026-04-30 -- Phase 2 planning complete] last_commit=[1272e5f docs(state): record phase 2 planning complete (12 plans)]
+- 2026-04-30T16:14:47Z — stop-hook iter=1 state=[status: verifying|stopped_at: Completed 02-12-PLAN.md — Phase 2 ship gate ready for verification|last_activity: 2026-04-30] last_commit=[5bef1b3 docs(02-12): SUMMARY + STATE + ROADMAP — Phase 2 plan-execution complete]
+- 2026-04-30T16:15:33Z — stop-hook iter=2 state=[status: verifying|stopped_at: Completed 02-12-PLAN.md — Phase 2 ship gate ready for verification|last_activity: 2026-04-30] last_commit=[5bef1b3 docs(02-12): SUMMARY + STATE + ROADMAP — Phase 2 plan-execution complete]
+- 2026-04-30T16:16:51Z — stop-hook iter=3 state=[status: verifying|stopped_at: Completed 02-12-PLAN.md — Phase 2 ship gate ready for verification|last_activity: 2026-04-30] last_commit=[5bef1b3 docs(02-12): SUMMARY + STATE + ROADMAP — Phase 2 plan-execution complete]
