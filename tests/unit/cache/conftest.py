@@ -74,7 +74,7 @@ def sample_cassette_step() -> CassetteStep:
         hoare_pre=hoare_pre,
         action_canonical=action_canonical,
         hoare_post=hoare_post,
-        screenshot_phash="abc123def456",
+        screenshot_phash="abc123def4560000000000000000000000000000000000000000000000000000",
         ax_subtree_hash="hash1",
         healed_selectors=[],
     )
@@ -132,7 +132,7 @@ def sample_cassette(sample_cassette_step: CassetteStep) -> Cassette:
         hoare_pre=step2_pre,
         action_canonical=step2_action,
         hoare_post=step2_post,
-        screenshot_phash="def789ghi012",
+        screenshot_phash="def7890000000000000000000000000000000000000000000000000000000000",
         ax_subtree_hash="hash2",
         healed_selectors=[],
     )
@@ -173,7 +173,7 @@ def sample_cassette(sample_cassette_step: CassetteStep) -> Cassette:
         hoare_pre=step3_pre,
         action_canonical=step3_action,
         hoare_post=step3_post,
-        screenshot_phash="jkl345mno678",
+        screenshot_phash="abc3450000000000000000000000000000000000000000000000000000000000",
         ax_subtree_hash="hash3",
         healed_selectors=[],
     )

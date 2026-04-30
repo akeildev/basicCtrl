@@ -8,10 +8,12 @@ stable-tier gate and atomic file replacement.
 from .agent_cache import AgentCache
 from .cassette import Cassette, CassetteStep
 from .key import compute_cache_key
+from .replay import CassetteReplayEngine
 
 __all__ = [
     "compute_cache_key",
     "Cassette",
     "CassetteStep",
     "AgentCache",
+    "CassetteReplayEngine",
 ]
