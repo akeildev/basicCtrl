@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-06-PLAN.md (T2 CDP + C5 CDP Input.dispatchMouseEvent)
-last_updated: "2026-04-30T07:27:01.175Z"
+stopped_at: Completed 02-07-PLAN.md (T3 AppleScript + C4 channel)
+last_updated: "2026-04-30T07:36:07.029Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 15
-  percent: 71
+  completed_plans: 16
+  percent: 76
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 7 of 12
+Plan: 8 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P04 | 4min | 2 tasks | 8 files |
 | Phase 02 P05 | 16m | 2 tasks | 7 files |
 | Phase 02 P06 | 6min | 2 tasks | 6 files |
+| Phase 02 P07 | 4min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,7 @@ Recent decisions affecting current work:
 - [Phase 02]: T2 ws_url stashed in TranslatorTarget.extras for C5 cross-fire re-attach (Phase 2 trades 10ms socket re-open for clean per-fire CDPClient lifecycle)
 - [Phase 02]: T2/C5 validate() does cheap struct check (no live DOM round-trip) — channel fails fast on stale session at dispatch time
 - [Phase 02]: D-03 hard rule grep-enforced: zero occurrences of literal 'browser_harness' substring in t2_cdp.py source
+- [Phase 02]: T3+C4 ship as third D-14 default tier-channel pair: dedicated cua-as ThreadPool (T-2-03), module-level compiled-script cache (Pitfall E), C4 reuses T3 pool (does not spin own)
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T07:27:01.173Z
-Stopped at: Completed 02-06-PLAN.md (T2 CDP + C5 CDP Input.dispatchMouseEvent)
+Last session: 2026-04-30T07:36:00.668Z
+Stopped at: Completed 02-07-PLAN.md (T3 AppleScript + C4 channel)
 Resume file: None
