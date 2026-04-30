@@ -221,30 +221,36 @@ async def test_send_destructive_always_single_channel(fake_proxy_with_tools) -> 
 
 
 @pytest.mark.asyncio
-async def test_key_combo_safe_race_combos_use_key_combo_action_type(
+async def test_key_combo_safe_race_combos_use_prefix_action_type(
     fake_proxy_with_tools,
 ) -> None:
-    """D-12: cmd+c, cmd+v use action_type='key_combo' (race-allowed)."""
+    """D-12: cmd+c, cmd+v dispatch as action_type='key_combo:<combo>' so the
+    race_policy `key_combo:` prefix handler routes to RACE via SAFE_RACE_COMBOS."""
     fo = fake_proxy_with_tools
     fn = fo.proxy.tools["key_combo_with_healing"]
-    await fn(combo="cmd+c", bundle_id="com.test", pid=1)
-    call_kwargs = fo.race_orch.execute.await_args.kwargs
-    assert call_kwargs["action_type"] == "key_combo"
+    for combo in ["cmd+c", "cmd+v"]:
+        fo.race_orch.execute.reset_mock()
+        await fn(combo=combo, bundle_id="com.test", pid=1)
+        call_kwargs = fo.race_orch.execute.await_args.kwargs
+        assert call_kwargs["action_type"] == f"key_combo:{combo}", (
+            f"combo={combo} did not dispatch as key_combo:{combo}"
+        )
 
 
 @pytest.mark.asyncio
-async def test_key_combo_destructive_uses_key_combo_destructive_action_type(
+async def test_key_combo_destructive_uses_prefix_action_type(
     fake_proxy_with_tools,
 ) -> None:
-    """D-11: cmd+s, cmd+enter, cmd+w, cmd+z → 'key_combo_destructive' (single-channel)."""
+    """D-11: cmd+s, cmd+enter, cmd+w, cmd+z dispatch as 'key_combo:<combo>' too;
+    the race_policy prefix handler routes them to SINGLE_CHANNEL via DESTRUCTIVE_COMBOS."""
     fo = fake_proxy_with_tools
     fn = fo.proxy.tools["key_combo_with_healing"]
     for combo in ["cmd+s", "cmd+enter", "cmd+w", "cmd+z"]:
         fo.race_orch.execute.reset_mock()
         await fn(combo=combo, bundle_id="com.test", pid=1)
         call_kwargs = fo.race_orch.execute.await_args.kwargs
-        assert call_kwargs["action_type"] == "key_combo_destructive", (
-            f"combo={combo} did not route to key_combo_destructive"
+        assert call_kwargs["action_type"] == f"key_combo:{combo}", (
+            f"combo={combo} did not dispatch as key_combo:{combo}"
         )
 
 

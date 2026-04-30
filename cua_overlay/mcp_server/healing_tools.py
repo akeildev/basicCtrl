@@ -318,15 +318,13 @@ async def register_healing_tools(
     ) -> dict[str, Any]:
         """D-11/D-12 — orchestrator picks via resolve_race_policy.
 
-        For 'auto' policy:
-          * SAFE_RACE_COMBOS (cmd+c, cmd+v) → action_type='key_combo' (RACE)
-          * Everything else → action_type='key_combo_destructive' (SINGLE_CHANNEL)
+        Dispatches `action_type="key_combo:<combo>"` so the prefix handler at
+        race_policy._classify_intrinsic uses the SAFE_RACE_COMBOS / DESTRUCTIVE_COMBOS
+        tables directly. SAFE combos (cmd+c, cmd+v) get RACE; destructive combos
+        (cmd+s, cmd+enter, cmd+w, cmd+z) get SINGLE_CHANNEL automatically.
         """
         combo_lower = combo.lower().strip()
-        if combo_lower in SAFE_RACE_COMBOS:
-            action_type = "key_combo"
-        else:
-            action_type = "key_combo_destructive"
+        action_type = f"key_combo:{combo_lower}"
         t_start = time.monotonic()
         action, post = await race_orch.execute(
             bundle_id=bundle_id,
