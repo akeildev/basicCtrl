@@ -76,9 +76,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 03-03-PLAN.md — CircuitBreaker per-(bundle_id, target_key) with 60s window and translator reordering
 - [x] 03-04-PLAN.md — 5 recovery branches (B1 rescroll, B2 OCR regrounding, B3/B4 stubs, B5 AppleScript) with RecoveryBranch Protocol
 - [x] 03-05-PLAN.md — RecoveryOrchestrator coordinating parallel branch fanout with bounded cycles + heal-rate budget
-- [ ] 03-06-PLAN.md — HealEvent emission + heals.ndjson stream + heal-rate budget metrics
-- [ ] 03-07-PLAN.md — AgentCache + cassette replay engine
-- [ ] 03-08-PLAN.md — WriteBack + stable-locator gate + atomic cassette replace
+- [x] 03-06-PLAN.md — AgentCache + Cassette with SHA-256 keying, NDJSON serialization, schema versioning (20 tests)
+- [x] 03-07-PLAN.md — CassetteReplayEngine with pHash matching (8-bit threshold) and fallthrough (14 tests)
+- [x] 03-08-PLAN.md — WriteBack with stable-tier gate (AX-only) + atomic file ops + StreamCache (14 tests)
 - [ ] 03-09-PLAN.md — Phase 3 demo: stale selector → heal → cassette updated
 
 ### Phase 4: Cognition + Learning + Episodic
@@ -134,8 +134,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + State + Verifier | 9/9 | Complete | 2026-04-30 |
-| 2. Translators + Racing | 12/12 | Complete    | 2026-04-30 |
-| 3. Recovery + Cache Write-Back | 0/TBD | Not started | - |
+| 2. Translators + Racing | 12/12 | Complete | 2026-04-30 |
+| 3. Recovery + Cache Write-Back | 8/9 | In Progress | 2026-04-30 (06-08 cache layer complete) |
 | 4. Cognition + Learning + Episodic | 0/TBD | Not started | - |
 | 5. Visualizer + Full Transparency | 0/TBD | Not started | - |
 | 6. Private SPIs + Durability Hardening | 0/TBD | Not started | - |
