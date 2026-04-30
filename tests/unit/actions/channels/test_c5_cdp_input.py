@@ -10,11 +10,11 @@ Real Slack integration lives in tests/integration/test_slack_t2_wins.py.
 """
 from __future__ import annotations
 
-import asyncio
 import time
+import uuid
 from datetime import datetime, timezone
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import anyio
 import pytest
@@ -22,7 +22,7 @@ import pytest
 from cua_overlay.actions.channels.c5_cdp_input import C5CDPInputChannel
 from cua_overlay.actions.idempotency import IdempotencyTokenStore
 from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
+from cua_overlay.state.causal_dag import ActionCanonical
 from cua_overlay.state.graph import Bbox, Source, UIElement
 from cua_overlay.translators.base import TranslatorTarget
 
@@ -30,19 +30,17 @@ from cua_overlay.translators.base import TranslatorTarget
 # ─── helpers ────────────────────────────────────────────────────────────────
 
 
-def _fake_action(action_id: str = "act-c5-1") -> ActionCanonical:
-    """Build a minimal ActionCanonical for testing C5.fire."""
+def _fake_action(action_id: str | None = None) -> ActionCanonical:
+    """Build a minimal ActionCanonical for testing C5.fire (matches C2 test shape)."""
     return ActionCanonical(
-        id=action_id,
+        id=action_id or uuid.uuid4().hex,
+        step_idx=1,
         kind="MUTATE",
+        target_key="composite-key-c5",
         action_type="click",
-        pre=HoarePre(
-            target_role="AXButton",
-            target_label="message_container",
-            target_role_path="CDPElement[42]",
-            target_pid=1234,
-            target_bundle_id="com.tinyspeck.slackmacgap",
-        ),
+        payload={},
+        timestamp_ns=time.monotonic_ns(),
+        session_id="unit-sess-c5",
     )
 
 
@@ -100,14 +98,9 @@ class _FakeCDPClient:
 
 
 @pytest.fixture
-def fake_session_writer(tmp_path):
-    """Real SessionWriter pointing at a tmp directory."""
-    return SessionWriter(session_dir=tmp_path / "sess")
-
-
-@pytest.fixture
-def store(fake_session_writer):
-    return IdempotencyTokenStore(session_writer=fake_session_writer)
+def store(tmp_path):
+    """Real IdempotencyTokenStore over a tmp-dir SessionWriter."""
+    return IdempotencyTokenStore(SessionWriter(base=tmp_path))
 
 
 # ─── tests ──────────────────────────────────────────────────────────────────
