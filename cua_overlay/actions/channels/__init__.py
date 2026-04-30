@@ -12,11 +12,13 @@ shared IdempotencyTokenStore for D-17 atomic claim before fire.
 """
 from cua_overlay.actions.channels.base import Channel, ChannelOutcome
 from cua_overlay.actions.channels.c2_ax_press import C2AXPressChannel
+from cua_overlay.actions.channels.c4_applescript import C4AppleScriptChannel
 from cua_overlay.actions.channels.c5_cdp_input import C5CDPInputChannel
 
 __all__ = [
     "Channel",
     "ChannelOutcome",
     "C2AXPressChannel",
+    "C4AppleScriptChannel",
     "C5CDPInputChannel",
 ]
