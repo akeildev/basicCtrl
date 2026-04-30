@@ -19,6 +19,7 @@ from cua_overlay.translators.t1_ax import T1AXTranslator
 from cua_overlay.translators.t2_cdp import T2CDPTranslator
 from cua_overlay.translators.t3_applescript import T3AppleScriptTranslator
 from cua_overlay.translators.t4_vision import T4VisionTranslator
+from cua_overlay.translators.t5_pixel import T5PixelTranslator
 
 __all__ = [
     "TargetSpec",
@@ -29,4 +30,5 @@ __all__ = [
     "T2CDPTranslator",
     "T3AppleScriptTranslator",
     "T4VisionTranslator",
+    "T5PixelTranslator",
 ]
