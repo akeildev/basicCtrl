@@ -274,6 +274,56 @@ Use these entry points:
 Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
 <!-- GSD:workflow-end -->
 
+## Current Status & Next Step
+
+**Phase:** 1 of 6 — Foundation + State + Verifier
+**Plans:** 0 / TBD
+**Status:** Ready to plan (CONTEXT.md not yet written; user picked Claude's discretion on all gray areas)
+
+### Standard Flow (per phase)
+```
+/gsd-discuss-phase N   →  N-CONTEXT.md  (decisions)
+/gsd-plan-phase N      →  N-RESEARCH.md + N-PLAN.md  (tasks)
+/gsd-execute-phase N   →  code + atomic commits per plan
+/gsd-verify-work N     →  N-VERIFICATION.md  (UAT)
+```
+
+Shortcuts:
+- `/gsd-progress` — where am I, what's next
+- `/gsd-resume-work` — restore context after `/clear`
+- `/gsd-next` — auto-route to next logical step
+- `/gsd-fast` — trivial inline task, no planning overhead
+- `/gsd-autonomous` — discuss → plan → execute all phases unattended (use with care)
+
+### Phase 1 Goal (locked)
+Python overlay can probe any Mac app, write a typed state graph, and verify a click via push events + cheap deterministic checks in **<50ms** — without touching cua-driver Swift code.
+
+**Phase 1 success criteria** live in `.planning/ROADMAP.md` §"Phase 1".
+
+### Where to find things
+| Artifact | Path |
+|---|---|
+| Vision + decisions | `.planning/PROJECT.md` |
+| All 79 requirements | `.planning/REQUIREMENTS.md` |
+| Phase breakdown | `.planning/ROADMAP.md` |
+| Tech stack (locked) | `.planning/research/STACK.md` |
+| Architecture blueprint | `.planning/research/ARCHITECTURE.md` |
+| Pitfall taxonomy (29) | `.planning/research/PITFALLS.md` |
+| Feature inventory | `.planning/research/FEATURES.md` |
+| Session state | `.planning/STATE.md` |
+| Per-phase artifacts | `.planning/phases/NN-slug/` (created when phase starts) |
+
+### Architecture canonical ref
+`~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE locked maximalist blueprint. Downstream agents MUST read before planning.
+
+### Hard rules for any agent on this project
+- **Never** edit Swift code under `libs/cua-driver/` — overlay only.
+- **Never** run a full recursive AX tree walk (15-20s on Safari). Always depth-limited (3 levels max).
+- **Never** poll AX at >20 calls/sec/pid (cmux #2985 stalls Cocoa main thread).
+- **Always** subscribe AXObserver push notifications BEFORE the action fires.
+- **Always** use deterministic ensemble first (L0→L1→L2). LLM (L3) only when ensemble confidence < 0.30.
+- **Destructive actions** (submit/send/delete) — single-channel only, never raced.
+
 
 
 <!-- GSD:profile-start -->
