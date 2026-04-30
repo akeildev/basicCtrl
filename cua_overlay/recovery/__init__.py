@@ -20,6 +20,7 @@ from .branches import B1_Rescroll, B2_OCRRegrounding, B3_WorldReplan, B4_Planner
 from .circuit_breaker import CircuitBreaker, BreakState
 from .classifier import FailureClass, FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
 from .heal_event import HealEvent
+from .orchestrator import RecoveryOrchestrator
 
 __all__ = [
     "branches",
@@ -35,4 +36,5 @@ __all__ = [
     "FailureCtx",
     "FAILURE_CLASS_TO_BRANCHES",
     "HealEvent",
+    "RecoveryOrchestrator",
 ]
