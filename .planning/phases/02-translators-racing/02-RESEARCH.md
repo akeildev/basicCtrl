@@ -1424,6 +1424,20 @@ def fake_idempotency_store(tmp_path):
 **Research date:** 2026-04-30
 **Valid until:** 2026-05-30 (30 days for stable; cdp-use, uitag, py-applescript all stable releases)
 
+## Resolutions (Phase-2 planner addendum)
+
+The 5 questions in §"Open Questions" above are RESOLVED for Phase 2 execution. This addendum is the canonical lookup the checker reads when verifying open-question closure.
+
+- **Q1 — AXObserver refcon scoping under 5-channel race:** RESOLVED — Phase 2 channels share ONE `action_id` (the idempotency token by design D-17). Phase 1's `_passes_filter` already keys on `event.action_id == sub.action_id` and the bridge `_refcon_to_action` dict is keyed by the action_id (one entry per action, not per channel). No scoping change needed; Plan 02-10 integration test `test_subscribe_before_fire_ordering` exercises the single-action-id-multiple-channels path with mocked channels.
+
+- **Q2 — cdp-use 1.4.5 `Page.lifecycleEvent` push subscription:** RESOLVED — Phase 2 uses `cdp.register("Page.lifecycleEvent", handler)` per the cdp-use README pattern (verified live at github.com/browser-use/cdp-use). Plan 02-06 (T2 CDP) wires this verbatim; if 1.4.5 generator output omits the typed wrapper, the `register` raw-string path is the documented fallback (`t2_cdp.py` docstring records the discovery at implementation time).
+
+- **Q3 — `transformers>=5.0.0` vs Phase 4 mlx-vlm:** RESOLVED — defer per D-08. Plan 02-01 install runs `uv tree | grep transformers` post-install and writes the version into `02-01-SUMMARY.md`. Phase 4 `/gsd-research-phase` will reconcile (uv extras `[phase2]` vs `[phase4]` if conflict; both use Python 3.12 so dual-install is supported). No Phase 2 blocker.
+
+- **Q4 — `send_destructive` `confirmation_phrase` required vs optional:** RESOLVED — OPTIONAL for Phase 2. Plan 02-11 ships `confirmation_phrase: str | None = None` per the D-29 schema; classifier emits a `structlog` warning when `None`. Phase 3 may promote to required after observing real usage (tracked in PROJECT.md Deferred Ideas).
+
+- **Q5 — uitag fallback on Chess.app non-UI canvas:** RESOLVED — three-tier T4 fallback in Plan 02-08 / Plan 02-09: (1) uitag SoM full board with bounded timeout (Pitfall C `asyncio.to_thread`); (2) ocrmac for piece-position labels (Chess shows piece glyphs not text — typically empty); (3) geometric 8×8 grid mapping over the board's known viewport bbox. Plan 02-12 SC #3 test passes if any of the three tiers produces a target; the test logs which tier resolved.
+
 ---
 
 *Researched: 2026-04-30 for Phase 2 (Translators + Racing) by gsd-research-phase. Phase boundaries and decisions locked in 02-CONTEXT.md (D-01..D-31). Planner: produce per-translator plans with the channel-orchestrator-MCP wave order in §Summary.*
