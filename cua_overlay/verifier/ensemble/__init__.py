@@ -10,6 +10,7 @@ from __future__ import annotations
 from cua_overlay.verifier.ensemble.l0_push import L0Push
 from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap, L1Snapshot
 from cua_overlay.verifier.ensemble.l2_medium import L2Medium, L2Snapshot
+from cua_overlay.verifier.ensemble.l3_llm import L3Contract, L3Stub
 from cua_overlay.verifier.ensemble.weighted_vote import (
     L3_ESCALATE_THRESHOLD,
     VERIFIED_THRESHOLD,
@@ -22,6 +23,8 @@ __all__ = [
     "L1Snapshot",
     "L2Medium",
     "L2Snapshot",
+    "L3Contract",
+    "L3Stub",
     "L3_ESCALATE_THRESHOLD",
     "VERIFIED_THRESHOLD",
     "WeightedVote",
