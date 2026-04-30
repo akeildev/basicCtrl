@@ -101,6 +101,18 @@ class AXEventBridge:
         self._cfrunloop: Any = None
         self._observers: dict[int, Any] = {}  # pid -> AXObserver
         self._subscriptions: list[Subscription] = []
+        # AXObserverAddNotification's refcon arg expects an integer pointer
+        # (void*). PyObjC marshals int → uintptr_t. We hash action_id strings
+        # to a small int and stash the reverse mapping so the callback can
+        # resolve the original UUID. Without this, kAXErrorIllegalArgument.
+        self._refcon_to_action: dict[int, str] = {}
+        # Hold strong references to AX callbacks so they aren't garbage
+        # collected before AXObserver fires them on the CFRunLoop thread.
+        # Without this, callbacks silently never fire on macOS 26+.
+        self._callbacks: list[Any] = []
+        # Polled by the run-loop thread; flipped True by stop() so the outer
+        # while-loop exits between CFRunLoopRunInMode iterations.
+        self._stop_requested: bool = False
         self._log = structlog.get_logger()
 
     # ------------------------------------------------------------------ lifecycle
@@ -116,7 +128,11 @@ class AXEventBridge:
 
         def _runloop_target() -> None:
             try:
-                from CoreFoundation import CFRunLoopGetCurrent, CFRunLoopRun
+                from CoreFoundation import (
+                    CFRunLoopGetCurrent,
+                    CFRunLoopRunInMode,
+                    kCFRunLoopDefaultMode,
+                )
             except ImportError:
                 # PyObjC unavailable (CI without macOS). Mark ready so caller
                 # doesn't deadlock — bridge will still queue events injected by
@@ -125,7 +141,16 @@ class AXEventBridge:
                 return
             self._cfrunloop = CFRunLoopGetCurrent()
             ready.set()
-            CFRunLoopRun()  # blocks until CFRunLoopStop
+            # CFRunLoopRun() returns immediately if there are no sources/timers
+            # registered yet (and AXObserver sources are added LATER from the
+            # main thread via subscribe()). Loop in 1-second chunks so the run
+            # loop stays alive long enough for sources to be added; each
+            # iteration polls _stop_requested so stop() can break us out.
+            self._stop_requested = False
+            while not self._stop_requested:
+                # Run for up to 1s; returns when sources fire or timeout hits.
+                # returnAfterSourceHandled=False so we keep looping.
+                CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1.0, False)
 
         self._thread = threading.Thread(
             target=_runloop_target, name="cua-cfrunloop", daemon=True
@@ -140,6 +165,9 @@ class AXEventBridge:
         Safe to call multiple times. Safe to call even if start() was never
         called (no-op).
         """
+        # Set the flag the run-loop thread polls so it exits its outer loop
+        # at the end of the current 1-second CFRunLoopRunInMode iteration.
+        self._stop_requested = True
         if self._cfrunloop is not None:
             try:
                 from CoreFoundation import CFRunLoopStop
@@ -189,6 +217,7 @@ class AXEventBridge:
         )
 
         try:
+            import objc  # type: ignore[import-not-found]
             from HIServices import (  # type: ignore[import-not-found]
                 AXObserverAddNotification,
                 AXObserverCreate,
@@ -208,28 +237,47 @@ class AXEventBridge:
         # off across threads via call_soon_threadsafe.
         loop = self.loop
         queue = self.queue
+        refcon_map = self._refcon_to_action
 
-        def _callback(
-            observer: Any,
-            axelem: Any,
-            notif_name: Any,
-            user_info_ref: Any,
-            refcon: Any,
-        ) -> None:
+        # Compute a 32-bit refcon for this action_id and stash the reverse
+        # mapping so the callback can resolve back to the original UUID.
+        # `id(action_id)` would also work but isn't stable across processes;
+        # a hash of the string is fine since collisions are filtered by the
+        # subscription_ts_ns + notif-set predicates downstream.
+        action_refcon = abs(hash(action_id)) & 0xFFFFFFFF
+        refcon_map[action_refcon] = action_id
+
+        # PyObjC requires the C-callback to be wrapped via objc.callbackFor
+        # so its signature can be marshalled across the C boundary. The
+        # AXObserverCreate signature expects (observer, element, notification,
+        # refcon) — four arguments, not five. The refcon is the per-action_id
+        # tag we pass to AXObserverAddNotification (Pitfall P28 part 2).
+        @objc.callbackFor(AXObserverCreate)  # type: ignore[misc]
+        def _callback(observer, axelem, notif_name, refcon):
             # CALLBACK FIRES ON CFRunLoop THREAD — NOT asyncio thread.
+            resolved_action_id: Optional[str] = None
+            try:
+                if refcon is not None:
+                    resolved_action_id = refcon_map.get(int(refcon))
+            except Exception:
+                resolved_action_id = None
             event = AXEvent(
                 pid=pid,
                 element_key=element_key,
                 notif=str(notif_name),
-                user_info=user_info_ref,
+                user_info=None,
                 event_ts_ns=time.monotonic_ns(),
-                action_id=str(refcon) if refcon is not None else None,
+                action_id=resolved_action_id,
             )
             # Cross-thread hand-off: the only way to safely insert into an
             # asyncio.Queue from a non-loop thread.
             loop.call_soon_threadsafe(queue.put_nowait, event)
 
         if pid not in self._observers:
+            # Retain the callback closure so it survives across the
+            # AXObserverCreate boundary (CFRunLoop fires it later — if the
+            # closure is GC'd in between, callbacks silently never deliver).
+            self._callbacks.append(_callback)
             err, observer = AXObserverCreate(pid, _callback, None)
             if err != 0:
                 raise axerror_from_code(err, f"AXObserverCreate(pid={pid}) failed")
@@ -242,10 +290,12 @@ class AXEventBridge:
 
         observer = self._observers[pid]
         for notif in notifications:
-            # action_id passed as refcon -> echoed back to _callback so we can
-            # filter for "this specific action's events" (Pitfall P28 part 2).
+            # action_refcon (integer hash of action_id) passed as refcon ->
+            # echoed back to _callback so we can filter "this specific
+            # action's events" (Pitfall P28 part 2). The callback uses
+            # _refcon_to_action to recover the original action_id.
             err = AXObserverAddNotification(
-                observer, element, notif, action_id.encode() if isinstance(action_id, str) else action_id
+                observer, element, notif, action_refcon
             )
             if err != 0 and err != -25209:  # kAXErrorNotificationAlreadyRegistered: ok
                 self._log.warning(
