@@ -116,7 +116,7 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 ### MCP Server Interface
 
 - [ ] **MCP-01**: Maintain trycua/cua's existing MCP server surface (the Python overlay extends, doesn't replace)
-- [ ] **MCP-02**: Expose self-healing wrapper as MCP tools so Claude Code / Cursor / Codex can invoke it
+- [x] **MCP-02**: Expose self-healing wrapper as MCP tools so Claude Code / Cursor / Codex can invoke it
 
 ## v2 Requirements
 
@@ -212,7 +212,7 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | SPI-07 | Phase 6 | Pending |
 | SPI-08 | Phase 6 | Pending |
 | MCP-01 | Phase 1 | Pending |
-| MCP-02 | Phase 1 | Pending |
+| MCP-02 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 79 total (counting PERSIST-01..03 as 3 entries, durability hardening continues into Phase 6)

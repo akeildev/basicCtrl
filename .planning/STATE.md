@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-10-PLAN.md (RaceOrchestrator + race_first_complete; 11 integration tests passing)
-last_updated: "2026-04-30T15:44:24.847Z"
+stopped_at: Completed 02-11-PLAN.md
+last_updated: "2026-04-30T15:53:46.809Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 19
-  percent: 90
+  completed_plans: 20
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 11 of 12
+Plan: 12 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P08 | 3min | 1 tasks | 3 files |
 | Phase 02 P02-09 | 5min | 2 tasks | 5 files |
 | Phase 02-translators-racing P10 | 4min 33s | 2 tasks | 3 files |
+| Phase 02 P11 | 6m 06s | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Recent decisions affecting current work:
 - [Phase 02-translators-racing]: race_first_complete uses tg.cancel_scope.cancel() (anyio FIRST_COMPLETED workaround per D-13)
 - [Phase 02-translators-racing]: Server-side T-2-09 enforcement: resolve_race_policy gates BEFORE channel construction; D-11 destructive verbs forced to SINGLE_CHANNEL even when caller passes RACE
 - [Phase 02-translators-racing]: ActionCanonical.tier and .channel filled from winner's ChannelOutcome via model_copy after race resolves (D-14 inverse map for tier_for_channel)
+- [Phase 02]: Latency tracked at MCP boundary via time.monotonic — Phase 1 HoarePost has no elapsed_ms field
+- [Phase 02]: main.py builds RaceOrchestrator at startup with explicit T1-T5 + C1-C5 register calls (translators/channels do NOT self-register on import)
+- [Phase 02]: send_destructive encodes safety in tool name (no race_policy parameter) — T-2-09 layer 1 of three-layer defense
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T15:44:16.018Z
-Stopped at: Completed 02-10-PLAN.md (RaceOrchestrator + race_first_complete; 11 integration tests passing)
+Last session: 2026-04-30T15:53:37.463Z
+Stopped at: Completed 02-11-PLAN.md
 Resume file: None
