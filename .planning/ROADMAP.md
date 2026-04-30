@@ -36,8 +36,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 9 plans
 - [x] 01-01-PLAN.md — Project scaffold + Pydantic state-graph contracts (UIElement, ActionCanonical, HoarePre/Post, EdgeKind, StateGraph, TemporalRingBuffer, CausalDAG)
 - [x] 01-02-PLAN.md — AppProfile classifier with parallel capability probe + per-bundle disk cache + TCC monitor
-- [ ] 01-03-PLAN.md — AX safety primitives: TokenBucket rate limiter, depth-limited walker, modal probe, typed AX errors
-- [ ] 01-04-PLAN.md — AXObserver bridge (CFRunLoop thread + asyncio Queue) + AXObserverManager.expect (subscribe-before-fire) + NSWorkspace + kqueue
+- [x] 01-03-PLAN.md — AX safety primitives: TokenBucket rate limiter, depth-limited walker, modal probe, typed AX errors
+- [x] 01-04-PLAN.md — AXObserver bridge (CFRunLoop thread + asyncio Queue) + AXObserverManager.expect (subscribe-before-fire) + NSWorkspace + kqueue
 - [ ] 01-05-PLAN.md — L0 push + L1 cheap-diff (CGWindowList + NSPasteboard.changeCount + ImageHash dHash) + WeightedVote + Aggregator
 - [ ] 01-06-PLAN.md — L2 medium tier (ocrmac + walker delegation) + L3 LLM stub + escalation ladder wiring
 - [ ] 01-07-PLAN.md — Persistence: SessionWriter ~/.cua/sessions/<id>/ tree + LangGraph PostgresSaver wrapper + crash-resume contract
