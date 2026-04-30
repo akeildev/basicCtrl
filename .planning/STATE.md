@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-09-PLAN.md (T5 + C1 + C3)
-last_updated: "2026-04-30T15:33:13.239Z"
+stopped_at: Completed 02-10-PLAN.md (RaceOrchestrator + race_first_complete; 11 integration tests passing)
+last_updated: "2026-04-30T15:44:24.847Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 17
-  percent: 81
+  completed_plans: 19
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 10 of 12
+Plan: 11 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P07 | 4min | 2 tasks | 6 files |
 | Phase 02 P08 | 3min | 1 tasks | 3 files |
 | Phase 02 P02-09 | 5min | 2 tasks | 5 files |
+| Phase 02-translators-racing P10 | 4min 33s | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 02]: T3+C4 ship as third D-14 default tier-channel pair: dedicated cua-as ThreadPool (T-2-03), module-level compiled-script cache (Pitfall E), C4 reuses T3 pool (does not spin own)
 - [Phase 02]: Plan 02-08: T4 Vision uses lazy uitag/ocrmac imports inside asyncio.to_thread closures (Pitfall C isolation + test-friendly patch.dict); D-06 grep-enforced to 0 occurrences of Screen2AX/MacPaw literals; image_width/image_height logged at INFO on every resolve for A1 Retina ratio surfacing in Plan 02-12 Chess integration
 - [Phase 02]: Plan 02-09: T5 Pixel + C1 + C3 ship together; T5 delegates coordinate resolution to T4 (D-07); C1 = background no-cursor-warp tier (Phase 6 SkyLight upgrade), C3 = foreground with cursor (stays public CGEventPostToPid). Both wrap CGEventPostToPid only (T-2-05 grep-enforced). C3 imports _post_left_click from c1_skylight (DRY).
+- [Phase 02-translators-racing]: race_first_complete uses tg.cancel_scope.cancel() (anyio FIRST_COMPLETED workaround per D-13)
+- [Phase 02-translators-racing]: Server-side T-2-09 enforcement: resolve_race_policy gates BEFORE channel construction; D-11 destructive verbs forced to SINGLE_CHANNEL even when caller passes RACE
+- [Phase 02-translators-racing]: ActionCanonical.tier and .channel filled from winner's ChannelOutcome via model_copy after race resolves (D-14 inverse map for tier_for_channel)
 
 ### Pending Todos
 
@@ -106,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T15:33:13.237Z
-Stopped at: Completed 02-09-PLAN.md (T5 + C1 + C3)
+Last session: 2026-04-30T15:44:16.018Z
+Stopped at: Completed 02-10-PLAN.md (RaceOrchestrator + race_first_complete; 11 integration tests passing)
 Resume file: None
