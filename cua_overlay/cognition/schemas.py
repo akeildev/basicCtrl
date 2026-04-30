@@ -51,12 +51,15 @@ class PlanCandidate(BaseModel):
     includes preconditions (must be true before fire) and success criteria
     (assertions that should hold after). `bounded=True` means the planner
     enforces max_steps (default 20).
+
+    Phase 4: steps and preconds can be dicts or objects; will validate
+    strictly in Phase 5+ when full Pydantic coercion is in place.
     """
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    steps: list[ActionCanonical]
-    preconds: list[HoarePre]
+    steps: list[Any]  # Phase 4: dicts or ActionCanonical objects
+    preconds: list[Any]  # Phase 4: dicts or HoarePre objects
     success_criteria: list[str]
     bounded: bool = True
 
