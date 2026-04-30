@@ -9,6 +9,7 @@ from .agent_cache import AgentCache
 from .cassette import Cassette, CassetteStep
 from .key import compute_cache_key
 from .replay import CassetteReplayEngine
+from .writeback import StreamCache, WriteBack
 
 __all__ = [
     "compute_cache_key",
@@ -16,4 +17,6 @@ __all__ = [
     "CassetteStep",
     "AgentCache",
     "CassetteReplayEngine",
+    "WriteBack",
+    "StreamCache",
 ]
