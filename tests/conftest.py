@@ -74,7 +74,7 @@ def calculator_pid() -> Iterator[int]:
     while time.monotonic() < deadline:
         ws = NSWorkspace.sharedWorkspace()
         for app in ws.runningApplications():
-            if app.bundleIdentifier() == "com.apple.Calculator":
+            if (app.bundleIdentifier() or "").lower() == "com.apple.calculator":
                 pid = int(app.processIdentifier())
                 break
         if pid is not None:
