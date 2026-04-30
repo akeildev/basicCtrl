@@ -73,19 +73,20 @@ def fake_probes(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def fake_tcc(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Stub TCC monitor's bound check() method to always return True (granted).
+    """Stub TCC monitor to always return True (granted).
 
-    `_tcc` is a module-level TCCMonitor instance in classifier.py; replacing
-    its `check` attribute with an async lambda short-circuits the
-    AXIsProcessTrusted call without touching HIServices.
+    Patches the TCCMonitor.check class method (NOT the module-level _tcc
+    instance attribute) so that monkeypatch's teardown cleanly restores the
+    original method. Patching the instance creates a shadowing instance
+    attribute that monkeypatch cannot restore correctly, which leaks into
+    sibling tests (test_tcc.py::test_classify_calls_tcc_check_at_start).
     """
+    from cua_overlay.profile.tcc import TCCMonitor
 
-    async def _granted() -> bool:
+    async def _granted(self) -> bool:
         return True
 
-    from cua_overlay.profile import classifier as _classifier_module
-
-    monkeypatch.setattr(_classifier_module._tcc, "check", _granted)
+    monkeypatch.setattr(TCCMonitor, "check", _granted)
 
 
 @pytest.fixture

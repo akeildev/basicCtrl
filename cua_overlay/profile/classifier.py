@@ -36,6 +36,7 @@ from cua_overlay.profile.capability_probe import (
     probe_electron,
     probe_tauri_or_wails,
 )
+from cua_overlay.profile.known_apps import KNOWN_APPS, KnownApp
 from cua_overlay.profile.tcc import TCCMonitor
 
 
@@ -97,6 +98,24 @@ _tcc = TCCMonitor()
 _CACHE_DIR_OVERRIDE: Optional[Path] = None
 
 
+def _is_version_newer(live: str, known: str) -> bool:
+    """Return True iff `live` is strictly newer than `known` per simple
+    dotted-decimal comparison.
+
+    "15.0" > "14.0" → True. "14.5" > "14.0" → True. "14.0" > "14.0" → False.
+    Non-numeric components compared lexicographically (sort after numeric).
+    """
+    def _tup(v: str) -> tuple:
+        parts: list[object] = []
+        for chunk in v.split("."):
+            try:
+                parts.append((0, int(chunk)))
+            except ValueError:
+                parts.append((1, chunk))
+        return tuple(parts)
+    return _tup(live) > _tup(known)
+
+
 def _derive_translator_priority(
     *,
     is_electron: bool,
@@ -155,6 +174,37 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
         log.info("appprofile_cache_hit", elapsed_ms=elapsed_ms)
         return cached
 
+    # 3.5 (NEW Phase 2): bundled top-12 short-circuit (D-20).
+    # We still run probes so the AppProfile carries honest ax/cdp signals
+    # (downstream tools may read them), but the translator_priority and
+    # cdp_available_after_relaunch flag are sourced from KNOWN_APPS unless
+    # the live bundle_version drifts past min_known_version.
+    bundled: Optional[KnownApp] = KNOWN_APPS.get(bundle_id)
+    bundled_priority: Optional[list[str]] = None
+    bundled_cdp_after: bool = False
+    if bundled is not None:
+        if (
+            bundled.min_known_version is not None
+            and meta["bundle_version"]
+            and _is_version_newer(meta["bundle_version"], bundled.min_known_version)
+        ):
+            log.warning(
+                "known_app.version_drift",
+                bundle=bundle_id,
+                known=bundled.min_known_version,
+                live=meta["bundle_version"],
+            )
+            # Fall through — do NOT use bundled priority; live probe wins.
+        else:
+            bundled_priority = list(bundled.translator_priority)
+            bundled_cdp_after = bundled.cdp_after_relaunch
+            log.info(
+                "known_app.short_circuit",
+                bundle=bundle_id,
+                priority=bundled_priority,
+                cdp_after_relaunch=bundled_cdp_after,
+            )
+
     # PARALLEL PROBES via anyio task group. Each probe self-caps at 200ms
     # (or 500ms for the AXObserver probe per Pitfall 14 budget).
     is_electron = probe_electron(meta["bundle_path"])
@@ -199,11 +249,14 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
         ax_observer_works=results["ax_observer_works"],
         applescript_sdef=has_sdef,
         cdp_port=results["cdp_port"],
-        cdp_available_after_relaunch=is_electron and results["cdp_port"] is None,
+        cdp_available_after_relaunch=(
+            bundled_cdp_after if bundled is not None and bundled_priority is not None
+            else (is_electron and results["cdp_port"] is None)
+        ),
         tauri_or_wails=is_tauri,
         electron=is_electron,
         tcc_axenabled=True,  # we already checked above; if False we'd have exited
-        translator_priority=priority,
+        translator_priority=bundled_priority if bundled_priority is not None else priority,
         probed_at=datetime.now(timezone.utc),
         probe_latency_ms=int((time.monotonic() - t_start) * 1000),
     )
