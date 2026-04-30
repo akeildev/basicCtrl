@@ -115,6 +115,7 @@ async def probe_ax_observer_works(pid: int) -> bool:
 
     def _sync() -> bool:
         try:
+            import objc  # type: ignore[import-not-found]
             from HIServices import (  # type: ignore[import-not-found]
                 AXObserverAddNotification,
                 AXObserverCreate,
@@ -125,15 +126,16 @@ async def probe_ax_observer_works(pid: int) -> bool:
             return False
 
         try:
-            app = AXUIElementCreateApplication(pid)
-            # AXObserverCreate signature: (pid, callback, &observer)
-            # PyObjC returns (error, observer)
+            # PyObjC requires the C-callback to be wrapped via objc.callbackFor
+            # so its signature can be marshalled across the C boundary.
+            @objc.callbackFor(AXObserverCreate)  # type: ignore[misc]
             def _noop_callback(observer, element, notification, refcon):  # pragma: no cover
                 return None
 
             err, observer = AXObserverCreate(pid, _noop_callback, None)
             if err != 0 or observer is None:
                 return False
+            app = AXUIElementCreateApplication(pid)
             # Try subscribing. kAXErrorNotificationUnsupported (-25204) on web/Electron.
             sub_err = AXObserverAddNotification(
                 observer, app, kAXFocusedUIElementChangedNotification, None
