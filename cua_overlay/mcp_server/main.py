@@ -32,9 +32,17 @@ from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.server.fastmcp import FastMCP
 
+from cua_overlay.actions import (
+    DuplicateReceipt,
+    IdempotencyTokenStore,
+    RaceOrchestrator,
+)
+from cua_overlay.actions.channel_registry import ChannelRegistry
 from cua_overlay.ax.observer import AXEventBridge
 from cua_overlay.log import configure as configure_logging
 from cua_overlay.persist import DurableExecutor, SessionWriter
+from cua_overlay.profile.classifier import classify
+from cua_overlay.translators.registry import TranslatorRegistry
 from cua_overlay.verifier import (
     Aggregator,
     AXObserverManager,
@@ -201,11 +209,60 @@ async def main() -> None:
         for tool in upstream_tools.tools:
             await register_proxied_tool(proxy_server, upstream, tool, deps)
 
-        # 8. Register healing tools (Phase 1: click_with_healing only; Phase 3
-        # adds the 5-branch recovery variants).
+        # 7.5 Build Phase 2 RaceOrchestrator. Translator + channel registries
+        # are populated below by instantiating each translator/channel and
+        # registering them. Plans 02-05..02-09 implement the translators;
+        # plans 02-04..02-09 implement the channels. Each is a class with a
+        # default constructor (T5PixelTranslator wires T4 internally).
+        from cua_overlay.translators import (  # noqa: E402 — late to avoid cycle
+            T1AXTranslator,
+            T2CDPTranslator,
+            T3AppleScriptTranslator,
+            T4VisionTranslator,
+            T5PixelTranslator,
+        )
+        from cua_overlay.actions.channels import (  # noqa: E402
+            C1SkyLightChannel,
+            C2AXPressChannel,
+            C3CGEventChannel,
+            C4AppleScriptChannel,
+            C5CDPInputChannel,
+        )
+
+        translator_registry = TranslatorRegistry()
+        translator_registry.register(T1AXTranslator())
+        translator_registry.register(T2CDPTranslator())
+        translator_registry.register(T3AppleScriptTranslator())
+        t4 = T4VisionTranslator()
+        translator_registry.register(t4)
+        translator_registry.register(T5PixelTranslator(t4=t4))
+
+        channel_registry = ChannelRegistry()
+        channel_registry.register(C1SkyLightChannel())
+        channel_registry.register(C2AXPressChannel())
+        channel_registry.register(C3CGEventChannel())
+        channel_registry.register(C4AppleScriptChannel())
+        channel_registry.register(C5CDPInputChannel())
+
+        idem_store = IdempotencyTokenStore(session)
+        duplicate = DuplicateReceipt()
+
+        race_orch = RaceOrchestrator(
+            translator_registry=translator_registry,
+            channel_registry=channel_registry,
+            idem_store=idem_store,
+            duplicate_receipt=duplicate,
+            axmgr=axmgr,
+            aggregator=aggregator,
+            l1_cheap=l1,
+            classifier=classify,
+            session_writer=session,
+        )
+
+        # 8. Register healing tools (Phase 2: 6 tools through RaceOrchestrator).
         from cua_overlay.mcp_server.healing_tools import register_healing_tools
 
-        await register_healing_tools(proxy_server, upstream, deps)
+        await register_healing_tools(proxy_server, upstream, deps, race_orch)
 
         log.info(
             "proxy.ready",

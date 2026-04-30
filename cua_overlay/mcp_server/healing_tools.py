@@ -1,68 +1,106 @@
-"""Healing tools — MCP-02. Phase 1: ``click_with_healing``.
+"""Healing tools — MCP-02. Phase 2: 6 tools per D-29 routed through RaceOrchestrator.
 
-Per Plan 01-08 Task 2 step 2: register healing-wrapper tools alongside the
-mirrored upstream tools. Phase 1 ships ``click_with_healing`` only.
+Per CONTEXT.md D-28 (option (a) — extend + sibling tools), D-29 (5 new + 1 extended
+= 6 tools total), D-30 (race_policy enum), D-31 (~10 tools after Phase 2).
 
-Phase 1 wrapper behaviour:
+Per RESEARCH.md §"Pattern 12: MCP Tool Schemas" (Pydantic input models).
 
-* Calls the upstream ``click`` tool through the same MCP ClientSession that
-  ``register_proxied_tool`` uses.
-* Returns ``{"result": <upstream content>, "session_id": <writer.session_id>,
-  "phase": 1, "note": ...}`` so the host can correlate the call with the
-  per-session ``~/.cua/sessions/<id>/action_log.ndjson``.
+Phase 2 wrapper behaviour:
+* Each tool calls cua_overlay.actions.race_orchestrator.RaceOrchestrator.execute
+  with the appropriate action_type + race_policy. The orchestrator owns
+  translator + channel + verifier wiring.
+* Returns HealingToolResult-shaped dict so the host has tier_won / channel_won /
+  latency_ms / verifier_confidence visible per-call.
 
-Phase 3 will swap the body for the 5-branch parallel recovery (race AX click
-+ AppleScript click + CGEvent click + CDP click + Vision-grounded click; first
-verified channel wins; cache the winner for next time).
+Server-side T-2-09 mitigation (layered):
+1. Tool name: send_destructive has NO race_policy parameter — encodes safety
+2. Pydantic Literal["auto","race","single_channel"] rejects bad strings
+3. Orchestrator's resolve_race_policy forces SINGLE_CHANNEL for D-11 verbs
 
-This is a deliberately thin wrapper — the heavy lifting lives in the proxied
-``click`` tool's verifier wrap (``register_proxied_tool``). The healing tool
-exists primarily so MCP hosts can DISCOVER the cua-maximalist surface — when
-they see ``click_with_healing`` in ``list_tools``, they know they're talking
-to a self-healing proxy and not a vanilla cua-driver.
+Phase 1 backward compat: click_with_healing's first 5 args (x, y, bundle_id,
+pid, label) keep their Phase 1 positions and defaults; new args appended.
 """
 from __future__ import annotations
 
-from typing import Any
+import time
+from typing import Any, Literal, Optional
 
 import structlog
 from mcp.client.session import ClientSession
 from mcp.server.fastmcp import FastMCP
 
+from cua_overlay.actions.race_orchestrator import RaceOrchestrator
+from cua_overlay.actions.race_policy import RacePolicy
 from cua_overlay.mcp_server.main import ProxyDeps
-from cua_overlay.mcp_server.proxy import run_action_wrap
+from cua_overlay.translators.base import TargetSpec
 
 
 _log = structlog.get_logger()
+
+
+# D-12 SAFE-RACE key combos (race allowed). Everything else falls under D-11
+# key_combo_destructive and resolve_race_policy forces SINGLE_CHANNEL.
+SAFE_RACE_COMBOS: frozenset[str] = frozenset({"cmd+c", "cmd+v"})
+
+
+def _race_policy_from_string(s: str) -> RacePolicy:
+    """Map MCP string arg → RacePolicy enum. Pydantic Literal already rejected
+    invalid values, so this is a safe lookup."""
+    return RacePolicy(s)
+
+
+def _build_race_outcome(
+    action: Any, post: Any, latency_ms: float, near_miss_count: int = 0
+) -> dict[str, Any]:
+    """Build the 'race' field of HealingToolResult — what the host sees about
+    who won the race.
+
+    Latency is measured at the MCP tool boundary (time.monotonic() around the
+    race_orch.execute call) because Phase 1's HoarePost schema does not include
+    elapsed_ms — see Plan 02-10 SUMMARY deviation #1.
+    """
+    return {
+        "tier_won": action.tier,
+        "channel_won": action.channel,
+        "latency_ms": latency_ms,
+        "verifier_confidence": post.confidence,
+        "near_miss_duplicate_count": near_miss_count,
+    }
 
 
 async def register_healing_tools(
     proxy: FastMCP,
     upstream: ClientSession,
     deps: ProxyDeps,
+    race_orch: RaceOrchestrator,
 ) -> None:
-    """Register MCP-02 healing-wrapper tools onto the proxy server.
+    """Register MCP-02 healing tools onto the proxy server.
 
-    Phase 1 registers ``click_with_healing`` only. Future phases extend with
-    ``type_text_with_healing``, ``scroll_with_healing``, etc.
+    Phase 2 registers 6 tools per D-29:
+      - click_with_healing (extended from Phase 1)
+      - type_with_healing
+      - scroll_with_healing
+      - set_value_with_healing
+      - send_destructive (NO race_policy — D-29 safety-by-name)
+      - key_combo_with_healing
 
     Args:
-        proxy: the FastMCP server hosting our tool surface.
-        upstream: the ClientSession to ``cua-driver mcp`` — we forward
-            individual click calls through it.
-        deps: shared verifier + persistence dependencies (session_id is read
-            from ``deps.session.session_id``).
+        proxy: FastMCP server hosting the tool surface.
+        upstream: ClientSession to cua-driver mcp (kept for proxy pattern parity;
+            Phase 2 healing tools no longer go through the proxy — they route
+            through RaceOrchestrator. upstream stays as an arg for future
+            tools that might fall back to upstream calls).
+        deps: ProxyDeps (session_id read for response correlation).
+        race_orch: Phase 2 RaceOrchestrator (built in main()).
     """
 
     @proxy.tool(
         name="click_with_healing",
         description=(
-            "Click on a target element with self-healing recovery. Phase 1: "
-            "delegates to the upstream cua-driver `click` tool, runs the "
-            "L0+L1 verifier ladder, and writes a Hoare-triple line to the "
-            "session action log. Phase 3 will add 5-branch parallel recovery "
-            "(race AX + AppleScript + CGEvent + CDP + Vision-grounded clicks; "
-            "first verified channel wins; cache the winner)."
+            "Click on a target element with self-healing race. Phase 2: races "
+            "T1 AX + T2 CDP + T3 AS + T4/T5 vision channels in parallel via "
+            "atomic idempotency tokens; first verifier signal wins. Backward "
+            "compatible with Phase 1 5-arg signature."
         ),
     )
     async def click_with_healing(
@@ -71,51 +109,254 @@ async def register_healing_tools(
         bundle_id: str = "",
         pid: int = 0,
         label: str = "",
+        race_policy: Literal["auto", "race", "single_channel"] = "auto",
+        prefer_tier: Optional[Literal["T1", "T2", "T3", "T4", "T5"]] = None,
+        prefer_channel: Optional[Literal["C1", "C2", "C3", "C4", "C5"]] = None,
     ) -> dict[str, Any]:
-        """Click ``(x, y)`` on the target app with verifier wrap.
-
-        Args:
-            x: screen-coordinate X (top-left origin).
-            y: screen-coordinate Y.
-            bundle_id: target app bundle ID (e.g. ``com.apple.calculator``).
-            pid: target process ID. If 0, the upstream tool resolves it from
-                the bundle_id.
-            label: optional human-readable label (e.g. ``"5"`` for the digit-5
-                button on Calculator). Used for logging + UI-element
-                fingerprinting.
-
-        Returns:
-            dict shaped::
-
-                {
-                    "result": <upstream click result content>,
-                    "session_id": <SessionWriter.session_id>,
-                    "phase": 1,
-                    "note": "Phase 1 wrapper; Phase 3 adds 5-branch recovery + cache write-back"
-                }
-        """
-        result, post = await run_action_wrap(
-            upstream=upstream,
-            deps=deps,
-            tool_name="click",
-            action_class="click",
-            kwargs={
+        """Click (x, y) on the target app with race + verify wrap. See
+        register_healing_tools docstring for full semantics."""
+        t_start = time.monotonic()
+        action, post = await race_orch.execute(
+            bundle_id=bundle_id,
+            pid=pid,
+            target_spec=TargetSpec(x=x, y=y, label=label),
+            action_type="click",
+            payload={
                 "x": x,
                 "y": y,
-                "bundle_id": bundle_id,
-                "pid": pid,
                 "label": label,
+                "prefer_tier": prefer_tier,
+                "prefer_channel": prefer_channel,
             },
+            race_policy=_race_policy_from_string(race_policy),
+            session_id=deps.session.session_id,
         )
+        latency_ms = (time.monotonic() - t_start) * 1000.0
         return {
-            "result": result.content if hasattr(result, "content") else str(result),
+            "result": None,  # Phase 2 doesn't proxy upstream — race handles delivery
             "session_id": deps.session.session_id,
-            "phase": 1,
+            "phase": 2,
             "verified": post.verified,
             "confidence": post.confidence,
-            "note": (
-                "Phase 1 wrapper; Phase 3 will add 5-branch recovery + cache write-back"
-            ),
+            "race": _build_race_outcome(action, post, latency_ms),
+            "note": "Phase 2 race orchestrator; D-29 click_with_healing extended",
         }
 
-    _log.info("healing_tools.registered", tools=["click_with_healing"])
+    @proxy.tool(
+        name="type_with_healing",
+        description=(
+            "Type text into a focused/labeled element. D-11: type is "
+            "single-channel by default (each channel inserts text → race = "
+            "duplicate chars)."
+        ),
+    )
+    async def type_with_healing(
+        text: str,
+        bundle_id: str,
+        pid: int,
+        target_label: str = "",
+        race_policy: Literal["auto", "race", "single_channel"] = "auto",
+    ) -> dict[str, Any]:
+        """D-11 — type_into_focused is single-channel."""
+        t_start = time.monotonic()
+        action, post = await race_orch.execute(
+            bundle_id=bundle_id,
+            pid=pid,
+            target_spec=TargetSpec(label=target_label),
+            action_type="type_into_focused",
+            payload={"text": text, "target_label": target_label},
+            race_policy=_race_policy_from_string(race_policy),
+            session_id=deps.session.session_id,
+        )
+        latency_ms = (time.monotonic() - t_start) * 1000.0
+        return {
+            "result": None,
+            "session_id": deps.session.session_id,
+            "phase": 2,
+            "verified": post.verified,
+            "confidence": post.confidence,
+            "race": _build_race_outcome(action, post, latency_ms),
+            "note": "Phase 2 type_with_healing; D-11 single-channel default",
+        }
+
+    @proxy.tool(
+        name="scroll_with_healing",
+        description=(
+            "Scroll a target by direction + amount. D-10/D-11: 'absolute' "
+            "(scroll_to_position) is race-allowed; 'delta' (scroll_by_delta) "
+            "is single-channel (deltas compound across channels)."
+        ),
+    )
+    async def scroll_with_healing(
+        direction: Literal["up", "down", "left", "right"],
+        amount: int,
+        bundle_id: str,
+        pid: int,
+        action_kind: Literal["absolute", "delta"] = "delta",
+        race_policy: Literal["auto", "race", "single_channel"] = "auto",
+    ) -> dict[str, Any]:
+        """D-10 absolute = race; D-11 delta = single-channel."""
+        action_type = (
+            "scroll_to_position" if action_kind == "absolute" else "scroll_by_delta"
+        )
+        t_start = time.monotonic()
+        action, post = await race_orch.execute(
+            bundle_id=bundle_id,
+            pid=pid,
+            target_spec=TargetSpec(),
+            action_type=action_type,
+            payload={"direction": direction, "amount": amount, "kind": action_kind},
+            race_policy=_race_policy_from_string(race_policy),
+            session_id=deps.session.session_id,
+        )
+        latency_ms = (time.monotonic() - t_start) * 1000.0
+        return {
+            "result": None,
+            "session_id": deps.session.session_id,
+            "phase": 2,
+            "verified": post.verified,
+            "confidence": post.confidence,
+            "race": _build_race_outcome(action, post, latency_ms),
+            "note": f"Phase 2 scroll_with_healing; kind={action_kind}",
+        }
+
+    @proxy.tool(
+        name="set_value_with_healing",
+        description=(
+            "Set a labeled element's value (replace semantics). D-11: "
+            "single-channel by default — AX kAXValue and AS 'set value' can "
+            "disagree on focus side-effects."
+        ),
+    )
+    async def set_value_with_healing(
+        target_label: str,
+        value: str,
+        bundle_id: str,
+        pid: int,
+        race_policy: Literal["auto", "race", "single_channel"] = "auto",
+    ) -> dict[str, Any]:
+        """D-11 — set_value is single-channel."""
+        t_start = time.monotonic()
+        action, post = await race_orch.execute(
+            bundle_id=bundle_id,
+            pid=pid,
+            target_spec=TargetSpec(label=target_label),
+            action_type="set_value",
+            payload={"target_label": target_label, "value": value},
+            race_policy=_race_policy_from_string(race_policy),
+            session_id=deps.session.session_id,
+        )
+        latency_ms = (time.monotonic() - t_start) * 1000.0
+        return {
+            "result": None,
+            "session_id": deps.session.session_id,
+            "phase": 2,
+            "verified": post.verified,
+            "confidence": post.confidence,
+            "race": _build_race_outcome(action, post, latency_ms),
+            "note": "Phase 2 set_value_with_healing; D-11 single-channel",
+        }
+
+    @proxy.tool(
+        name="send_destructive",
+        description=(
+            "Submit/send/delete/confirm a destructive action. ALWAYS "
+            "single-channel — D-11 + D-29 (safety encoded in tool name; no "
+            "race_policy parameter)."
+        ),
+    )
+    async def send_destructive(
+        target_label: str,
+        bundle_id: str,
+        pid: int,
+        confirmation_phrase: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """D-11/D-29 — destructive verbs encode safety in tool name; never raceable."""
+        if confirmation_phrase is None:
+            _log.warning(
+                "send_destructive.no_confirmation",
+                bundle_id=bundle_id,
+                target_label=target_label,
+            )
+        t_start = time.monotonic()
+        action, post = await race_orch.execute(
+            bundle_id=bundle_id,
+            pid=pid,
+            target_spec=TargetSpec(label=target_label),
+            action_type="submit",
+            payload={
+                "target_label": target_label,
+                "confirmation_phrase": confirmation_phrase,
+            },
+            race_policy=RacePolicy.SINGLE_CHANNEL,  # ALWAYS — never RACE
+            session_id=deps.session.session_id,
+        )
+        latency_ms = (time.monotonic() - t_start) * 1000.0
+        return {
+            "result": None,
+            "session_id": deps.session.session_id,
+            "phase": 2,
+            "verified": post.verified,
+            "confidence": post.confidence,
+            "race": _build_race_outcome(action, post, latency_ms),
+            "note": "Phase 2 send_destructive; D-29 safety-by-name; SINGLE_CHANNEL forced",
+        }
+
+    @proxy.tool(
+        name="key_combo_with_healing",
+        description=(
+            "Press a key combo (cmd+c, cmd+s, etc.). D-12 SAFE-RACE allowlist "
+            "(cmd+c, cmd+v) uses race; D-11 destructive (cmd+s/enter/w/z) is "
+            "forced single-channel by orchestrator."
+        ),
+    )
+    async def key_combo_with_healing(
+        combo: str,
+        bundle_id: str,
+        pid: int,
+        race_policy: Literal["auto", "race", "single_channel"] = "auto",
+    ) -> dict[str, Any]:
+        """D-11/D-12 — orchestrator picks via resolve_race_policy.
+
+        For 'auto' policy:
+          * SAFE_RACE_COMBOS (cmd+c, cmd+v) → action_type='key_combo' (RACE)
+          * Everything else → action_type='key_combo_destructive' (SINGLE_CHANNEL)
+        """
+        combo_lower = combo.lower().strip()
+        if combo_lower in SAFE_RACE_COMBOS:
+            action_type = "key_combo"
+        else:
+            action_type = "key_combo_destructive"
+        t_start = time.monotonic()
+        action, post = await race_orch.execute(
+            bundle_id=bundle_id,
+            pid=pid,
+            target_spec=TargetSpec(),
+            action_type=action_type,
+            payload={"combo": combo_lower},
+            race_policy=_race_policy_from_string(race_policy),
+            session_id=deps.session.session_id,
+        )
+        latency_ms = (time.monotonic() - t_start) * 1000.0
+        return {
+            "result": None,
+            "session_id": deps.session.session_id,
+            "phase": 2,
+            "verified": post.verified,
+            "confidence": post.confidence,
+            "race": _build_race_outcome(action, post, latency_ms),
+            "note": f"Phase 2 key_combo_with_healing; combo={combo_lower}; type={action_type}",
+        }
+
+    _log.info(
+        "healing_tools.registered",
+        tools=[
+            "click_with_healing",
+            "type_with_healing",
+            "scroll_with_healing",
+            "set_value_with_healing",
+            "send_destructive",
+            "key_combo_with_healing",
+        ],
+        phase=2,
+    )
