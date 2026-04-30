@@ -34,8 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. AX rate-limiter caps at 20 calls/sec/pid; depth-limited subtree (3 levels max) prevents Safari hangs
   6. Existing trycua MCP server surface still works; healing wrapper exposed as additional MCP tools so Claude Code / Cursor / Codex can invoke it
 **Plans**: 9 plans
-- [ ] 01-01-PLAN.md — Project scaffold + Pydantic state-graph contracts (UIElement, ActionCanonical, HoarePre/Post, EdgeKind, StateGraph, TemporalRingBuffer, CausalDAG)
-- [ ] 01-02-PLAN.md — AppProfile classifier with parallel capability probe + per-bundle disk cache + TCC monitor
+- [x] 01-01-PLAN.md — Project scaffold + Pydantic state-graph contracts (UIElement, ActionCanonical, HoarePre/Post, EdgeKind, StateGraph, TemporalRingBuffer, CausalDAG)
+- [x] 01-02-PLAN.md — AppProfile classifier with parallel capability probe + per-bundle disk cache + TCC monitor
 - [ ] 01-03-PLAN.md — AX safety primitives: TokenBucket rate limiter, depth-limited walker, modal probe, typed AX errors
 - [ ] 01-04-PLAN.md — AXObserver bridge (CFRunLoop thread + asyncio Queue) + AXObserverManager.expect (subscribe-before-fire) + NSWorkspace + kqueue
 - [ ] 01-05-PLAN.md — L0 push + L1 cheap-diff (CGWindowList + NSPasteboard.changeCount + ImageHash dHash) + WeightedVote + Aggregator
