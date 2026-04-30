@@ -100,27 +100,28 @@ class DurableExecutor:
         config = {
             "configurable": {
                 "thread_id": session_id,
-                "checkpoint_id": str(step_idx),
                 "checkpoint_ns": "",
             }
         }
-        checkpoint = empty_checkpoint()
-        checkpoint["channel_values"] = {
+        # AsyncPostgresSaver only persists channel values whose version is
+        # listed in ``new_versions`` (it diffs new vs current to populate the
+        # checkpoint_blobs table). We use a SINGLE channel called ``state``
+        # carrying our full (step_idx, pre, action, post) dict so every
+        # checkpoint round-trips through aget intact.
+        version = str(step_idx + 1)
+        state_payload = {
             "step_idx": step_idx,
             "pre": pre.model_dump(mode="json"),
             "action": action.model_dump(mode="json"),
             "post": post.model_dump(mode="json"),
         }
-        # Each channel must have a version for AsyncPostgresSaver to accept the put.
-        version = str(step_idx + 1)
-        checkpoint["channel_versions"] = {
-            "step_idx": version,
-            "pre": version,
-            "action": version,
-            "post": version,
-        }
+        checkpoint = empty_checkpoint()
+        checkpoint["channel_values"] = {"state": state_payload}
+        checkpoint["channel_versions"] = {"state": version}
 
-        await self._saver.aput(config, checkpoint, metadata={}, new_versions={})
+        await self._saver.aput(
+            config, checkpoint, metadata={}, new_versions={"state": version}
+        )
         self._log.info(
             "durable.checkpoint_written",
             session_id=session_id,
@@ -130,8 +131,10 @@ class DurableExecutor:
     async def latest_checkpoint(self, session_id: str) -> Optional[dict[str, Any]]:
         """Return the most recent checkpoint state for ``session_id``, or ``None``.
 
-        Extracts our (step_idx, pre, action, post) dict from the saver's
-        ``channel_values``. Returns ``None`` for fresh sessions with no rows.
+        Extracts our (step_idx, pre, action, post) dict from the ``state``
+        channel inside ``channel_values``. Returns ``None`` for fresh
+        sessions with no rows OR for legacy / corrupt rows where the
+        ``state`` channel is missing.
         """
         if self._saver is None:
             raise RuntimeError("DurableExecutor not setup()")
@@ -144,12 +147,16 @@ class DurableExecutor:
         # whose ``channel_values`` carries everything we wrote. Defensively
         # support older releases that may have returned a typed object.
         if isinstance(cp, dict) and "channel_values" in cp:
-            values = cp["channel_values"]
+            channel_values = cp["channel_values"]
         else:
-            values = getattr(cp, "channel_values", None) or cp
-        if not isinstance(values, dict):
+            channel_values = getattr(cp, "channel_values", None) or {}
+        if not isinstance(channel_values, dict):
             return None
-        return values
+
+        state = channel_values.get("state")
+        if not isinstance(state, dict):
+            return None
+        return state
 
     def _mask_conn(self) -> str:
         """Return a structlog-safe representation of the conn string.
