@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-07-PLAN.md (T3 AppleScript + C4 channel)
-last_updated: "2026-04-30T07:36:07.029Z"
+stopped_at: Completed 02-08-PLAN.md (T4 Vision translator)
+last_updated: "2026-04-30T07:42:29.522Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 16
-  percent: 76
+  completed_plans: 17
+  percent: 81
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 8 of 12
+Plan: 9 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P05 | 16m | 2 tasks | 7 files |
 | Phase 02 P06 | 6min | 2 tasks | 6 files |
 | Phase 02 P07 | 4min | 2 tasks | 6 files |
+| Phase 02 P08 | 3min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Recent decisions affecting current work:
 - [Phase 02]: T2/C5 validate() does cheap struct check (no live DOM round-trip) — channel fails fast on stale session at dispatch time
 - [Phase 02]: D-03 hard rule grep-enforced: zero occurrences of literal 'browser_harness' substring in t2_cdp.py source
 - [Phase 02]: T3+C4 ship as third D-14 default tier-channel pair: dedicated cua-as ThreadPool (T-2-03), module-level compiled-script cache (Pitfall E), C4 reuses T3 pool (does not spin own)
+- [Phase 02]: Plan 02-08: T4 Vision uses lazy uitag/ocrmac imports inside asyncio.to_thread closures (Pitfall C isolation + test-friendly patch.dict); D-06 grep-enforced to 0 occurrences of Screen2AX/MacPaw literals; image_width/image_height logged at INFO on every resolve for A1 Retina ratio surfacing in Plan 02-12 Chess integration
 
 ### Pending Todos
 
@@ -102,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T07:36:00.668Z
-Stopped at: Completed 02-07-PLAN.md (T3 AppleScript + C4 channel)
+Last session: 2026-04-30T07:42:29.519Z
+Stopped at: Completed 02-08-PLAN.md (T4 Vision translator)
 Resume file: None
