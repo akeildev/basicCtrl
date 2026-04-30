@@ -26,16 +26,21 @@ __all__ = [
 ]
 
 
-# Deferred imports — durable_step and resume are added in Plan 07 Tasks 2 & 3.
-# Once those modules exist they extend __all__ via their own re-exports.
+# Deferred imports — durable_step (Task 2) and resume (Task 3) land separately.
+# Each is wrapped independently so partial state during plan execution is OK.
 try:
     from cua_overlay.persist.durable_step import DurableExecutor  # noqa: F401
+
+    __all__.append("DurableExecutor")
+except ImportError:
+    pass
+
+try:
     from cua_overlay.persist.resume import (  # noqa: F401
         ResumeContext,
         resume_from_checkpoint,
     )
 
-    __all__ += ["DurableExecutor", "ResumeContext", "resume_from_checkpoint"]
+    __all__ += ["ResumeContext", "resume_from_checkpoint"]
 except ImportError:
-    # Tasks 2-3 not landed yet — Task 1 tests still pass.
     pass
