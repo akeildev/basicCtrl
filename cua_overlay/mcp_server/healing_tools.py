@@ -23,11 +23,14 @@ to a self-healing proxy and not a vanilla cua-driver.
 """
 from __future__ import annotations
 
+from typing import Any
+
 import structlog
 from mcp.client.session import ClientSession
 from mcp.server.fastmcp import FastMCP
 
 from cua_overlay.mcp_server.main import ProxyDeps
+from cua_overlay.mcp_server.proxy import run_action_wrap
 
 
 _log = structlog.get_logger()
@@ -68,7 +71,7 @@ async def register_healing_tools(
         bundle_id: str = "",
         pid: int = 0,
         label: str = "",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Click ``(x, y)`` on the target app with verifier wrap.
 
         Args:
@@ -91,9 +94,12 @@ async def register_healing_tools(
                     "note": "Phase 1 wrapper; Phase 3 adds 5-branch recovery + cache write-back"
                 }
         """
-        result = await upstream.call_tool(
-            "click",
-            arguments={
+        result, post = await run_action_wrap(
+            upstream=upstream,
+            deps=deps,
+            tool_name="click",
+            action_class="click",
+            kwargs={
                 "x": x,
                 "y": y,
                 "bundle_id": bundle_id,
@@ -105,6 +111,8 @@ async def register_healing_tools(
             "result": result.content if hasattr(result, "content") else str(result),
             "session_id": deps.session.session_id,
             "phase": 1,
+            "verified": post.verified,
+            "confidence": post.confidence,
             "note": (
                 "Phase 1 wrapper; Phase 3 will add 5-branch recovery + cache write-back"
             ),

@@ -36,7 +36,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import Tool
 
 from cua_overlay.mcp_server.main import ProxyDeps
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
+from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 from cua_overlay.state.graph import Bbox, UIElement
 from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap
 
@@ -158,97 +158,13 @@ async def register_proxied_tool(
     action_class = ACTION_CLASS_TOOLS[tool_name]
 
     async def _wrapped(**kwargs: Any) -> Any:
-        action_id = uuid.uuid4().hex
-        _step_counter["value"] += 1
-        step_idx = _step_counter["value"]
-        t_start = time.monotonic()
-
-        target = _build_minimal_target(kwargs, deps.session.session_id)
-
-        pre = HoarePre(
-            target_key=target.composite_key,
-            target_exists=True,
-            target_enabled=True,
-            target_role=target.role,
-            role_compatible=True,
-            frontmost_app=str(kwargs.get("bundle_id", "")),
-            no_blocking_modal=True,
-            timestamp_ns=time.monotonic_ns(),
+        result, _post = await run_action_wrap(
+            upstream=upstream,
+            deps=deps,
+            tool_name=tool_name,
+            action_class=action_class,
+            kwargs=kwargs,
         )
-
-        # PRE: capture L1 baseline so the post-action diff is apples-to-apples.
-        l1_before = await L1Cheap().snapshot(target)
-
-        # FIRE: delegate to upstream.
-        result = await upstream.call_tool(tool_name, arguments=kwargs)
-
-        # Build the canonical action record. ``payload`` is the kwargs the
-        # caller supplied; ``id`` doubles as the ACT-03 idempotency token;
-        # ``kind = "MUTATE"`` because every action-class tool is a mutation.
-        action = ActionCanonical(
-            id=action_id,
-            step_idx=step_idx,
-            kind="MUTATE",
-            target_key=target.composite_key,
-            action_type=action_class,
-            payload=dict(kwargs),
-            tier=None,
-            channel=None,
-            timestamp_ns=time.monotonic_ns(),
-            session_id=deps.session.session_id,
-        )
-
-        # POST: aggregate verifier signals. Phase 1 with no AX element ref the
-        # L0 layer drains push events without subscribing to a specific element;
-        # L1 fires the cheap-diff. L2/L3 are skipped because before_l2 is None.
-        post = await deps.aggregator.verify(
-            action=action,
-            target=target,
-            notifs=["AXValueChanged", "AXFocusedUIElementChanged"],
-            before_l1=l1_before,
-            ax_element=None,
-            timeout_ms=50,
-        )
-
-        elapsed_ms = (time.monotonic() - t_start) * 1000.0
-
-        # LOG: append one NDJSON line per Hoare triple. The structlog redactor
-        # strips sensitive field names (T-1-03); this writer is a raw sink so
-        # callers must not pass pasteboard payload strings — kwargs are the
-        # tool arguments which are coordinates / labels, never clipboard.
-        deps.session.append_action_log(
-            {
-                "step_idx": step_idx,
-                "action_id": action_id,
-                "tool": tool_name,
-                "action_type": action_class,
-                "pre": pre.model_dump(mode="json"),
-                "action": action.model_dump(mode="json"),
-                "post": post.model_dump(mode="json"),
-                "elapsed_ms": elapsed_ms,
-            }
-        )
-
-        # CHECKPOINT: best-effort Postgres write via DurableExecutor. A failure
-        # here does NOT abort the MCP call — the MCP host expects the upstream
-        # result, and missing a checkpoint just means a slower resume on crash.
-        try:
-            await deps.durable.checkpoint(
-                session_id=deps.session.session_id,
-                step_idx=step_idx,
-                pre=pre,
-                action=action,
-                post=post,
-            )
-        except Exception as exc:  # noqa: BLE001 — Postgres flaps must never
-            # cascade into MCP call failure.
-            _log.warning(
-                "durable.checkpoint_failed",
-                error=str(exc),
-                step_idx=step_idx,
-                action_id=action_id,
-            )
-
         return result.content if hasattr(result, "content") else result
 
     proxy.add_tool(
@@ -257,3 +173,116 @@ async def register_proxied_tool(
         description=tool.description or "",
     )
     _log.info("registered.action_class", tool=tool_name, action_class=action_class)
+
+
+async def run_action_wrap(
+    upstream: ClientSession,
+    deps: ProxyDeps,
+    tool_name: str,
+    action_class: str,
+    kwargs: dict[str, Any],
+) -> tuple[Any, "HoarePost"]:
+    """Run the PRE→FIRE→POST→LOG→CHECKPOINT verifier wrap once.
+
+    Shared by ``register_proxied_tool``'s ``_wrapped`` (mirroring upstream
+    action-class tools) AND by healing-named tools like ``click_with_healing``
+    that need the same Hoare-triple instrumentation but a different public
+    surface. Per WR-02 fix: previously ``click_with_healing`` called
+    ``upstream.call_tool`` directly, bypassing the wrap.
+
+    Returns the upstream result object PLUS the computed HoarePost so callers
+    that want ``post.verified`` (healing tools) can reach it without a second
+    aggregator call.
+    """
+    action_id = uuid.uuid4().hex
+    _step_counter["value"] += 1
+    step_idx = _step_counter["value"]
+    t_start = time.monotonic()
+
+    target = _build_minimal_target(kwargs, deps.session.session_id)
+
+    pre = HoarePre(
+        target_key=target.composite_key,
+        target_exists=True,
+        target_enabled=True,
+        target_role=target.role,
+        role_compatible=True,
+        frontmost_app=str(kwargs.get("bundle_id", "")),
+        no_blocking_modal=True,
+        timestamp_ns=time.monotonic_ns(),
+    )
+
+    # PRE: capture L1 baseline so the post-action diff is apples-to-apples.
+    l1_before = await L1Cheap().snapshot(target)
+
+    # FIRE: delegate to upstream.
+    result = await upstream.call_tool(tool_name, arguments=kwargs)
+
+    # Build the canonical action record. ``payload`` is the kwargs the
+    # caller supplied; ``id`` doubles as the ACT-03 idempotency token;
+    # ``kind = "MUTATE"`` because every action-class tool is a mutation.
+    action = ActionCanonical(
+        id=action_id,
+        step_idx=step_idx,
+        kind="MUTATE",
+        target_key=target.composite_key,
+        action_type=action_class,
+        payload=dict(kwargs),
+        tier=None,
+        channel=None,
+        timestamp_ns=time.monotonic_ns(),
+        session_id=deps.session.session_id,
+    )
+
+    # POST: aggregate verifier signals. Phase 1 with no AX element ref the
+    # L0 layer drains push events without subscribing to a specific element;
+    # L1 fires the cheap-diff. L2/L3 are skipped because before_l2 is None.
+    post = await deps.aggregator.verify(
+        action=action,
+        target=target,
+        notifs=["AXValueChanged", "AXFocusedUIElementChanged"],
+        before_l1=l1_before,
+        ax_element=None,
+        timeout_ms=50,
+    )
+
+    elapsed_ms = (time.monotonic() - t_start) * 1000.0
+
+    # LOG: append one NDJSON line per Hoare triple. The structlog redactor
+    # strips sensitive field names (T-1-03); this writer is a raw sink so
+    # callers must not pass pasteboard payload strings — kwargs are the
+    # tool arguments which are coordinates / labels, never clipboard.
+    deps.session.append_action_log(
+        {
+            "step_idx": step_idx,
+            "action_id": action_id,
+            "tool": tool_name,
+            "action_type": action_class,
+            "pre": pre.model_dump(mode="json"),
+            "action": action.model_dump(mode="json"),
+            "post": post.model_dump(mode="json"),
+            "elapsed_ms": elapsed_ms,
+        }
+    )
+
+    # CHECKPOINT: best-effort Postgres write via DurableExecutor. A failure
+    # here does NOT abort the MCP call — the MCP host expects the upstream
+    # result, and missing a checkpoint just means a slower resume on crash.
+    try:
+        await deps.durable.checkpoint(
+            session_id=deps.session.session_id,
+            step_idx=step_idx,
+            pre=pre,
+            action=action,
+            post=post,
+        )
+    except Exception as exc:  # noqa: BLE001 — Postgres flaps must never
+        # cascade into MCP call failure.
+        _log.warning(
+            "durable.checkpoint_failed",
+            error=str(exc),
+            step_idx=step_idx,
+            action_id=action_id,
+        )
+
+    return result, post
