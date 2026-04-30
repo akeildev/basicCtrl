@@ -14,3 +14,14 @@ Submodules:
     3 consecutive failures
   - heal_event.py — HealEvent Pydantic model, emitters
 """
+
+from .classifier import FailureClass, FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
+from .heal_event import HealEvent
+
+__all__ = [
+    "FailureClass",
+    "FailureClassifier",
+    "FailureCtx",
+    "FAILURE_CLASS_TO_BRANCHES",
+    "HealEvent",
+]
