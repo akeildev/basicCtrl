@@ -19,11 +19,12 @@ Threat register:
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cua_overlay.learning import Recipe
+if TYPE_CHECKING:
+    from cua_overlay.learning import Recipe
 
 
 class EpisodicQuery(BaseModel):
@@ -59,7 +60,7 @@ class EpisodicHit(BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    recipe: Recipe
+    recipe: Any  # Recipe (forward ref; imported at runtime via episodic_delayed_init)
     similarity: float = Field(..., ge=0.0, le=1.0)
     embedding_source_text: str
     success_count: int = 0
@@ -103,7 +104,7 @@ class EpisodicMemory:
 
     async def insert(
         self,
-        recipe: Recipe,
+        recipe: Any,
         embedding: list[float],
         source_text: str,
     ) -> None:
