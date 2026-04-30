@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 01-05-PLAN.md — L0 push + L1 cheap-diff (CGWindowList + NSPasteboard.changeCount + ImageHash dHash) + WeightedVote + Aggregator
 - [x] 01-06-PLAN.md — L2 medium tier (ocrmac + walker delegation) + L3 LLM stub + escalation ladder wiring
 - [x] 01-07-PLAN.md — Persistence: SessionWriter ~/.cua/sessions/<id>/ tree + LangGraph PostgresSaver wrapper + crash-resume contract
-- [ ] 01-08-PLAN.md — Python MCP server proxying cua-driver mcp via stdio + click_with_healing tool
+- [x] 01-08-PLAN.md — Python MCP server proxying cua-driver mcp via stdio + click_with_healing tool
 - [ ] 01-09-PLAN.md — Calculator click <50ms end-to-end demo + 6 ROADMAP success criteria pytest gate + PHASE-1-DEMO.md runbook
 
 ### Phase 2: Translators + Racing
