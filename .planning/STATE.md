@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md (Wave-0 scaffolding)
-last_updated: "2026-04-30T06:33:28.663Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-04-30T06:41:24.651Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 10
-  percent: 48
+  completed_plans: 11
+  percent: 52
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 2 of 12
+Plan: 3 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 02-translators-racing P01 | 4min | 2 tasks | 23 files |
+| Phase 02 P02 | 4min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent decisions affecting current work:
 - Phase 6: Every private SPI needs public-API fallback in registry; capability probe at session start; macOS-version risk = degrade gracefully
 - [Phase 02-translators-racing]: Wave-0 stubs use pytest.importorskip at module load — files collect/skip cleanly until target module ships, then pass automatically (Nyquist gate)
 - [Phase 02-translators-racing]: Skip-if-missing fixture pattern adopted for slack_cdp_ws/pages_running/chess_launcher — probe + pytest.skip(actionable msg) over hard fail
+- [Phase 02]: Single global asyncio.Lock for IdempotencyTokenStore (D-16) — per-target locks rejected; first-claimer-wins is correct by design (Pitfall F)
+- [Phase 02]: RacePolicy unknown action_types default to SINGLE_CHANNEL — conservative; explicit RACE caller request still downgrades when intrinsic = SINGLE_CHANNEL (T-2-09)
+- [Phase 02]: NDJSON idempotency_claim event written INSIDE the asyncio.Lock — guarantees deterministic ordering for Phase 4 cassette replay (D-16 trace contract)
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T06:33:28.660Z
-Stopped at: Completed 02-01-PLAN.md (Wave-0 scaffolding)
+Last session: 2026-04-30T06:41:15.806Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
