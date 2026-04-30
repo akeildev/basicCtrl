@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-04-30T06:41:24.651Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-04-30T06:48:10.310Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 11
-  percent: 52
+  completed_plans: 12
+  percent: 57
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (Translators + Racing) — EXECUTING
-Plan: 3 of 12
+Plan: 4 of 12
 Status: Ready to execute
 Last activity: 2026-04-30
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 02-translators-racing P01 | 4min | 2 tasks | 23 files |
 | Phase 02 P02 | 4min | 3 tasks | 7 files |
+| Phase 02 P03 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Single global asyncio.Lock for IdempotencyTokenStore (D-16) — per-target locks rejected; first-claimer-wins is correct by design (Pitfall F)
 - [Phase 02]: RacePolicy unknown action_types default to SINGLE_CHANNEL — conservative; explicit RACE caller request still downgrades when intrinsic = SINGLE_CHANNEL (T-2-09)
 - [Phase 02]: NDJSON idempotency_claim event written INSIDE the asyncio.Lock — guarantees deterministic ordering for Phase 4 cassette replay (D-16 trace contract)
+- [Phase 02]: D-20: classify() consults KNOWN_APPS short-circuit BEFORE live probes; 17-entry bundled map (12 D-21 + 5 D-22) covers Akeil's daily app surface; Slack/Cursor/Obsidian flagged cdp_after_relaunch=True for Plan 02-11 MCP relaunch prompt; min_known_version drift detection emits warning + falls through to live probe
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T06:41:15.806Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-04-30T06:48:02.781Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
