@@ -15,10 +15,13 @@ Submodules:
   - heal_event.py — HealEvent Pydantic model, emitters
 """
 
+from .circuit_breaker import CircuitBreaker, BreakState
 from .classifier import FailureClass, FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
 from .heal_event import HealEvent
 
 __all__ = [
+    "BreakState",
+    "CircuitBreaker",
     "FailureClass",
     "FailureClassifier",
     "FailureCtx",
