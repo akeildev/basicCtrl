@@ -16,6 +16,10 @@ dependencies = [
   "mcp",
   "httpx>=0.27",
   "rich",
+  "cdp-use==1.4.5",
+  "py-applescript==1.0.3",
+  "transformers>=5.0.0",
+  "uitag==0.6.0",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +45,7 @@ addopts = "-x --tb=short"
 markers = [
   "integration: requires real macOS apps (Calculator, etc.)",
   "manual: requires human interaction (TCC toggle, modal dialog)",
+  "stress: 100+ iteration stress tests (idempotency, race fuzzing)",
 ]
 
 [tool.ruff]
