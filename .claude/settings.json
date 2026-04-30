@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/akeilsmith/dev/cua-maximalist/.planning/scripts/ralph-stop-hook.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
