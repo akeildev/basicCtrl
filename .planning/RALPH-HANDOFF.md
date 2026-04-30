@@ -19,18 +19,20 @@
 
 ## State (snapshot)
 
-**Last update:** 2026-04-30T16:30:00Z
-**Last iteration:** 1
-**Current phase:** 2 (verifying — gsd-verifier running async, agentId=ab566a12d3a5d8e49)
-**Phases done:** 1 (of 6)
-**Phases planned:** 1, 2 (of 6)
-**Phases executed:** 1 (of 6) + Phase 2 plans 1-12 of 12 ✓
+**Last update:** 2026-04-30T20:45:00Z (orchestrator at 78% context — pause + snapshot for next iteration)
+**Last iteration:** 2 (ralph-loop iter=2 confirmed via stop-hook log)
+**Current phase:** 4 (CONTEXT.md written — needs plan + execute)
+**Phases done:** 1, 2, 3 (3 of 6) ✓
+**Phases planned:** 1, 2, 3, 4-context-only (4 of 6)
+**Phases executed:** 1, 2, 3 (3 of 6)
 **Subagent model rule (per user 2026-04-30):** ALL subagents use `model="sonnet"`, normal context window. NOT opus, NOT 1M.
 
 | Phase | Discuss | Plan | Execute | Verify | Notes |
 |-------|---------|------|---------|--------|-------|
 | 1 | n/a | done | done (9/9) | done | Foundation + state graph + verifier |
-| 2 | done (D-01..D-31) | done (12 plans) | done (12/12) | RUNNING | Translators + Racing — sequential mode (worktrees off); verifier dispatched on sonnet |
+| 2 | done (D-01..D-31) | done (12 plans) | done (12/12) | done (human_needed; D-12 fix applied 7a62f85) | Translators + Racing |
+| 3 | done (auto, D-01..D-26) | done (9 plans) | done (9/9) | done (human_needed, score 6/6) | Recovery + Cache Write-Back |
+| 4 | done (auto, D-01..D-32) | **NEXT** | pending | pending | Cognition + Learning + Episodic |
 | 3 | pending | pending | pending | pending | Recovery + Cache |
 | 4 | pending | pending | pending | pending | Cognition + Learning + Episodic |
 | 5 | pending | pending | pending | pending | Visualizer + Transparency |
@@ -40,11 +42,24 @@
 
 ## Next action (read this each iteration)
 
-**Action:** `/gsd-execute-phase 2`
+**Action:** Plan + execute Phase 4 (Cognition + Learning + Episodic).
 
-**Why:** Phase 2 has 12 plans across 6 waves. Execute autonomously where possible. Some Wave 5 integration tests need real apps (Slack relaunched with `--remote-debugging-port=9222`, Pages running, Chess.app available) — if app missing or user gesture needed, those plans skip-with-reason rather than block.
+**State:** Phase 4 CONTEXT.md is committed (b738c67) with 32 locked decisions. Need to:
+1. Dispatch gsd-planner subagent (sonnet) on Phase 4 — should produce 10-14 plans across 6 waves (cognition foundations → ensemble vote + speculative → CGEvent tap Swift sidecar → recipe synth + episodic FAISS → integration tests).
+2. Commit plans + run plan-checker once.
+3. Then dispatch gsd-executor subagents (sonnet, sequential) per plan — same pattern as Phase 2/3 (`workflow.use_worktrees=false` already set).
+4. Inline VERIFICATION.md after all plans done (verifier subagent flaky on long runs — write inline `human_needed` per Phase 2/3 precedent).
+5. `node gsd-tools.cjs phase complete 4` + commit.
+6. Move to Phase 5 (Visualizer) — only frontend phase; will need /gsd-ui-phase first.
 
-**After Phase 2 completes:** Run `/gsd-discuss-phase 3 --auto` then `/gsd-plan-phase 3 --auto` then `/gsd-execute-phase 3 --auto` (or use `/gsd-autonomous` which chains all three).
+**Helpful commands:**
+- `git log --oneline -10` to see what's done
+- `cat .planning/phases/04-cognition-learning-episodic/04-CONTEXT.md` (32 decisions)
+- `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init plan-phase 4` (init context)
+- `workflow.skip_discuss=true` already set in config — no re-discuss needed
+- `workflow.use_worktrees=false` already set — sequential executors
+
+**After Phase 4 completes:** Phase 5 (Visualizer + Transparency) — has UI hint. Run `/gsd-ui-phase 5` first, then plan + execute. Phase 6 (Private SPIs + Durability Hardening) needs SIP-off gestures from user; Tier-A SPIs work SIP-on.
 
 **Stop condition:** When ROADMAP.md shows all 6 phases checked off `[x]`. At that point, write a "DONE" section to the bottom of this file and commit.
 
