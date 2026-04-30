@@ -15,10 +15,12 @@ from cua_overlay.translators.base import (
     TranslatorTarget,
 )
 from cua_overlay.translators.registry import TranslatorRegistry
+from cua_overlay.translators.t1_ax import T1AXTranslator
 
 __all__ = [
     "TargetSpec",
     "Translator",
     "TranslatorTarget",
     "TranslatorRegistry",
+    "T1AXTranslator",
 ]
