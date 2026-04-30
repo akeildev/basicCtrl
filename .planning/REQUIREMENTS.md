@@ -18,7 +18,7 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 - [ ] **STATE-01**: Typed-graph state model — `UIElement{id, role, label, value, bbox, capabilities, confidence, source[], visual_embedding, ocr_text, history[t-5..t-1], caused_by, causes[], episodic_ref}`
 - [ ] **STATE-02**: Causal DAG of action → state delta
 - [ ] **STATE-03**: Temporal ring buffer (last 5 frames)
-- [ ] **STATE-04**: Episodic memory — FAISS vector store keyed by `(app, task_class, state_fingerprint)`
+- [x] **STATE-04**: Episodic memory — FAISS vector store keyed by `(app, task_class, state_fingerprint)`
 
 ### Protocol Translators
 
@@ -61,22 +61,22 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 
 ### Continuous Learning
 
-- [ ] **LEARN-01**: CGEvent tap (.listenOnly) on background thread via Swift sidecar (ghost-os pattern, LearningRecorder.swift:62-88)
-- [ ] **LEARN-02**: Keystroke coalescing via CFRunLoopTimer (0.5s) — 1 typeText per word
-- [ ] **LEARN-03**: Auto re-enable on tapDisabledByTimeout
-- [ ] **LEARN-04**: Recording → ObservedAction → Recipe JSON synthesis (params + preconditions + steps + per-step on_failure)
-- [ ] **LEARN-05**: Episodic memory retrieval — "last time we did this" lookup before planning
+- [x] **LEARN-01**: CGEvent tap (.listenOnly) on background thread via Swift sidecar (ghost-os pattern, LearningRecorder.swift:62-88)
+- [x] **LEARN-02**: Keystroke coalescing via CFRunLoopTimer (0.5s) — 1 typeText per word
+- [x] **LEARN-03**: Auto re-enable on tapDisabledByTimeout
+- [x] **LEARN-04**: Recording → ObservedAction → Recipe JSON synthesis (params + preconditions + steps + per-step on_failure)
+- [x] **LEARN-05**: Episodic memory retrieval — "last time we did this" lookup before planning
 
 ### Cognitive Layer
 
-- [ ] **COG-01**: Planner agent (Claude Opus class) with bounded plan generation
-- [ ] **COG-02**: Grounder (UI-TARS-1.5-7B MLX local via mlx-vlm) running in parallel with planner; uitag SoM as primary, sanity gate against #330 quantization bug
-- [ ] **COG-03**: Verifier-LLM (V-Droid prefill-only, prefix-cached, 0.7s/step batch)
-- [ ] **COG-04**: World-model predictor (CUWM-style — predicts post-state before action)
-- [ ] **COG-05**: Apple FoundationModels tier-0 classifier — local 3B for routing decisions (binary/small-enum only; 4096 ctx limit; text-only API gate)
-- [ ] **COG-06**: Critic / recovery arbiter — ranks oracle outputs, never self-critiques (avoids 16-27% intrinsic accuracy trap)
-- [ ] **COG-07**: Speculative pre-execution — draft model predicts steps N+1, N+2 in parallel with N's verifier; READ-ONLY only (Skyvern agent.py:4337 pattern)
-- [ ] **COG-08**: Ensemble vote on action selection (Opus + GPT-5 + Apple FM, majority + tiebreaker)
+- [x] **COG-01**: Planner agent (Claude Opus class) with bounded plan generation
+- [x] **COG-02**: Grounder (UI-TARS-1.5-7B MLX local via mlx-vlm) running in parallel with planner; uitag SoM as primary, sanity gate against #330 quantization bug
+- [x] **COG-03**: Verifier-LLM (V-Droid prefill-only, prefix-cached, 0.7s/step batch)
+- [x] **COG-04**: World-model predictor (CUWM-style — predicts post-state before action)
+- [x] **COG-05**: Apple FoundationModels tier-0 classifier — local 3B for routing decisions (binary/small-enum only; 4096 ctx limit; text-only API gate)
+- [x] **COG-06**: Critic / recovery arbiter — ranks oracle outputs, never self-critiques (avoids 16-27% intrinsic accuracy trap)
+- [x] **COG-07**: Speculative pre-execution — draft model predicts steps N+1, N+2 in parallel with N's verifier; READ-ONLY only (Skyvern agent.py:4337 pattern)
+- [x] **COG-08**: Ensemble vote on action selection (Opus + GPT-5 + Apple FM, majority + tiebreaker)
 
 ### Persistence + Durable Execution
 
@@ -150,7 +150,7 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | STATE-01 | Phase 1 | Pending |
 | STATE-02 | Phase 1 | Pending |
 | STATE-03 | Phase 1 | Pending |
-| STATE-04 | Phase 4 | Pending |
+| STATE-04 | Phase 4 | Complete |
 | TRANS-01 | Phase 2 | Complete |
 | TRANS-02 | Phase 2 | Complete |
 | TRANS-03 | Phase 2 | Complete |
@@ -175,19 +175,19 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | CACHE-01 | Phase 3 | Pending |
 | CACHE-02 | Phase 3 | Pending |
 | CACHE-03 | Phase 3 | Pending |
-| LEARN-01 | Phase 4 | Pending |
-| LEARN-02 | Phase 4 | Pending |
-| LEARN-03 | Phase 4 | Pending |
-| LEARN-04 | Phase 4 | Pending |
-| LEARN-05 | Phase 4 | Pending |
-| COG-01 | Phase 4 | Pending |
-| COG-02 | Phase 4 | Pending |
-| COG-03 | Phase 4 | Pending |
-| COG-04 | Phase 4 | Pending |
-| COG-05 | Phase 4 | Pending |
-| COG-06 | Phase 4 | Pending |
-| COG-07 | Phase 4 | Pending |
-| COG-08 | Phase 4 | Pending |
+| LEARN-01 | Phase 4 | Complete |
+| LEARN-02 | Phase 4 | Complete |
+| LEARN-03 | Phase 4 | Complete |
+| LEARN-04 | Phase 4 | Complete |
+| LEARN-05 | Phase 4 | Complete |
+| COG-01 | Phase 4 | Complete |
+| COG-02 | Phase 4 | Complete |
+| COG-03 | Phase 4 | Complete |
+| COG-04 | Phase 4 | Complete |
+| COG-05 | Phase 4 | Complete |
+| COG-06 | Phase 4 | Complete |
+| COG-07 | Phase 4 | Complete |
+| COG-08 | Phase 4 | Complete |
 | PERSIST-01 | Phase 1 | Pending |
 | PERSIST-02 | Phase 1 | Pending |
 | PERSIST-03 | Phase 1 | Pending |
