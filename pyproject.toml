@@ -2,7 +2,7 @@
 name = "cua-maximalist"
 version = "0.1.0"
 description = "Self-healing autonomous Mac CU framework"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 dependencies = [
   "pyobjc==12.1",
   "ocrmac==1.0.1",
