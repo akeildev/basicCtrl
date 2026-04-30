@@ -6,6 +6,19 @@ walk + L3 LLM fallback. The aggregator's confidence threshold contract:
 """
 from __future__ import annotations
 
+from cua_overlay.verifier.ensemble.l0_push import L0Push
 from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap, L1Snapshot
+from cua_overlay.verifier.ensemble.weighted_vote import (
+    L3_ESCALATE_THRESHOLD,
+    VERIFIED_THRESHOLD,
+    WeightedVote,
+)
 
-__all__ = ["L1Cheap", "L1Snapshot"]
+__all__ = [
+    "L0Push",
+    "L1Cheap",
+    "L1Snapshot",
+    "L3_ESCALATE_THRESHOLD",
+    "VERIFIED_THRESHOLD",
+    "WeightedVote",
+]
