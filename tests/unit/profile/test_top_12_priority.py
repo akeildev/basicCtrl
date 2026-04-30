@@ -1,4 +1,11 @@
-"""TRANS-01..05 / D-20..D-22 — top-12 association map asserted against classifier."""
+"""TRANS-01..05 / D-20..D-22 — top-12 association map asserted against classifier.
+
+SC #5 (per VALIDATION.md):
+  For all 12 D-21 bundle_ids in known_apps, classify() returns AppProfile with
+  translator_priority equal to KNOWN_APPS[bid].translator_priority.
+  cdp_available_after_relaunch correctly flagged for Slack/Cursor/Obsidian
+  (mirrors KNOWN_APPS[bid].cdp_after_relaunch).
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,6 +14,30 @@ import pytest
 
 from cua_overlay.profile.classifier import classify
 from cua_overlay.profile.known_apps import KNOWN_APPS
+
+
+# D-21 verified bundle IDs (top-12). Order matches CONTEXT.md D-21 table.
+D21_TOP_12: list[str] = [
+    "com.apple.calculator",
+    "com.apple.iWork.Pages",
+    "com.apple.iWork.Numbers",
+    "com.apple.iWork.Keynote",
+    "com.apple.mail",
+    "com.apple.iCal",
+    "com.apple.Notes",
+    "com.apple.reminders",
+    "com.apple.Safari",
+    "com.tinyspeck.slackmacgap",
+    "com.todesktop.230313mzl4w4u92",
+    "md.obsidian",
+]
+
+# D-24: Electron apps requiring manual --remote-debugging-port relaunch.
+ELECTRON_BUNDLES_REQUIRING_RELAUNCH: set[str] = {
+    "com.tinyspeck.slackmacgap",
+    "com.todesktop.230313mzl4w4u92",
+    "md.obsidian",
+}
 
 
 pytestmark = pytest.mark.asyncio
@@ -154,11 +185,66 @@ async def test_pages_version_drift_warning(stubbed_classify, monkeypatch) -> Non
 
 async def test_top_12_all_present_in_known_apps() -> None:
     """All 12 D-21 bundleIDs are present in KNOWN_APPS, plus 5 D-22 bonus = 17 total."""
-    expected_top_12 = {
-        "com.apple.calculator", "com.apple.iWork.Pages", "com.apple.iWork.Numbers",
-        "com.apple.iWork.Keynote", "com.apple.mail", "com.apple.iCal",
-        "com.apple.Notes", "com.apple.reminders", "com.apple.Safari",
-        "com.tinyspeck.slackmacgap", "com.todesktop.230313mzl4w4u92", "md.obsidian",
-    }
+    expected_top_12 = set(D21_TOP_12)
     assert expected_top_12.issubset(KNOWN_APPS.keys())
     assert len(KNOWN_APPS) == 17
+
+
+# --- SC #5 (VALIDATION.md): classify() returns AppProfile.translator_priority
+# matching KNOWN_APPS[bid].translator_priority for all 12 D-21 entries. ---
+
+
+@pytest.mark.parametrize("bundle_id", D21_TOP_12)
+async def test_sc5_classify_priority_matches_known_apps(
+    bundle_id: str, stubbed_classify
+) -> None:
+    """SC #5: For every D-21 bundle_id, classify() returns
+    AppProfile.translator_priority equal to KNOWN_APPS[bid].translator_priority.
+
+    This is the canonical 'top-12 priority match' assertion required by
+    VALIDATION.md §"Pass threshold mapping" SC #5.
+    """
+    profile = await classify(bundle_id, 1234)
+    expected = KNOWN_APPS[bundle_id].translator_priority
+    assert profile.translator_priority == expected, (
+        f"classify({bundle_id!r}).translator_priority={profile.translator_priority!r} "
+        f"!= KNOWN_APPS[{bundle_id!r}].translator_priority={expected!r}"
+    )
+
+
+@pytest.mark.parametrize("bundle_id", sorted(ELECTRON_BUNDLES_REQUIRING_RELAUNCH))
+async def test_sc5_electron_apps_flagged_cdp_after_relaunch(
+    bundle_id: str, stubbed_classify
+) -> None:
+    """D-24: Slack/Cursor/Obsidian have cdp_after_relaunch=True in KNOWN_APPS
+    AND classify() surfaces cdp_available_after_relaunch=True on the profile."""
+    entry = KNOWN_APPS[bundle_id]
+    assert entry.cdp_after_relaunch is True, (
+        f"{bundle_id} should have cdp_after_relaunch=True (D-24 Electron flag)"
+    )
+    assert entry.electron is True, f"{bundle_id} should be electron=True"
+    profile = await classify(bundle_id, 1234)
+    assert profile.cdp_available_after_relaunch is True, (
+        f"classify({bundle_id!r}).cdp_available_after_relaunch must mirror "
+        f"KNOWN_APPS[{bundle_id!r}].cdp_after_relaunch=True (D-24)"
+    )
+
+
+@pytest.mark.asyncio
+async def test_no_silent_relaunch_for_electron_apps() -> None:
+    """D-24: classifier sets the cdp_after_relaunch flag; never silently relaunches.
+
+    Structural assertion — reads the classifier source and ensures no
+    subprocess.run call appears near a 'relaunch' literal that would trigger
+    a Slack/Cursor/Obsidian restart automatically."""
+    src = (
+        Path(__file__).parents[3]
+        / "cua_overlay"
+        / "profile"
+        / "classifier.py"
+    ).read_text()
+    # Defensive: classifier.py should not call subprocess for relaunching apps.
+    assert "subprocess.run" not in src or "relaunch" not in src.lower(), (
+        "classifier.py contains a subprocess.run call near 'relaunch' — "
+        "D-24 forbids silent relaunch; MCP healing tool layer prompts the user."
+    )
