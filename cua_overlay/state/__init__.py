@@ -7,6 +7,11 @@ this module.
 """
 from __future__ import annotations
 
+from cua_overlay.state.episodic import (
+    EpisodicHit,
+    EpisodicMemory,
+    EpisodicQuery,
+)
 from cua_overlay.state.graph import (
     Bbox,
     Capability,
@@ -22,6 +27,9 @@ __all__ = [
     "Capability",
     "Edge",
     "EdgeKind",
+    "EpisodicHit",
+    "EpisodicMemory",
+    "EpisodicQuery",
     "Source",
     "StateGraph",
     "UIElement",
