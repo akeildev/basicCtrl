@@ -22,18 +22,18 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 
 ### Protocol Translators
 
-- [ ] **TRANS-01**: T1 AX SPI translator — bidirectional read/write via AXUIElement + private `_AXUIElementGetWindow` + `_AXObserverAddNotificationAndCheckRemote`
-- [ ] **TRANS-02**: T2 CDP translator — auto-relaunch Electron apps with `--remote-debugging-port`, attach via WebSocket, full DOM/JS/network access
-- [ ] **TRANS-03**: T3 AppleScript translator — NSAppleScript in-process via py-applescript, ScriptingBridge typed access for apps with .sdef
-- [ ] **TRANS-04**: T4 Vision/Screen2AX translator — Vision OCR (ocrmac) + MacPaw Screen2AX synthetic tree + uitag SoM (Apple Vision + YOLO11 MLX) for non-AX apps
-- [ ] **TRANS-05**: T5 Pixel translator — CGEvent + SkyLight `SLEventPostToPid` (background, no cursor warp) for total fallback
+- [x] **TRANS-01**: T1 AX SPI translator — bidirectional read/write via AXUIElement + private `_AXUIElementGetWindow` + `_AXObserverAddNotificationAndCheckRemote`
+- [x] **TRANS-02**: T2 CDP translator — auto-relaunch Electron apps with `--remote-debugging-port`, attach via WebSocket, full DOM/JS/network access
+- [x] **TRANS-03**: T3 AppleScript translator — NSAppleScript in-process via py-applescript, ScriptingBridge typed access for apps with .sdef
+- [x] **TRANS-04**: T4 Vision/Screen2AX translator — Vision OCR (ocrmac) + MacPaw Screen2AX synthetic tree + uitag SoM (Apple Vision + YOLO11 MLX) for non-AX apps
+- [x] **TRANS-05**: T5 Pixel translator — CGEvent + SkyLight `SLEventPostToPid` (background, no cursor warp) for total fallback
 
 ### Racing Action Delivery
 
-- [ ] **ACT-01**: Action channel registry — C1 SLEventPostToPid, C2 AX kAXPress, C3 CGEvent.postToPid, C4 AppleScript, C5 CDP Input.dispatch
-- [ ] **ACT-02**: Race orchestrator — `asyncio.wait(FIRST_COMPLETED)` across channels, cancel losers when first verifier passes
-- [ ] **ACT-03**: Atomic idempotency tokens — written to shared state before fire, channels skip if already claimed
-- [ ] **ACT-04**: Action interference mitigations — staggered_race for AppleScript, AX rate-limit (cmux #2985 fix, 20 calls/sec/pid token bucket), pre-action AX validity check, per-action-class race policy (read/focus/scroll race; submit/send/delete single-channel)
+- [x] **ACT-01**: Action channel registry — C1 SLEventPostToPid, C2 AX kAXPress, C3 CGEvent.postToPid, C4 AppleScript, C5 CDP Input.dispatch
+- [x] **ACT-02**: Race orchestrator — `asyncio.wait(FIRST_COMPLETED)` across channels, cancel losers when first verifier passes
+- [x] **ACT-03**: Atomic idempotency tokens — written to shared state before fire, channels skip if already claimed
+- [x] **ACT-04**: Action interference mitigations — staggered_race for AppleScript, AX rate-limit (cmux #2985 fix, 20 calls/sec/pid token bucket), pre-action AX validity check, per-action-class race policy (read/focus/scroll race; submit/send/delete single-channel)
 
 ### Push-Event Verifier
 
@@ -151,15 +151,15 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | STATE-02 | Phase 1 | Pending |
 | STATE-03 | Phase 1 | Pending |
 | STATE-04 | Phase 4 | Pending |
-| TRANS-01 | Phase 2 | Pending |
-| TRANS-02 | Phase 2 | Pending |
-| TRANS-03 | Phase 2 | Pending |
-| TRANS-04 | Phase 2 | Pending |
-| TRANS-05 | Phase 2 | Pending |
-| ACT-01 | Phase 2 | Pending |
-| ACT-02 | Phase 2 | Pending |
-| ACT-03 | Phase 2 | Pending |
-| ACT-04 | Phase 2 | Pending |
+| TRANS-01 | Phase 2 | Complete |
+| TRANS-02 | Phase 2 | Complete |
+| TRANS-03 | Phase 2 | Complete |
+| TRANS-04 | Phase 2 | Complete |
+| TRANS-05 | Phase 2 | Complete |
+| ACT-01 | Phase 2 | Complete |
+| ACT-02 | Phase 2 | Complete |
+| ACT-03 | Phase 2 | Complete |
+| ACT-04 | Phase 2 | Complete |
 | VERIFY-01 | Phase 1 | Pending |
 | VERIFY-02 | Phase 1 | Pending |
 | VERIFY-03 | Phase 1 | Pending |

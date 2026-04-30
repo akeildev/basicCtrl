@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-04-30T06:21:47.616Z"
-last_activity: 2026-04-30 -- Phase 2 planning complete
+stopped_at: Completed 02-01-PLAN.md (Wave-0 scaffolding)
+last_updated: "2026-04-30T06:33:28.663Z"
+last_activity: 2026-04-30
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 21
-  completed_plans: 9
-  percent: 43
+  completed_plans: 10
+  percent: 48
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-29)
 
 **Core value:** Autonomous control of any Mac surface, with deterministic self-healing and full transparency — never silently fails, never gives up, never makes the user babysit.
-**Current focus:** Phase 01 — Foundation + State + Verifier
+**Current focus:** Phase 02 — Translators + Racing
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (Translators + Racing) — EXECUTING
+Plan: 2 of 12
 Status: Ready to execute
-Last activity: 2026-04-30 -- Phase 2 planning complete
+Last activity: 2026-04-30
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 02-translators-racing P01 | 4min | 2 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Recent decisions affecting current work:
 - Phase 4: Apple FM is tier-0 binary classifier ONLY; never JSON, never multi-field params (50% hallucination on complex schemas; text-only public API)
 - Phase 5: Visualizer in Phase 5 not Phase 1 — failure logs come first; need real recordings before knowing what's worth visualizing
 - Phase 6: Every private SPI needs public-API fallback in registry; capability probe at session start; macOS-version risk = degrade gracefully
+- [Phase 02-translators-racing]: Wave-0 stubs use pytest.importorskip at module load — files collect/skip cleanly until target module ships, then pass automatically (Nyquist gate)
+- [Phase 02-translators-racing]: Skip-if-missing fixture pattern adopted for slack_cdp_ws/pages_running/chess_launcher — probe + pytest.skip(actionable msg) over hard fail
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30T04:47:52.616Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-translators-racing/02-CONTEXT.md
+Last session: 2026-04-30T06:33:28.660Z
+Stopped at: Completed 02-01-PLAN.md (Wave-0 scaffolding)
+Resume file: None
