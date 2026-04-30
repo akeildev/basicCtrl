@@ -15,11 +15,19 @@ Submodules:
   - heal_event.py — HealEvent Pydantic model, emitters
 """
 
+from . import branches
+from .branches import B1_Rescroll, B2_OCRRegrounding, B3_WorldReplan, B4_PlannerRequery, B5_AppleScriptFallback
 from .circuit_breaker import CircuitBreaker, BreakState
 from .classifier import FailureClass, FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
 from .heal_event import HealEvent
 
 __all__ = [
+    "branches",
+    "B1_Rescroll",
+    "B2_OCRRegrounding",
+    "B3_WorldReplan",
+    "B4_PlannerRequery",
+    "B5_AppleScriptFallback",
     "BreakState",
     "CircuitBreaker",
     "FailureClass",
