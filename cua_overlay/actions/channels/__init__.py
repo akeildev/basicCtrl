@@ -11,5 +11,6 @@ Each channel implements the Channel Protocol (base.py) and reads the
 shared IdempotencyTokenStore for D-17 atomic claim before fire.
 """
 from cua_overlay.actions.channels.base import Channel, ChannelOutcome
+from cua_overlay.actions.channels.c2_ax_press import C2AXPressChannel
 
-__all__ = ["Channel", "ChannelOutcome"]
+__all__ = ["Channel", "ChannelOutcome", "C2AXPressChannel"]

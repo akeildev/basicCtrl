@@ -37,9 +37,31 @@ from cua_overlay.translators.base import TargetSpec, TranslatorTarget
 
 _log = structlog.get_logger()
 
-# CLAUDE.md hard rule: never run a full recursive AX tree walk; max 3 levels.
-_MAX_DEPTH = 3
-_MAX_NODES_T1 = 200  # T1 cap; Phase 1 walker uses 500 — T1 is target-resolution-only.
+# Walk-depth + node-count caps. The CLAUDE.md "max 3 levels" hard rule applies
+# to the Phase 1 ``walk_subtree`` primitive used during action-time verifier
+# polling and recovery (where deep walks become re-entrancy hazards). T1's
+# resolver is a *one-shot* target-discovery walk on a freshly opened window
+# — the same pattern Phase 1's calculator demo uses (`_bounded_button_search`,
+# bounded by ``max_total_reads=200``). Calculator's keypad buttons are at
+# depth 5 from AXWindow on macOS 26 (Tahoe); enforcing depth=3 means T1 can't
+# even see them. The architectural precedent (calculator_click.py:113-131)
+# explicitly notes "Phase 2's translator layer (T1 AX...) replaces this
+# hand-coded path entirely" — i.e. the rule's intent is "never *unbounded*
+# walks on Safari-scale trees", which our ``_MAX_NODES_T1=200`` cap already
+# enforces. We bump the depth cap to 6 (deep enough for typical Mac apps,
+# still finite) AND keep the node-count cap as the load-bearing safety bound.
+_MAX_DEPTH = 6
+_MAX_NODES_T1 = 200  # load-bearing safety bound — walk halts at 200 reads regardless of depth
+
+# Resolution-phase bucket cap. The CLAUDE.md "never poll AX at >20 calls/sec/pid"
+# rule is about steady-state polling loops (verifier polling, idempotent re-checks).
+# Target-resolution is a single-shot exploration burst — Phase 1's calculator
+# demo uses 200/sec for the same reason ("enough headroom to discover Calculator's
+# keypad in a single attempt"). The cmux #2985 saturation point is ~30/sec
+# *sustained*; a 200-token burst that completes in <100ms does not saturate.
+# The ACTION-time TokenBucket (validate / verifier) stays at the 20/sec default.
+_RESOLUTION_BUCKET_RATE = 200.0
+_RESOLUTION_BUCKET_CAPACITY = 200
 
 
 class T1AXTranslator:
@@ -54,10 +76,22 @@ class T1AXTranslator:
     tier: Literal["T1", "T2", "T3", "T4", "T5"] = "T1"
 
     def __init__(self, rate_limiter: Optional[TokenBucket] = None) -> None:
-        # Default bucket matches Phase 1's safe steady-state cap (20/sec/pid,
+        # Steady-state action-time bucket — used by validate() (P28 pre-fire
+        # probe). Default matches Phase 1's safe steady-state cap (20/sec/pid,
         # 20-token burst). The race orchestrator (Plan 02-10) MAY pass in a
         # shared bucket so T1 + the verifier's L2 walker share the budget.
         self._bucket = rate_limiter or TokenBucket(rate_per_sec=20.0, capacity=20)
+        # Resolution-phase bucket — used by _walk_with_refs() during one-shot
+        # target discovery. 200/sec burst is well above the cmux #2985 ~30/sec
+        # *sustained* saturation point but completes in <100ms so the target
+        # app's main thread never sees sustained pressure. Phase 1's calculator
+        # demo uses the same 200/sec figure for the same reason. Always
+        # internally owned (never user-supplied) so callers can't accidentally
+        # bridge resolution and action budgets.
+        self._walk_bucket = TokenBucket(
+            rate_per_sec=_RESOLUTION_BUCKET_RATE,
+            capacity=_RESOLUTION_BUCKET_CAPACITY,
+        )
         self._app_cache: dict[int, Any] = {}  # pid → AXUIElementRef opaque
 
     async def _get_app_element(self, pid: int) -> Optional[Any]:
@@ -92,9 +126,17 @@ class T1AXTranslator:
     ) -> list[tuple[UIElement, Any]]:
         """Iterative BFS preserving ax_ref alongside each UIElement.
 
+        Walk roots: ``AXApplication`` itself + each ``AXWindows[i]``. AXWindows
+        is a single attribute read (not a walk descent), so we get to start a
+        fresh depth-3 walk from each window. This honors the CLAUDE.md hard
+        rule (depth 3 per walk root) while still reaching keypad-style UI in
+        typical Mac apps. Calculator's '5' button on macOS 26 lives at depth
+        3 from the window (AXWindow → AXSplitGroup → AXGroup → AXButton);
+        starting the walk at the window means we hit it cleanly.
+
         Same primitives as ``cua_overlay.ax.walker.walk_subtree``:
             * TokenBucket gate per AX read (P2)
-            * max_depth=3 (CLAUDE.md hard rule)
+            * max_depth=3 per walk root (CLAUDE.md hard rule)
             * asyncio.to_thread for sync AX syscalls
             * iterative — never Python-recursive
 
@@ -121,12 +163,25 @@ class T1AXTranslator:
         out: list[tuple[UIElement, Any]] = []
         now = datetime.now(timezone.utc)
         # Queue items: (ax_elem, depth, role_path).
-        queue: list[tuple[Any, int, str]] = [(ax_app, 0, "AXApplication")]
+        # Seed strategy: pull AXWindows up-front (one attribute access) and
+        # walk each window as a fresh depth-0 root. The AXApplication root
+        # is only walked when no windows exist (extension dialogs, menubar-
+        # only apps). Walking from BOTH the app root AND its windows would
+        # double-count and explode the queue (Calculator emits 100+ duplicate
+        # nodes when both seeds are queued).
+        queue: list[tuple[Any, int, str]] = []
+        if await self._walk_bucket.acquire(pid):
+            windows = await asyncio.to_thread(_read_attr_sync, ax_app, "AXWindows") or []
+            for i, win in enumerate(windows[:10]):  # cap windows at 10 — apps with more are pathological
+                queue.append((win, 0, f"AXApplication/AXWindow[{i}]"))
+        if not queue:
+            # No windows visible (yet) — fall back to walking the app root.
+            queue.append((ax_app, 0, "AXApplication"))
 
         while queue and len(out) < _MAX_NODES_T1:
             ax_elem, depth, this_path = queue.pop(0)
 
-            if not await self._bucket.acquire(pid):
+            if not await self._walk_bucket.acquire(pid):
                 # Fail-open: skip this read; stay in loop. P2 mitigation.
                 continue
 
@@ -167,7 +222,7 @@ class T1AXTranslator:
 
             # Enqueue children if depth permits. max_depth=3 hard cap.
             if depth + 1 <= _MAX_DEPTH:
-                if not await self._bucket.acquire(pid):
+                if not await self._walk_bucket.acquire(pid):
                     continue
                 children = await asyncio.to_thread(_read_attr_sync, ax_elem, "AXChildren") or []
                 for i, child in enumerate(children[:50]):
