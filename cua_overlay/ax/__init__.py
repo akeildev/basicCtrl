@@ -7,14 +7,15 @@ This subpackage holds the foundation layer that mitigates THREE BLOCKER pitfalls
 * **Pitfall P3** (full recursive AX walk = 15-20s on Safari) — see ``walker.walk_subtree``.
 * **Pitfall P25** (modal alert blocks AX) — see ``modal_probe.has_blocking_modal``.
 
+T-1-04 (TCC revocation mid-session) surfaces as ``AXAPIDisabledError`` from any
+wrapper-layer read; Plan 02's ``TCCMonitor`` catches and emits a structured
+``tcc_revoked`` event.
+
 Public exports below are the LOCKED contract every Phase 1+ module imports.
 """
 from __future__ import annotations
 
-# Public exports are populated as tasks complete in plan 01-03.
-# Task 1: errors + rate limit.
-# Task 2: walker.
-# Task 3: modal_probe + element wrapper.
+from cua_overlay.ax.element import AXUIElementWrapper
 from cua_overlay.ax.errors import (
     AXActionUnsupportedError,
     AXAPIDisabledError,
@@ -25,7 +26,9 @@ from cua_overlay.ax.errors import (
     AXNotificationUnsupportedError,
     axerror_from_code,
 )
+from cua_overlay.ax.modal_probe import has_blocking_modal
 from cua_overlay.ax.rate_limit import TokenBucket
+from cua_overlay.ax.walker import WalkResult, walk_subtree
 
 __all__ = [
     "AXError",
@@ -37,4 +40,8 @@ __all__ = [
     "AXAttributeUnsupportedError",
     "axerror_from_code",
     "TokenBucket",
+    "walk_subtree",
+    "WalkResult",
+    "has_blocking_modal",
+    "AXUIElementWrapper",
 ]
