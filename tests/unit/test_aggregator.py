@@ -23,6 +23,8 @@ from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
 from cua_overlay.state.graph import Bbox, Source, UIElement
 from cua_overlay.verifier.aggregator import Aggregator
 from cua_overlay.verifier.ensemble.l1_cheap import L1Snapshot
+from cua_overlay.verifier.ensemble.l2_medium import L2Snapshot
+from cua_overlay.verifier.ensemble.l3_llm import L3Stub
 from cua_overlay.verifier.ensemble.weighted_vote import (
     L3_ESCALATE_THRESHOLD,
     VERIFIED_THRESHOLD,
@@ -126,6 +128,23 @@ class _SpyVote:
         return self._return_value
 
 
+class _NoopL2:
+    """L2Medium stand-in. These tests don't exercise L2 escalation
+    (existing tests pre-date Plan 06); the constructor needs SOMETHING
+    that satisfies the param. Plan 06 escalation is tested separately
+    in test_aggregator_escalation.py.
+    """
+
+    async def run(
+        self,
+        target: UIElement,
+        ax_element: Any,
+        before: L2Snapshot,
+        expected_text: Optional[str] = None,
+    ) -> dict[str, float]:
+        return {}
+
+
 # ----------------------------------------------------------------- Test 1
 
 
@@ -136,7 +155,7 @@ async def test_returns_hoare_post_with_signals() -> None:
     action = _make_action("click")
     l0 = _MockL0({"ax.value_changed": 1.0})
     l1 = _MockL1({"l1.window_diff": 0.5})
-    agg = Aggregator(l0=l0, l1=l1, vote=WeightedVote())  # type: ignore[arg-type]
+    agg = Aggregator(l0=l0, l1=l1, l2=_NoopL2(), l3=L3Stub(), vote=WeightedVote())  # type: ignore[arg-type]
 
     result = await agg.verify(
         action=action,
@@ -163,7 +182,7 @@ async def test_l0_l1_run_in_parallel() -> None:
     action = _make_action("click")
     l0 = _MockL0({"ax.value_changed": 1.0}, sleep_s=0.030)
     l1 = _MockL1({"l1.window_diff": 0.5}, sleep_s=0.030)
-    agg = Aggregator(l0=l0, l1=l1, vote=WeightedVote())  # type: ignore[arg-type]
+    agg = Aggregator(l0=l0, l1=l1, l2=_NoopL2(), l3=L3Stub(), vote=WeightedVote())  # type: ignore[arg-type]
 
     t0 = time.monotonic()
     await agg.verify(
@@ -188,7 +207,7 @@ async def test_verified_when_confidence_above_05() -> None:
     # ax.value_changed=1.0 alone → confidence 1.0 (single-signal renorm)
     l0 = _MockL0({"ax.value_changed": 1.0})
     l1 = _MockL1({})
-    agg = Aggregator(l0=l0, l1=l1, vote=WeightedVote())  # type: ignore[arg-type]
+    agg = Aggregator(l0=l0, l1=l1, l2=_NoopL2(), l3=L3Stub(), vote=WeightedVote())  # type: ignore[arg-type]
 
     result = await agg.verify(
         action=action,
@@ -211,7 +230,7 @@ async def test_not_verified_when_confidence_below_05() -> None:
     # All signals zero → confidence 0.0
     l0 = _MockL0({})
     l1 = _MockL1({})
-    agg = Aggregator(l0=l0, l1=l1, vote=WeightedVote())  # type: ignore[arg-type]
+    agg = Aggregator(l0=l0, l1=l1, l2=_NoopL2(), l3=L3Stub(), vote=WeightedVote())  # type: ignore[arg-type]
 
     result = await agg.verify(
         action=action,
@@ -236,7 +255,13 @@ async def test_hoare_post_consistency_with_threshold() -> None:
     cases = [(0.0, False), (0.49, False), (0.50, True), (0.99, True)]
     for confidence, expected_verified in cases:
         spy = _SpyVote(return_value=confidence)
-        agg = Aggregator(l0=_MockL0({}), l1=_MockL1({}), vote=spy)  # type: ignore[arg-type]
+        agg = Aggregator(
+            l0=_MockL0({}),  # type: ignore[arg-type]
+            l1=_MockL1({}),  # type: ignore[arg-type]
+            l2=_NoopL2(),  # type: ignore[arg-type]
+            l3=L3Stub(),
+            vote=spy,  # type: ignore[arg-type]
+        )
         result = await agg.verify(
             action=action,
             target=target,
@@ -257,7 +282,7 @@ async def test_target_key_propagated() -> None:
     action = _make_action("click")
     l0 = _MockL0({"ax.value_changed": 1.0})
     l1 = _MockL1({})
-    agg = Aggregator(l0=l0, l1=l1, vote=WeightedVote())  # type: ignore[arg-type]
+    agg = Aggregator(l0=l0, l1=l1, l2=_NoopL2(), l3=L3Stub(), vote=WeightedVote())  # type: ignore[arg-type]
 
     result = await agg.verify(
         action=action,
@@ -280,6 +305,8 @@ async def test_action_class_routing() -> None:
     agg = Aggregator(
         l0=_MockL0({"ax.value_changed": 1.0}),  # type: ignore[arg-type]
         l1=_MockL1({}),  # type: ignore[arg-type]
+        l2=_NoopL2(),  # type: ignore[arg-type]
+        l3=L3Stub(),
         vote=spy,  # type: ignore[arg-type]
     )
 
