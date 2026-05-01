@@ -91,7 +91,7 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 - [x] **VIS-03**: Element box highlight via kAXFrameAttribute, semi-transparent rectangle with label
 - [ ] **VIS-04**: SwiftUI HUD with .ultraThinMaterial — last 8 actions, status icons, tier badges (T1-T5 / C1-C5)
 - [x] **VIS-05**: SCContentFilter excludes overlay from own captures (macOS 15+ where sharingType=.none no longer works)
-- [ ] **VIS-06**: Toggle/config — Cmd+Shift+V hotkey, opacity slider, position snap
+- [x] **VIS-06**: Toggle/config — Cmd+Shift+V hotkey, opacity slider, position snap
 
 ### Full Transparency
 
@@ -196,7 +196,7 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | VIS-03 | Phase 5 | Complete |
 | VIS-04 | Phase 5 | Pending |
 | VIS-05 | Phase 5 | Complete |
-| VIS-06 | Phase 5 | Pending |
+| VIS-06 | Phase 5 | Complete |
 | OBS-01 | Phase 5 | Pending |
 | OBS-02 | Phase 5 | Pending |
 | OBS-03 | Phase 5 | Pending |
