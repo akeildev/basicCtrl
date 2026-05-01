@@ -9,6 +9,11 @@ in Wave 1+. Tests use pytest.importorskip(module) to skip cleanly until impl shi
 """
 from __future__ import annotations
 
+from .apple_fm import AppleFMClassifier
+from .critic import Critic
+from .ensemble import EnsembleVotingEngine
+from .grounder import Grounder
+from .planner import Planner, WorldModelPredictor
 from .schemas import (
     AppleFMOutput,
     EnsembleVote,
@@ -17,12 +22,23 @@ from .schemas import (
     PredictedState,
     SpeculativeDraft,
 )
+from .speculative import Speculator, SpeculationMutationGate
+from .verifier_llm import VerifierLLM
 
 __all__ = [
+    "AppleFMClassifier",
     "AppleFMOutput",
+    "Critic",
+    "EnsembleVotingEngine",
     "EnsembleVote",
+    "Grounder",
     "OracleOutput",
     "PlanCandidate",
+    "Planner",
     "PredictedState",
+    "Speculator",
+    "SpeculationMutationGate",
     "SpeculativeDraft",
+    "VerifierLLM",
+    "WorldModelPredictor",
 ]

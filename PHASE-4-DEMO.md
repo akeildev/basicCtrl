@@ -228,11 +228,11 @@ Per Phase 4 design, verify correctness on your local Mac.
 
 ```bash
 python3 <<'PY'
-from cua_overlay.cognition.ensemble import EnsembleVoter
+from cua_overlay.cognition import EnsembleVotingEngine
 from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
 import time
 
-voter = EnsembleVoter()
+voter = EnsembleVotingEngine()
 
 # Simulate 10 routine clicks on calculator button "5"
 for i in range(10):
@@ -284,7 +284,7 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.cognition.speculator import SpeculativeDraft
+from cua_overlay.cognition import SpeculativeDraft
 import time
 
 # Valid: N+1 speculative draft is READ-only
@@ -320,9 +320,10 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.learning.recipe_synth import RecipeSynthesizer, ObservedAction
+from cua_overlay.learning import RecipeSynthesizer, ObservedAction
 from cua_overlay.state.causal_dag import ActionCanonical
 import time
+import asyncio
 
 # Simulate 5 recorded user actions: click, type, wait, type, click
 actions = [
@@ -360,11 +361,11 @@ actions = [
 
 # Synthesize Recipe from recorded actions
 synth = RecipeSynthesizer()
-recipe = synth.synthesize(
-    actions=actions,
+recipe = asyncio.run(synth.synthesize(
+    observed_actions=actions,
     app_bundle_id="com.apple.mail",
     task_label="Send an email to akeil",
-)
+))
 
 print(f"Recipe name: {recipe.name}")
 print(f"Recipe steps: {len(recipe.steps)}")
@@ -385,7 +386,7 @@ PY
 ```bash
 python3 <<'PY'
 from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
-from cua_overlay.learning.recipe_synth import Recipe, RecipeStep, RecipeParam
+from cua_overlay.learning import Recipe, RecipeStep, RecipeParam
 import hashlib
 import time
 

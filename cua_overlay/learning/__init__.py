@@ -14,6 +14,7 @@ All frozen=True per Phase 1-3 precedent.
 from __future__ import annotations
 
 from .coalesce import KeystrokeCoalescer
+from .recipe_synth import RecipeSynthesizer
 from .recorder import LearningRecorder
 from .schemas import (
     ObservedAction,
@@ -31,4 +32,5 @@ __all__ = [
     "RecipeParam",
     "RecipePrecondition",
     "RecipeStep",
+    "RecipeSynthesizer",
 ]
