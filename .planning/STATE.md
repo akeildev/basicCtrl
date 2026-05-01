@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-05-PLAN.md — IMU SPI-08
-last_updated: "2026-05-01T22:00:06.322Z"
+stopped_at: Completed 06-06-PLAN.md — Tier-B/C SPIs with graceful SIP gating
+last_updated: "2026-05-01T22:04:11.142Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 61
-  completed_plans: 54
-  percent: 89
+  completed_plans: 55
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 6 (private-spis-durability-hardening) — EXECUTING
-Plan: 6 of 12
+Plan: 7 of 12
 Status: Ready to execute
 Last activity: 2026-05-01
 
@@ -84,6 +84,7 @@ Progress: [███████░░░] 49/49 plans completed (100%)
 | Phase 06 P02 | 20 | 3 tasks | 4 files |
 | Phase 06 P03 | 8 | 2 tasks | 2 files |
 | Phase 06 P05 | 5 | 2 tasks | 2 files |
+| Phase 06-private-spis-durability-hardening P06 | 8 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,7 @@ Recent decisions affecting current work:
 - [Phase 02]: send_destructive encodes safety in tool name (no race_policy parameter) — T-2-09 layer 1 of three-layer defense
 - [Phase 02-translators-racing]: Phase 2 ship gate complete: 5 SC integration tests written, PHASE-2-DEMO.md operator runbook in PHASE-1-DEMO.md format; case-sensitive bundle_ids per D-21; SC #2 uses action_type='click' (D-10 RACE) per WARN-4 for AS stagger observability; SC #4 stress on Calculator + WARN-6 C1/C3 dedup; ready for gsd-verifier
 - [Phase 06]: IOKit IMU enumeration via ioreg(1); graceful skip on Intel
+- [Phase ?]: All Tier-B/C SPIs gracefully skip on default Mac (SIP fully on); is_sip_partial_off() helper centralized in probe.py
 
 ### Pending Todos
 
@@ -137,8 +139,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-01T22:00:06.320Z
-Stopped at: Completed 06-05-PLAN.md — IMU SPI-08
+Last session: 2026-05-01T22:04:11.139Z
+Stopped at: Completed 06-06-PLAN.md — Tier-B/C SPIs with graceful SIP gating
 Resume file: None
 
 **Phase 5 Summary:**
