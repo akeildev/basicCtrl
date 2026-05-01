@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation + State + Verifier** (2026-04-30) - Python overlay, state graph, push-event verifier, deterministic L0+L1, durable persistence baseline, MCP surface preserved
 - [x] **Phase 2: Translators + Racing** - 5 protocol translators (T1-T5) and 5 racing channels (C1-C5) with atomic idempotency tokens, decided by Phase 1 verifier (completed 2026-04-30)
 - [x] **Phase 3: Recovery + Cache Write-Back** - 6-class failure classifier, 5-branch parallel recovery, circuit breaker, Stagehand-style cassette replay + heal write-back (completed 2026-04-30)
-- [ ] **Phase 4: Cognition + Learning + Episodic** - Multi-agent ensemble (Opus + GPT-5 + Apple FM), UI-TARS grounder, V-Droid verifier, world model, speculative read-only, CGEvent tap recorder, recipe synthesis, FAISS episodic memory
+- [x] **Phase 4: Cognition + Learning + Episodic** - Multi-agent ensemble (Opus + GPT-5 + Apple FM), UI-TARS grounder, V-Droid verifier, world model, speculative read-only, CGEvent tap recorder, recipe synthesis, FAISS episodic memory (completed 2026-05-01)
 - [ ] **Phase 5: Visualizer + Full Transparency** - NSPanel ghost cursor, SwiftUI HUD, 60fps H.265 replay, 3D timeline, counterfactual replay, differential session compare
 - [ ] **Phase 6: Private SPIs + Durability Hardening** - SkyLight, AX remote, ES, DTrace, DYLD inject, WebKit RemoteInspector, IMU reader, LangGraph PostgresSaver crash-resume
 
@@ -136,6 +136,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation + State + Verifier | 9/9 | Complete | 2026-04-30 |
 | 2. Translators + Racing | 12/12 | Complete | 2026-04-30 |
 | 3. Recovery + Cache Write-Back | 9/9 | Complete    | 2026-04-30 |
-| 4. Cognition + Learning + Episodic | 8/9 | In Progress|  |
+| 4. Cognition + Learning + Episodic | 9/9 | Complete    | 2026-05-01 |
 | 5. Visualizer + Full Transparency | 0/TBD | Not started | - |
 | 6. Private SPIs + Durability Hardening | 0/TBD | Not started | - |
