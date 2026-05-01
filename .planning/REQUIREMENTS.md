@@ -99,7 +99,7 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 - [ ] **OBS-02**: Per-step state snapshot logging (full StateNode at every step) via structlog NDJSON
 - [x] **OBS-03**: 3D timeline visualization (X=time, Y=app/window, Z=action depth)
 - [x] **OBS-04**: Replay any past session with full state at every step
-- [ ] **OBS-05**: Counterfactual replay — "what if branch B had won?"
+- [x] **OBS-05**: Counterfactual replay — "what if branch B had won?"
 - [ ] **OBS-06**: Differential session compare
 
 ### Private SPI Integration
@@ -201,7 +201,7 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | OBS-02 | Phase 5 | Pending |
 | OBS-03 | Phase 5 | Complete |
 | OBS-04 | Phase 5 | Complete |
-| OBS-05 | Phase 5 | Pending |
+| OBS-05 | Phase 5 | Complete |
 | OBS-06 | Phase 5 | Pending |
 | SPI-01 | Phase 6 | Pending |
 | SPI-02 | Phase 6 | Pending |
