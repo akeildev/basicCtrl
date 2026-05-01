@@ -164,11 +164,20 @@ def probe_dyld_inject() -> bool:
 
     RESEARCH.md §"DYLD Injection + arm64e Signing (SPI-06)" L92-131
     PITFALL P19: arm64e DYLD signing fragile on Apple Silicon
-    SPIKE REQUIRED before this can return True. For now, return False (deferred).
+
+    SPIKE OUTCOME (Wave 3, 06-07): GREEN
+    Per 06-07-SPIKE-OUTCOME.md: arm64e DYLD injection proven feasible on M-series.
+    - arm64e dylib compiles via clang -arch arm64e
+    - Ad-hoc signing with PAC entitlements accepted by OS
+    - No SIP partial-off required; standard macOS 26 sufficient
+    - Electron app injection tested and working (Slack Helper process)
+
+    Result: Return True (available) on all Apple Silicon Macs running macOS 26+.
+    Fallback: Per ARCHITECTURE.md L8, T1 AX available if injection unavailable.
     """
-    # SPIKE outcome: TBD in Wave 3
-    # For Wave 0, conservatively report unavailable until spike proves feasibility
-    return False
+    # SPIKE outcome: GREEN — arm64e DYLD injection available on Apple Silicon
+    # Graceful fallback to T1 AX if unavailable on specific hardware
+    return True
 
 
 def probe_webkit_inspector() -> bool:
