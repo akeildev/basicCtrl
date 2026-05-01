@@ -80,7 +80,7 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 
 ### Persistence + Durable Execution
 
-- [ ] **PERSIST-01**: Each translator call wrapped as durable step (LangGraph PostgresSaver, local Postgres)
+- [x] **PERSIST-01**: Each translator call wrapped as durable step (LangGraph PostgresSaver, local Postgres)
 - [ ] **PERSIST-02**: `~/.cua/sessions/<id>/` structure — snapshot.json, action_log.ndjson, checkpoints/, recipes/, cassettes/, recordings/
 - [ ] **PERSIST-03**: Crash → resume from last verified step
 
@@ -188,7 +188,7 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | COG-06 | Phase 4 | Complete |
 | COG-07 | Phase 4 | Complete |
 | COG-08 | Phase 4 | Complete |
-| PERSIST-01 | Phase 1 | Pending |
+| PERSIST-01 | Phase 1 | Complete |
 | PERSIST-02 | Phase 1 | Pending |
 | PERSIST-03 | Phase 1 | Pending |
 | VIS-01 | Phase 5 | Complete |

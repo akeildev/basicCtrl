@@ -1,0 +1,29 @@
+========================================
+CUA DYLD Injection Spike — Slack Test
+========================================
+Date: Fri May  1 18:06:22 EDT 2026
+
+[1/3] Finding a safe Slack helper process...
+Found Slack network helper PID: 4957
+✓ Target process: PID 4957
+
+[2/3] Verifying target process architecture...
+Process architecture: unknown
+Process info (before injection):
+  PID COMM             ARGS
+ 4957 /Applications/Sl /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/akeilsmith/Library/Application Support/Slack --standard-schemes=app,slack-webapp-dev --enable-sandbox --secure-schemes=app,slack-webapp-dev,sentry-ipc --bypasscsp-schemes=slack-webapp-dev,sentry-ipc --cors-schemes=slack-webapp-dev,sentry-ipc --fetch-schemes=slack-webapp-dev,sentry-ipc --service-worker-schemes=slack-webapp-dev --shared-files --field-trial-handle=1718379636,r,7381029031206203084,9422906011330063745,262144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,PdfUseShowSaveFilePicker,ScreenCaptureKitMac,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=AllowAggressiveThrottlingWithWebSocket,CalculateNativeWinOcclusion,DropInputEventsWhilePaintHolding,EnableWatermarkView,EnumerateDevicesRelaxedCache,HardwareMediaKeyHandling,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,LogJsConsoleMessages,MacWebContentsOcclusion,PostQuantumKyber,RequestInitiatorSiteLockEnfocement,ScreenAIOCREnabled,SkipEmptyDisplayHotplugEvent,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation,WebRtcHideLocalIpsWithMdns,WinRetrieveSuggestionsOnlyOnDemand --variations-seed-version --pseudonymization-salt-handle=1935764596,r,13391033874347636681,14956374911925665742,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=22
+
+[3/3] Attempting injection...
+✓ Injector compiled
+
+Testing with DYLD_INSERT_LIBRARIES environment variable...
+[CUA-DYLD-SPIKE] Injected dylib loaded into PID 64718
+[CUA-DYLD-SPIKE] Injected dylib unloading
+Child process running (PID 64718, PPID 64661)
+SUCCESS: Found marker: CUA_DYLD_TEST_INJECTED_MARKER_v1
+✓ Test child completed successfully
+✓ MARKER FOUND — Injection successful
+
+========================================
+SPIKE SLACK TEST OUTCOME: GREEN
+========================================

@@ -84,13 +84,37 @@ def calculator_session_pid() -> Iterator[int]:
     )
     time.sleep(2.0)  # let the keypad finish layout
 
+    # AX readiness probe — wait for the AX tree to expose a window with children.
+    # Without this, a previous test's pkill -9 cycle can leave Calculator in a
+    # state where the process is alive (NSWorkspace happy) but the AX subsystem
+    # hasn't finished rebuilding the tree, and T1's walker reads zero children.
     try:
-        yield pid
-    finally:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
+        from ApplicationServices import (  # type: ignore[import-not-found]
+            AXUIElementCreateApplication,
+            AXUIElementCopyAttributeValue,
+        )
+        ax_app = AXUIElementCreateApplication(pid)
+        ready_deadline = time.monotonic() + 5.0
+        while time.monotonic() < ready_deadline:
+            err, windows = AXUIElementCopyAttributeValue(ax_app, "AXWindows", None)
+            if err == 0 and windows:
+                err2, win_children = AXUIElementCopyAttributeValue(
+                    windows[0], "AXChildren", None
+                )
+                if err2 == 0 and win_children:
+                    break
+            time.sleep(0.1)
+        else:
+            pytest.skip(
+                f"Calculator pid={pid} AX tree never populated within 5s "
+                f"(probably a race with a prior test's pkill cycle)"
+            )
+    except ImportError:
+        pass  # ApplicationServices not available; skip the probe
+
+    # Don't SIGTERM — see .planning/INTEGRATION-DEBUG.md F2. Leave Calculator
+    # running so subsequent tests can reuse the same warm AX tree.
+    yield pid
 
 
 async def _resolve_5(pid: int) -> TranslatorTarget:

@@ -146,10 +146,43 @@ def calculator_pid() -> Iterator[int]:
     if pid is None:
         raise RuntimeError("Calculator.app did not register with NSWorkspace within 5s")
 
+    # Activate so the keypad paints + wait for AX tree readiness.
+    # Without this, tests racing right after `open -a` see an empty AX tree
+    # because Calculator launches but hasn't built its UI tree yet.
+    # AppleScript `activate` may block under load (Calculator busy with prior
+    # test's click events) — TimeoutExpired is recoverable, the AX-readiness
+    # probe below is the actual gate.
     try:
-        yield pid
-    finally:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
+        subprocess.run(
+            ["osascript", "-e", 'tell application "Calculator" to activate'],
+            check=False, timeout=2.0,
+        )
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        from ApplicationServices import (  # type: ignore[import-not-found]
+            AXUIElementCreateApplication,
+            AXUIElementCopyAttributeValue,
+        )
+        ax_app = AXUIElementCreateApplication(pid)
+        ready_deadline = time.monotonic() + 5.0
+        while time.monotonic() < ready_deadline:
+            err, windows = AXUIElementCopyAttributeValue(ax_app, "AXWindows", None)
+            if err == 0 and windows:
+                err2, win_children = AXUIElementCopyAttributeValue(
+                    windows[0], "AXChildren", None
+                )
+                if err2 == 0 and win_children:
+                    break
+            time.sleep(0.1)
+        else:
+            pytest.skip(
+                f"Calculator pid={pid} AX tree never populated within 5s"
+            )
+    except ImportError:
+        pass  # ApplicationServices not available; best-effort
+
+    # Note: do NOT SIGTERM Calculator on teardown — see .planning/INTEGRATION-DEBUG.md
+    # F2. Killing it here races with the next test's `open -a Calculator` and leaves
+    # the AX tree half-painted. Leave Calculator running; subsequent tests reuse it.
+    yield pid

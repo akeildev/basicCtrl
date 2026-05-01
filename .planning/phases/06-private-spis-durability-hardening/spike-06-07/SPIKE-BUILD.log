@@ -1,0 +1,37 @@
+========================================
+CUA DYLD Injection Spike — Build & Test
+========================================
+Date: Fri May  1 18:05:59 EDT 2026
+Host: Darwin Akeils-MacBook-Pro-3.local 25.4.0 Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:50 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T6050 arm64
+
+[1/5] Compiling C source as arm64e dylib...
+✓ Compilation successful
+/Users/akeilsmith/dev/cua-maximalist/.planning/phases/06-private-spis-durability-hardening/spike-06-07/DYLDTestInject.dylib: Mach-O 64-bit dynamically linked shared library arm64e
+
+[2/5] Verifying arm64e architecture...
+Non-fat file: /Users/akeilsmith/dev/cua-maximalist/.planning/phases/06-private-spis-durability-hardening/spike-06-07/DYLDTestInject.dylib is architecture: arm64e
+✓ Architecture info retrieved
+
+[3/5] Code-signing with ad-hoc signature + PAC entitlements...
+✓ Code signing successful
+
+[4/5] Verifying code signature...
+/Users/akeilsmith/dev/cua-maximalist/.planning/phases/06-private-spis-durability-hardening/spike-06-07/DYLDTestInject.dylib: valid on disk
+/Users/akeilsmith/dev/cua-maximalist/.planning/phases/06-private-spis-durability-hardening/spike-06-07/DYLDTestInject.dylib: satisfies its Designated Requirement
+✓ Signature verification successful
+
+[5/5] Testing injection into test target...
+✓ Test target compiled
+
+Attempting to inject dylib into test target...
+[CUA-DYLD-SPIKE] Injected dylib loaded into PID 64599
+[CUA-DYLD-SPIKE] Injected dylib unloading
+Test target running (PID 64599)
+Test target exiting
+✓ Injection test completed (exit code 0)
+✓ DYLIB INITIALIZATION MESSAGE DETECTED — INJECTION CONFIRMED
+
+========================================
+SPIKE OUTCOME: GREEN
+========================================
+

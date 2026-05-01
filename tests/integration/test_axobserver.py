@@ -50,6 +50,14 @@ def _resolve_button_5(pid: int) -> tuple[object, Bbox]:
     Returns (raw_AXUIElement, Bbox). We do a depth-limited manual walk here
     rather than going through Plan 01-03's walker (whose real impl lives in a
     sibling worktree and isn't available during Wave 2).
+
+    NOTE: callers that subscribe to AXValueChanged should subscribe on the
+    APPLICATION ROOT (use `_resolve_app(pid)`), not on the button. macOS 26
+    Calculator fires AXValueChanged on its display element; the button itself
+    never emits that notification. AXObserver propagates from descendants
+    only when the subscription is on an ancestor, so the application root
+    catches what the button cannot. Verified empirically — see
+    .planning/INTEGRATION-DEBUG.md F1.
     """
     from HIServices import (  # type: ignore[import-not-found]
         AXUIElementCopyAttributeValue,
@@ -62,7 +70,10 @@ def _resolve_button_5(pid: int) -> tuple[object, Bbox]:
         err, value = AXUIElementCopyAttributeValue(elem, name, None)
         return value if err == 0 else None
 
-    # BFS to depth 4 (Application > Window > Group/Toolbar > Button).
+    # BFS to depth 8 — macOS 26 Calculator nests the keypad as
+    # AXApplication/AXWindow/AXWindow/AXGroup/AXSplitGroup/AXGroup/AXGroup/AXButton
+    # (depth 7 from the app root). Older Calculator builds were depth-4 but
+    # the modern keypad needs more headroom.
     queue: list[tuple[object, int]] = [(app, 0)]
     seen = 0
     while queue and seen < 500:
@@ -81,13 +92,24 @@ def _resolve_button_5(pid: int) -> tuple[object, Bbox]:
                 x, y, w, h = 0.0, 0.0, 0.0, 0.0
             return elem, Bbox(x=x, y=y, w=w, h=h)
 
-        if depth >= 4:
+        if depth >= 8:
             continue
         children = _attr(elem, "AXChildren") or []
         for child in children[:50]:
             queue.append((child, depth + 1))
 
     raise RuntimeError("could not find Calculator '5' button in AX tree")
+
+
+def _resolve_app(pid: int) -> object:
+    """Return the AXApplication root for the given pid.
+
+    Used as the subscription target for AXValueChanged etc. — see
+    `_resolve_button_5` docstring for why we subscribe on the root rather
+    than on the click target.
+    """
+    from HIServices import AXUIElementCreateApplication  # type: ignore[import-not-found]
+    return AXUIElementCreateApplication(pid)
 
 
 def _fire_cgevent_click(x: int, y: int) -> None:
@@ -127,6 +149,10 @@ async def test_pre_subscribe_records_subscription_ts(calculator_pid: int) -> Non
 
     try:
         elem, bbox = _resolve_button_5(calculator_pid)
+        # Subscribe on the application root, not the button — Calculator
+        # fires AXValueChanged on its display element, not the button itself.
+        # The root captures descendant events. See _resolve_button_5 docstring.
+        app_root = _resolve_app(calculator_pid)
         target = _make_target(calculator_pid, bbox)
 
         t_before = time.monotonic_ns()
@@ -138,7 +164,7 @@ async def test_pre_subscribe_records_subscription_ts(calculator_pid: int) -> Non
                 ["AXValueChanged"],
                 action_id="test-presub-1",
                 timeout_ms=50,
-                ax_element=elem,
+                ax_element=app_root,
             )
         )
         await asyncio.sleep(0.005)
@@ -179,6 +205,10 @@ async def test_axvalue_changed_fires_for_calculator_click(calculator_pid: int) -
 
     try:
         elem, bbox = _resolve_button_5(calculator_pid)
+        # Subscribe on the application root, not the button — Calculator
+        # fires AXValueChanged on its display element, not the button itself.
+        # The root captures descendant events. See _resolve_button_5 docstring.
+        app_root = _resolve_app(calculator_pid)
         target = _make_target(calculator_pid, bbox)
 
         # Subscribe BEFORE we fire the click — the contract.
@@ -188,7 +218,7 @@ async def test_axvalue_changed_fires_for_calculator_click(calculator_pid: int) -
                 ["AXValueChanged", "AXFocusedUIElementChanged"],
                 action_id="test-fire-2",
                 timeout_ms=1000,
-                ax_element=elem,
+                ax_element=app_root,
             )
         )
         await asyncio.sleep(0.05)  # let subscription register on CFRunLoop
@@ -225,6 +255,10 @@ async def test_event_within_50ms(calculator_pid: int) -> None:
 
     try:
         elem, bbox = _resolve_button_5(calculator_pid)
+        # Subscribe on the application root, not the button — Calculator
+        # fires AXValueChanged on its display element, not the button itself.
+        # The root captures descendant events. See _resolve_button_5 docstring.
+        app_root = _resolve_app(calculator_pid)
         target = _make_target(calculator_pid, bbox)
 
         expect_task = asyncio.create_task(
@@ -233,7 +267,7 @@ async def test_event_within_50ms(calculator_pid: int) -> None:
                 ["AXValueChanged", "AXFocusedUIElementChanged"],
                 action_id="test-50ms",
                 timeout_ms=1000,
-                ax_element=elem,
+                ax_element=app_root,
             )
         )
         await asyncio.sleep(0.05)
@@ -272,6 +306,10 @@ async def test_stale_event_dropped(calculator_pid: int) -> None:
 
     try:
         elem, bbox = _resolve_button_5(calculator_pid)
+        # Subscribe on the application root, not the button — Calculator
+        # fires AXValueChanged on its display element, not the button itself.
+        # The root captures descendant events. See _resolve_button_5 docstring.
+        app_root = _resolve_app(calculator_pid)
         target = _make_target(calculator_pid, bbox)
 
         expect_task = asyncio.create_task(
@@ -280,7 +318,7 @@ async def test_stale_event_dropped(calculator_pid: int) -> None:
                 ["AXValueChanged"],
                 action_id="test-stale",
                 timeout_ms=200,
-                ax_element=elem,
+                ax_element=app_root,
             )
         )
         await asyncio.sleep(0.05)
