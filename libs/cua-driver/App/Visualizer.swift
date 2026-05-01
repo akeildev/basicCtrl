@@ -30,6 +30,7 @@ class VisualizerPanel: NSPanel {
     private let contentView: VisualizerContentView
     var ghostCursorView: GhostCursorView
     var highlightView: HighlightOverlayView
+    var hudView: HUDView?
 
     init() {
         // UI-SPEC L44-46: .popUpMenu level, borderless, ignores input
@@ -61,6 +62,13 @@ class VisualizerPanel: NSPanel {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) not implemented")
+    }
+
+    func updateHUDActions(_ actions: [HUDActionEntry], sessionStart: String, goal: String) {
+        if let hudView = hudView {
+            hudView.updateActions(actions)
+            hudView.setSessionMetadata(sessionStart: sessionStart, goal: goal)
+        }
     }
 }
 
@@ -175,6 +183,34 @@ class SocketListener {
                    let label = dict["label"] as? String {
                     let rect = NSRect(x: bboxX, y: bboxY, width: bboxWidth, height: bboxHeight)
                     window.highlightView.showBox(rect: rect, label: label)
+                }
+            case "hud_action":
+                // HUD action update from Python overlay
+                // entries: [{"action_type": "click", "target_label": "Send", "tier": "T1", "channel": "C2", "status": "verified", ...}, ...]
+                // session_start_iso: "2026-05-01T10:00:00Z"
+                // goal: "Compose email"
+                if let entries = dict["entries"] as? [[String: Any]],
+                   let sessionStart = dict["session_start_iso"] as? String,
+                   let goal = dict["goal"] as? String {
+                    var hudEntries: [HUDActionEntry] = []
+                    for entryDict in entries {
+                        if let actionType = entryDict["action_type"] as? String,
+                           let targetLabel = entryDict["target_label"] as? String,
+                           let tier = entryDict["tier"] as? String,
+                           let channel = entryDict["channel"] as? String,
+                           let status = entryDict["status"] as? String {
+                            let entry = HUDActionEntry(
+                                action_type: actionType,
+                                target_label: targetLabel,
+                                tier: tier,
+                                channel: channel,
+                                status: status
+                            )
+                            hudEntries.append(entry)
+                        }
+                    }
+                    // Update HUD panel (assumes it's part of window's view hierarchy or accessible via VisualizerPanel)
+                    window.updateHUDActions(hudEntries, sessionStart: sessionStart, goal: goal)
                 }
             default:
                 break
