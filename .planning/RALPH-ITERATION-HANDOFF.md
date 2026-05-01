@@ -65,9 +65,13 @@ medium when you do proper tests and everything."
 
 **Proven mediums:**
 - ✅ Native AX (Cocoa app — Calculator) via T1+C2 — 5-step sequence
+  → `tests/integration/test_calculator_e2e_arithmetic.py` (CUA_RUN_E2E_CALC=1)
+- ✅ AppleScript (TextEdit) via T3+C4 — write+read document body
+  → `tests/integration/test_textedit_e2e_typing.py` (CUA_RUN_E2E_TEXTEDIT=1)
+  ⚠️ One-time TCC Automation grant required — System Settings → Privacy &
+     Security → Automation → approve Python for TextEdit
 
 **Mediums NOT yet proven end-to-end (next priorities):**
-- ❓ AppleScript (T3+C4) — TextEdit is the easiest target, always installed
 - ❓ CDP / Electron (T2+C5) — Slack/Discord/VSCode require relaunch with
   `--remote-debugging-port=9222`
 - ❓ Vision / OCR (T4+C3) — non-AX apps (Chess proven that uitag fires but the
@@ -82,24 +86,33 @@ medium when you do proper tests and everything."
 
 ## Suggested next iteration tasks (priority order)
 
-1. **TextEdit T3+C4 e2e demo** — `tests/integration/test_textedit_e2e_typing.py`
-   that opens TextEdit, types via AppleScript "do", verifies the document body
-   via AX. ~20 min if T3+C4 work as advertised.
+✅ Done in this iteration:
+- TextEdit T3+C4 e2e demo (commit 8be7708)
 
-2. **Race orchestrator e2e** — same Calculator scenario but go through the
+Remaining priorities:
+
+1. **Race orchestrator e2e** — same Calculator scenario but go through the
    `RaceOrchestrator.execute(...)` API (not bare T1/C2). Verifies the full
-   Phase 2 racing path actually fires + reports a winner.
+   Phase 2 racing path actually fires + reports a winner. Heavy wiring
+   (translator_registry, channel_registry, axmgr, aggregator, l1_cheap,
+   classifier, session_writer, idem_store, duplicate_receipt) — see
+   `cua_overlay/actions/race_orchestrator.py:134`.
 
-3. **Recovery e2e** — induce a verify failure on a Calculator click (mock the
+2. **Recovery e2e** — induce a verify failure on a Calculator click (mock the
    verifier), assert B1 (rescroll) takes over and re-fires.
 
-4. **Durability e2e** — start a multi-step task, kill the Python process via
+3. **Durability e2e** — start a multi-step task, kill the Python process via
    SIGKILL after step 2, restart, verify `resume_from_crash()` picks up at
-   step 2 not step 0.
+   step 2 not step 0. Needs local Postgres running (`brew services start
+   postgresql@16`).
 
-5. **Browser CDP demo** — opt-in via `CUA_RUN_BROWSER=1`. Spawn a chromium
+4. **Browser CDP demo** — opt-in via `CUA_RUN_BROWSER=1`. Spawn a chromium
    subprocess with `--remote-debugging-port`, navigate to example.com via T2,
    click a link, verify URL changed.
+
+5. **Cognition ensemble e2e** — wire mocked Anthropic + OpenAI clients,
+   verify EnsembleVotingEngine returns the majority decision and structured
+   logs include the per-oracle confidence.
 
 Each one above unlocks a "real medium proven" tick.
 
