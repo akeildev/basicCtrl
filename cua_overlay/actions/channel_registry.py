@@ -75,6 +75,21 @@ class ChannelRegistry:
         """
         return CHANNEL_TO_TIER_DEFAULT.get(channel_name)
 
+    async def register_with_capabilities(self, capabilities):
+        """Register channels based on capability probe results.
+
+        Per RESEARCH.md §"Pattern: Capability-Based Channel Registration" L403-428:
+        "Register channels only if their SPIs are available."
+
+        Args:
+            capabilities: SPICapabilities from probe.py
+        """
+        # SPI-optional channels (Wave 1+)
+        if capabilities.skylight_available:
+            from cua_overlay.actions.channels.c1_skylight_spi import C1SkyLightSPI
+            self.register(C1SkyLightSPI(capabilities=capabilities))
+            _log.info("registered_c1_spi_channel")
+
     def select(
         self, translator_priority: list[str], policy: RacePolicy
     ) -> list[Channel]:
