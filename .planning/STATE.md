@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-09-PLAN.md — phase 5 integration tests + validation gate
-last_updated: "2026-05-01T21:35:46.375Z"
-last_activity: 2026-05-01 -- Phase 6 planning complete
+stopped_at: Completed 06-01-PLAN.md — SPI probes, AppProfile integration, VALIDATION.md
+last_updated: "2026-05-01T21:44:42.877Z"
+last_activity: 2026-05-01
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 61
-  completed_plans: 49
-  percent: 80
+  completed_plans: 50
+  percent: 82
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-29)
 
 **Core value:** Autonomous control of any Mac surface, with deterministic self-healing and full transparency — never silently fails, never gives up, never makes the user babysit.
-**Current focus:** Phase 5 — visualizer-full-transparency (COMPLETE)
+**Current focus:** Phase 6 — private-spis-durability-hardening
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 6 (private-spis-durability-hardening) — EXECUTING
+Plan: 2 of 12
 Status: Ready to execute
-Last activity: 2026-05-01 -- Phase 6 planning complete
+Last activity: 2026-05-01
 
 Progress: [███████░░░] 49/49 plans completed (100%)
 
@@ -80,6 +80,7 @@ Progress: [███████░░░] 49/49 plans completed (100%)
 | Phase 05 P04 | 8 | 2 tasks | 3 files |
 | Phase 05 P06 | 5 | 2 tasks | 3 files |
 | Phase 05-visualizer-full-transparency P07 | 8 | 2 tasks | 2 files |
+| Phase 06 P01 | 15 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -132,8 +133,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-01T20:52:08Z
-Stopped at: Completed 05-09-PLAN.md — phase 5 integration tests + validation gate
+Last session: 2026-05-01T21:44:42.875Z
+Stopped at: Completed 06-01-PLAN.md — SPI probes, AppProfile integration, VALIDATION.md
 Resume file: None
 
 **Phase 5 Summary:**

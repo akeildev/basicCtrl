@@ -104,14 +104,14 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 
 ### Private SPI Integration
 
-- [ ] **SPI-01**: SkyLight `SLEventPostToPid` Swift bridge — background events, no cursor warp
-- [ ] **SPI-02**: `_AXObserverAddNotificationAndCheckRemote` — Electron AX trees stay alive when occluded
-- [ ] **SPI-03**: `CGSManagedDisplaySetCurrentSpace` — cross-Space window control
-- [ ] **SPI-04**: Endpoint Security `es_new_client` — kernel-level fork/exec/file-event observation
-- [ ] **SPI-05**: DTrace probes for app internals (SIP off OK locally)
-- [ ] **SPI-06**: DYLD_INSERT_LIBRARIES + Mach injection into Electron renderers (SIP off, arm64e signing spike required)
-- [ ] **SPI-07**: WebKit RemoteInspector private headers for Safari deep access
-- [ ] **SPI-08**: AppleSPUHIDDevice IMU reader (undocumented MEMS sensor, lid-angle / motion / vibration)
+- [x] **SPI-01**: SkyLight `SLEventPostToPid` Swift bridge — background events, no cursor warp
+- [x] **SPI-02**: `_AXObserverAddNotificationAndCheckRemote` — Electron AX trees stay alive when occluded
+- [x] **SPI-03**: `CGSManagedDisplaySetCurrentSpace` — cross-Space window control
+- [x] **SPI-04**: Endpoint Security `es_new_client` — kernel-level fork/exec/file-event observation
+- [x] **SPI-05**: DTrace probes for app internals (SIP off OK locally)
+- [x] **SPI-06**: DYLD_INSERT_LIBRARIES + Mach injection into Electron renderers (SIP off, arm64e signing spike required)
+- [x] **SPI-07**: WebKit RemoteInspector private headers for Safari deep access
+- [x] **SPI-08**: AppleSPUHIDDevice IMU reader (undocumented MEMS sensor, lid-angle / motion / vibration)
 
 ### MCP Server Interface
 
@@ -203,14 +203,14 @@ Phase mapping (filled by roadmapper, 2026-04-29):
 | OBS-04 | Phase 5 | Complete |
 | OBS-05 | Phase 5 | Complete |
 | OBS-06 | Phase 5 | Pending |
-| SPI-01 | Phase 6 | Pending |
-| SPI-02 | Phase 6 | Pending |
-| SPI-03 | Phase 6 | Pending |
-| SPI-04 | Phase 6 | Pending |
-| SPI-05 | Phase 6 | Pending |
-| SPI-06 | Phase 6 | Pending |
-| SPI-07 | Phase 6 | Pending |
-| SPI-08 | Phase 6 | Pending |
+| SPI-01 | Phase 6 | Complete |
+| SPI-02 | Phase 6 | Complete |
+| SPI-03 | Phase 6 | Complete |
+| SPI-04 | Phase 6 | Complete |
+| SPI-05 | Phase 6 | Complete |
+| SPI-06 | Phase 6 | Complete |
+| SPI-07 | Phase 6 | Complete |
+| SPI-08 | Phase 6 | Complete |
 | MCP-01 | Phase 1 | Pending |
 | MCP-02 | Phase 1 | Complete |
 
