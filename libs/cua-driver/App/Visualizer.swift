@@ -10,6 +10,18 @@ class VisualizerApplication: NSApplication {
     static let shared = VisualizerApplication()
     private var visualizerWindow: VisualizerPanel?
 
+    // MARK: - Overlay Window ID Registry (for ScreenRecorder P9/P10 exclusion)
+    /// Global overlay window IDs — ScreenRecorder reads these via getOverlayWindowIDs()
+    private static var overlayWindowIDRegistry: [CGWindowID] = []
+
+    static func registerOverlayWindowID(_ windowID: CGWindowID) {
+        overlayWindowIDRegistry.append(windowID)
+    }
+
+    static func getOverlayWindowIDs() -> [CGWindowID] {
+        return overlayWindowIDRegistry
+    }
+
     override func run() {
         // Silence app delegate warnings
         delegate = AppDelegate()
@@ -18,6 +30,11 @@ class VisualizerApplication: NSApplication {
         visualizerWindow = VisualizerPanel()
         visualizerWindow?.center()
         visualizerWindow?.orderFront(nil)
+
+        // Register this window's ID for ScreenRecorder to exclude (P9/P10 mitigation)
+        if let windowID = visualizerWindow?.windowNumber as? CGWindowID {
+            VisualizerApplication.registerOverlayWindowID(windowID)
+        }
 
         // Start socket listener
         SocketListener.shared.start()
