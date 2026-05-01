@@ -49,6 +49,68 @@ def _configure_structlog() -> Iterator[None]:
     yield
 
 
+@pytest.fixture(scope="session", autouse=True)
+def verify_phase5_pitfalls():
+    """Verify Phase 5 pitfall mitigations via grep (runs once per session).
+
+    Checks Swift source files for:
+    - P9: SCContentFilter usage in Visualizer.swift
+    - P10: No sharingType=.none (macOS 15+ deprecated)
+    - P11: CAShapeLayer present in highlight view
+    - P12: NSView.draw override present, no CALayer animation in ghost cursor
+
+    These assertions enforce architecture-level constraints that cannot be
+    easily tested via unit tests, so we grep-verify at test collection time.
+    """
+    # Verify pitfall mitigations via grep
+    cwd = Path.cwd()
+
+    # P9: SCContentFilter usage
+    p9_result = subprocess.run(
+        ["grep", "-c", "SCContentFilter", "libs/cua-driver/App/Visualizer.swift"],
+        capture_output=True,
+        cwd=cwd,
+    )
+    p9_count = int(p9_result.stdout.decode().strip() or "0")
+    assert p9_count >= 1, "P9: SCContentFilter not found in Visualizer.swift"
+
+    # P10: No sharingType=.none
+    p10_result = subprocess.run(
+        ["grep", "-c", "sharingType.*\\.none", "libs/cua-driver/App/Visualizer.swift"],
+        capture_output=True,
+        cwd=cwd,
+    )
+    p10_count = int(p10_result.stdout.decode().strip() or "0")
+    assert p10_count == 0, "P10: sharingType=.none found (deprecated on macOS 15+)"
+
+    # P11: CAShapeLayer present in highlight
+    p11_result = subprocess.run(
+        ["grep", "-c", "CAShapeLayer", "libs/cua-driver/App/HighlightOverlayView.swift"],
+        capture_output=True,
+        cwd=cwd,
+    )
+    p11_count = int(p11_result.stdout.decode().strip() or "0")
+    assert p11_count >= 1, "P11: CAShapeLayer not found in HighlightOverlayView.swift"
+
+    # P12: NSView.draw present in ghost cursor, no CALayer animation
+    p12_draw = subprocess.run(
+        ["grep", "-c", "override func draw", "libs/cua-driver/App/GhostCursorView.swift"],
+        capture_output=True,
+        cwd=cwd,
+    )
+    p12_anim = subprocess.run(
+        ["grep", "-c", "CABasicAnimation\\|CAKeyframeAnimation", "libs/cua-driver/App/GhostCursorView.swift"],
+        capture_output=True,
+        cwd=cwd,
+    )
+    p12_draw_count = int(p12_draw.stdout.decode().strip() or "0")
+    p12_anim_count = int(p12_anim.stdout.decode().strip() or "0")
+    assert p12_draw_count >= 1, "P12: NSView.draw override not found in GhostCursorView.swift"
+    assert p12_anim_count == 0, "P12: CALayer animation found in GhostCursorView.swift (performance issue)"
+
+    yield
+
+
 @pytest.fixture
 def calculator_pid() -> Iterator[int]:
     """Launch /System/Applications/Calculator.app and yield its pid.
