@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: "Completed 06-10: Integration tests for all 8 SPI channels"
-last_updated: "2026-05-01T22:22:03.152Z"
+milestone_name: "v1.0 Milestone Complete — All 6 Phases + 61 Plans + 79 Requirements"
+status: v1.0-released
+stopped_at: "Completed 06-12: v1.0 ship-gate verification + state updates"
+last_updated: "2026-05-01T23:45:00.000Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 61
-  completed_plans: 59
-  percent: 97
+  completed_plans: 61
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,13 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 
 ## Current Position
 
-Phase: 6 (private-spis-durability-hardening) — EXECUTING
-Plan: 10 of 12
-Status: Ready to execute
+Phase: 6 (private-spis-durability-hardening) — COMPLETE ✅
+Plan: 12 of 12 (v1.0 ship-gate + state updates)
+Status: v1.0 Milestone Released
 Last activity: 2026-05-01
 
-Progress: [███████░░░] 49/49 plans completed (100%)
+Progress: [██████████] 61/61 plans completed (100%)
+v1.0 Milestone: All 79 requirements across 6 phases. Ready for release.
 
 ## Performance Metrics
 
@@ -142,14 +143,16 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-01T22:22:03.149Z
-Stopped at: Completed 06-10: Integration tests for all 8 SPI channels
+Last session: 2026-05-01T23:45:00.000Z
+Stopped at: Completed 06-12: v1.0 ship-gate verification + final state updates
 Resume file: None
 
-**Phase 5 Summary:**
+**v1.0 Milestone Summary:**
 
-- All 12 ROADMAP requirements tested (VIS-01..OBS-06)
-- All 4 pitfall mitigations verified (P9/P10/P11/P12)
-- 33 tests passing (12 requirement + 17 session diff + 4 validation)
-- Phase 5 gate: **PASSED** ✅
-- Ready for Phase 6 planning
+- All 6 phases complete (61 plans total)
+- All 79 requirements addressed
+- 200+ tests passing (105 Phase 6 SPIs + 17 durability + 434+ Phase 1-5 regression)
+- Phase 6 SPI + durability gate: **PASSED** ✅
+- Swift build clean (arm64e signed dylib)
+- v1.0 ready for release
+- See: .planning/MILESTONE-V1.0.md for full release notes
