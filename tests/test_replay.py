@@ -200,11 +200,18 @@ def test_action_log_ndjson_structured(tmp_path):
     - Required fields: step_idx, action_type, verdict, timestamp_ns
     """
     import os
+    import uuid
 
     os.environ["HOME"] = str(tmp_path)
 
-    # Use unique session id to avoid test collision
-    writer = SessionWriter("test-session-obs02")
+    # Use unique session id with UUID to avoid test collision
+    unique_session_id = f"test-session-obs02-{uuid.uuid4().hex[:8]}"
+    writer = SessionWriter(unique_session_id)
+
+    # Clear any pre-existing file content
+    action_log = writer.session_dir / "action_log.ndjson"
+    if action_log.exists():
+        action_log.unlink()
 
     # Write 5 actions
     for step_idx in range(5):
@@ -219,7 +226,6 @@ def test_action_log_ndjson_structured(tmp_path):
         writer.write_log_line(event)
 
     # Verify NDJSON file exists and is readable
-    action_log = writer.session_dir / "action_log.ndjson"
     assert action_log.exists(), "action_log.ndjson not created"
 
     # Read back and validate
