@@ -22,6 +22,42 @@ import structlog
 log = structlog.get_logger(__name__)
 
 
+def is_sip_partial_off() -> bool:
+    """Check if SIP is partial-off or fully off.
+
+    Per PITFALL P18: SIP-off requirements limit agent capability.
+    This helper is used to gate Tier-B/C features.
+
+    Returns:
+        True if csrutil reports partial-off or full-off.
+        False if SIP is fully on (default).
+    """
+    try:
+        result = subprocess.run(
+            ["csrutil", "status"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        # Sample outputs:
+        # "Configuration: Custom Configuration" = partial-off (SIP on, but dtrace/fs exceptions)
+        # "System Integrity Protection status: off." = fully off
+        # "System Integrity Protection status: enabled." = fully on (default)
+
+        output = result.stdout.lower() + result.stderr.lower()
+        if "custom configuration" in output:
+            return True  # Partial-off
+        if "off" in output and "enabled" not in output:
+            return True  # Fully off
+        return False  # Fully on (default)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        # csrutil not found or timed out; assume SIP is on (conservative)
+        return False
+    except Exception as e:
+        log.warning("sip_status_check_failed", error=str(e))
+        return False
+
+
 @dataclass
 class SPICapabilities:
     """Immutable record of SPI availability at session start.
