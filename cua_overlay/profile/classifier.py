@@ -73,6 +73,16 @@ class AppProfile(BaseModel):
     # Phase 4: Cognition capability (D-31, D-32)
     cognition_capable: Optional[bool] = None  # True if local models available; False if missing
 
+    # Phase 6: SPI capabilities (cached at session start)
+    spi_skylight_available: bool = False
+    spi_ax_remote_available: bool = False
+    spi_cgs_display_space_available: bool = False
+    spi_endpoint_security_available: bool = False
+    spi_dtrace_available: bool = False
+    spi_dyld_inject_available: bool = False
+    spi_webkit_inspector_available: bool = False
+    spi_imu_available: bool = False
+
     # Derived
     translator_priority: list[str] = Field(default_factory=list)
     probed_at: datetime
@@ -295,6 +305,11 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
     # Run once at session start; cached in AppProfile
     cognition_capable = _probe_cognition_capable()
 
+    # Phase 6: Probe SPI capabilities
+    # Run once at session start; cached in AppProfile
+    from cua_overlay.spi import probe_spi_capabilities
+    spi_caps = await probe_spi_capabilities()
+
     profile = AppProfile(
         bundle_id=bundle_id,
         bundle_version=meta["bundle_version"],
@@ -312,6 +327,14 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
         electron=is_electron,
         tcc_axenabled=True,  # we already checked above; if False we'd have exited
         cognition_capable=cognition_capable,
+        spi_skylight_available=spi_caps.skylight_available,
+        spi_ax_remote_available=spi_caps.ax_remote_available,
+        spi_cgs_display_space_available=spi_caps.cgs_display_space_available,
+        spi_endpoint_security_available=spi_caps.endpoint_security_available,
+        spi_dtrace_available=spi_caps.dtrace_available,
+        spi_dyld_inject_available=spi_caps.dyld_inject_available,
+        spi_webkit_inspector_available=spi_caps.webkit_inspector_available,
+        spi_imu_available=spi_caps.imu_available,
         translator_priority=bundled_priority if bundled_priority is not None else priority,
         probed_at=datetime.now(timezone.utc),
         probe_latency_ms=int((time.monotonic() - t_start) * 1000),
