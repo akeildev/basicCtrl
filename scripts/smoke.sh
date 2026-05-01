@@ -106,6 +106,8 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   echo
   echo "Live demo: CUA_RUN_E2E_CALC=1 ./scripts/smoke.sh"
   echo "Other live targets:"
+  echo "  • CUA_RUN_E2E_TEXTEDIT=1 → T3+C4 AppleScript writes to TextEdit"
+  echo "    (one-time TCC Automation grant required — System Settings → Privacy)"
   echo "  • CUA_RUN_CHESS=1   → T4/T5 grounding on Chess (needs Chess.app + new game)"
   echo "  • CUA_RUN_PAGES=1   → T3 AppleScript on Pages toolbar (needs open document)"
   echo "  • Live SC#3 overlay-excluded screencap: see PHASE-5-DEMO.md"

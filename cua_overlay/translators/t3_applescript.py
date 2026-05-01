@@ -56,6 +56,7 @@ _APP_NAMES: dict[str, str] = {
     "com.apple.Safari": "Safari",
     "com.apple.Terminal": "Terminal",
     "com.apple.Music": "Music",
+    "com.apple.TextEdit": "TextEdit",
 }
 
 
