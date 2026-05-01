@@ -136,6 +136,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation + State + Verifier | 9/9 | Complete | 2026-04-30 |
 | 2. Translators + Racing | 12/12 | Complete | 2026-04-30 |
 | 3. Recovery + Cache Write-Back | 9/9 | Complete    | 2026-04-30 |
-| 4. Cognition + Learning + Episodic | 4/9 | In Progress|  |
+| 4. Cognition + Learning + Episodic | 5/9 | In Progress|  |
 | 5. Visualizer + Full Transparency | 0/TBD | Not started | - |
 | 6. Private SPIs + Durability Hardening | 0/TBD | Not started | - |
