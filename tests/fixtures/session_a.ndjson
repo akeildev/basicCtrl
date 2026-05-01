@@ -1,0 +1,5 @@
+{"step_idx": 0, "app": "Mail", "target_label": "Inbox", "action_type": "click", "tier": "T1", "channel": "C2", "verdict": "verified", "timestamp_ms": 1000}
+{"step_idx": 1, "app": "Mail", "target_label": "Compose", "action_type": "click", "tier": "T3", "channel": "C4", "verdict": "failed", "timestamp_ms": 2000}
+{"step_idx": 2, "app": "Mail", "target_label": "To", "action_type": "type", "tier": "T1", "channel": "C2", "verdict": "verified", "timestamp_ms": 3000}
+{"step_idx": 3, "app": "Mail", "target_label": "Subject", "action_type": "type", "tier": "T1", "channel": "C2", "verdict": "verified", "timestamp_ms": 4000}
+{"step_idx": 4, "app": "Mail", "target_label": "Send", "action_type": "click", "tier": "T2", "channel": "C5", "verdict": "verified", "timestamp_ms": 5000}
