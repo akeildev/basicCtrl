@@ -128,7 +128,9 @@ def stubbed_classify(fake_meta, fake_probes, fake_tcc, tmp_cache):
 
 async def test_calculator_uses_bundled_priority(stubbed_classify) -> None:
     profile = await classify("com.apple.calculator", 1234)
-    assert profile.translator_priority == ["T1", "T4"]
+    # T5 (Pixel) is the universal fallback per _derive_translator_priority's
+    # contract — must always be present at the tail.
+    assert profile.translator_priority == ["T1", "T4", "T5"]
 
 
 async def test_slack_flags_cdp_after_relaunch(stubbed_classify) -> None:

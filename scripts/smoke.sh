@@ -58,29 +58,59 @@ else
 fi
 
 # ----------------------------------------------------------------------
-# 3. Integration tests (informational)
+# 3. Integration tests
 # ----------------------------------------------------------------------
 echo
-echo "[3/3] Integration tests (tests/integration/) — informational"
-echo "  Note: most need real apps running + macOS permissions."
-echo "  Failures here usually mean an app/permission isn't set up,"
-echo "  not that the framework code is broken."
+echo "[3/4] Integration tests (tests/integration/)"
+echo "  Hardware-gated tests (Chess, Pages, ES/DTrace) skip cleanly when"
+echo "  their app/permission isn't set up — failures here ARE code regressions."
 echo
 INT_OUT=$(uv run pytest tests/integration/ -q --no-header -o addopts="" --tb=no 2>&1 | tail -3 || true)
 echo "$INT_OUT"
+if echo "$INT_OUT" | grep -qE "[0-9]+ failed"; then
+  red "  ✗ Integration tests have failures — investigate"
+  EXIT_CODE=1
+elif echo "$INT_OUT" | grep -qE "[0-9]+ passed"; then
+  green "  ✓ Integration tests pass (env-gated tests properly skipped)"
+fi
+
+# ----------------------------------------------------------------------
+# 4. End-to-end Calculator demo (live, OPT-IN)
+# ----------------------------------------------------------------------
+echo
+echo "[4/4] End-to-end Calculator demo: framework drives 5 + 3 = 8"
+echo "  Set CUA_RUN_E2E_CALC=1 to run. Requires Accessibility grant."
+if [[ "${CUA_RUN_E2E_CALC:-0}" == "1" ]]; then
+  pkill -9 -x Calculator 2>/dev/null || true
+  sleep 2
+  E2E_OUT=$(CUA_RUN_E2E_CALC=1 uv run pytest \
+      tests/integration/test_calculator_e2e_arithmetic.py \
+      -q --no-header -o addopts="" --tb=short 2>&1 | tail -5 || true)
+  echo "$E2E_OUT"
+  if echo "$E2E_OUT" | grep -qE "1 passed"; then
+    green "  ✓ Framework successfully drove Calculator to compute 5 + 3 = 8"
+  else
+    red "  ✗ End-to-end demo failed — investigate above"
+    EXIT_CODE=1
+  fi
+else
+  yellow "  ↷ Skipped (set CUA_RUN_E2E_CALC=1 to run live demo)"
+fi
 
 # ----------------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------------
 hr
 if [[ $EXIT_CODE -eq 0 ]]; then
-  green "SMOKE PASSED — Swift builds clean, unit tests green."
+  green "SMOKE PASSED — Swift builds clean, unit + integration green."
   echo
-  echo "Optional next steps for full live validation (~10 min total):"
-  echo "  • Open Calculator.app → re-run integration tests for AX path"
-  echo "  • Grant Screen Recording to Terminal/Python → SC#3 (overlay exclusion)"
-  echo "  • Live DYLD inject smoke: see PHASE-6-DEMO.md \"Manual Smoke Checks\""
-  echo "  • SIP partial-off (csrutil enable --without dtrace,fs) → unlocks ES + DTrace tests"
+  echo "Live demo: CUA_RUN_E2E_CALC=1 ./scripts/smoke.sh"
+  echo "Other live targets:"
+  echo "  • CUA_RUN_CHESS=1   → T4/T5 grounding on Chess (needs Chess.app + new game)"
+  echo "  • CUA_RUN_PAGES=1   → T3 AppleScript on Pages toolbar (needs open document)"
+  echo "  • Live SC#3 overlay-excluded screencap: see PHASE-5-DEMO.md"
+  echo "  • Live DYLD inject smoke: see PHASE-6-DEMO.md"
+  echo "  • SIP partial-off (csrutil enable --without dtrace,fs) → unlocks ES + DTrace"
 else
   red "SMOKE FAILED — see output above."
 fi
