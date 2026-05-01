@@ -172,7 +172,7 @@ struct SessionDiffView: View {
 
             // Target label
             if let label = action["target_label"] as? String {
-                Text(""\(label)"")
+                Text("\"\(label)\"")
                     .font(.system(size: 10, weight: .regular))
                     .foregroundColor(.gray)
                     .lineLimit(1)
