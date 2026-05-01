@@ -177,7 +177,7 @@ class B5_AppleScriptFallback(BranchBase):
             return None
 
         # Step 3: Re-check if claim is still valid (another branch may have won)
-        claim = self._idempotency_store.is_claimed(action_id)
+        claim = self._idempotency.is_claimed(action_id)
         if claim is None:
             # Claim was lost (someone else fired)
             self._log.debug(
@@ -309,7 +309,7 @@ class B5_AppleScriptFallback(BranchBase):
             outcome = await c4_channel.fire(
                 action=action,
                 target=as_target,
-                store=self._idempotency_store,
+                store=self._idempotency,
                 cancel_event=cancel_event,
             )
 

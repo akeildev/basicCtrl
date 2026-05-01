@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+import anyio
 import structlog
 
 from cua_overlay.recovery.branches import BranchBase
@@ -252,7 +253,7 @@ class B2_OCRRegrounding(BranchBase):
             outcome = await c3_channel.fire(
                 action=action,
                 target=regrounded_target,
-                store=self._idempotency_store,
+                store=self._idempotency,
                 cancel_event=cancel_event,
             )
 

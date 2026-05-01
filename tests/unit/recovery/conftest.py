@@ -6,7 +6,7 @@ without full integration setup.
 from __future__ import annotations
 
 from typing import Any, Callable, TypedDict
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -66,13 +66,13 @@ def verifier_mock() -> AsyncMock:
 
 
 @pytest.fixture
-def session_writer_mock() -> AsyncMock:
-    """AsyncMock for SessionWriter.append_action_log.
+def session_writer_mock() -> MagicMock:
+    """MagicMock for SessionWriter (sync API; append_action_log is synchronous).
 
     Tests can assert calls: session_writer_mock.append_action_log.assert_called
     """
-    mock = AsyncMock()
-    mock.append_action_log = AsyncMock()
+    mock = MagicMock()
+    mock.append_action_log = MagicMock()
     return mock
 
 
@@ -122,24 +122,24 @@ def channel_outcome_mock() -> object:
 
 
 @pytest.fixture
-def translator_registry_mock() -> AsyncMock:
-    """AsyncMock for TranslatorRegistry.
+def translator_registry_mock() -> MagicMock:
+    """MagicMock for TranslatorRegistry (sync .get).
 
     Tests can configure: registry.get("T1") to return mocked translators.
     """
-    mock = AsyncMock()
-    mock.get = AsyncMock(return_value=None)
+    mock = MagicMock()
+    mock.get = MagicMock(return_value=None)
     return mock
 
 
 @pytest.fixture
-def channel_registry_mock() -> AsyncMock:
-    """AsyncMock for ChannelRegistry.
+def channel_registry_mock() -> MagicMock:
+    """MagicMock for ChannelRegistry (sync .get).
 
     Tests can configure: registry.get("C1") to return mocked channels.
     """
-    mock = AsyncMock()
-    mock.get = AsyncMock(return_value=None)
+    mock = MagicMock()
+    mock.get = MagicMock(return_value=None)
     return mock
 
 

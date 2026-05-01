@@ -17,6 +17,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from datetime import datetime, timezone
+
 from cua_overlay.actions.channels.base import ChannelOutcome
 from cua_overlay.recovery.branches import (
     B1_Rescroll,
@@ -27,6 +29,23 @@ from cua_overlay.recovery.branches import (
     RecoveryBranch,
 )
 from cua_overlay.recovery.classifier import FailureCtx
+from cua_overlay.state.graph import Bbox, UIElement
+
+
+def _ui_element(label: str = "button") -> UIElement:
+    """Construct a minimal valid UIElement for tests that fire channels."""
+    now = datetime.now(timezone.utc)
+    return UIElement(
+        role="AXButton",
+        role_path="AXApplication/AXWindow/AXButton",
+        label=label,
+        bbox=Bbox(x=0, y=0, w=10, h=10),
+        discovered_at=now,
+        last_seen_at=now,
+        pid=1234,
+        bundle_id="com.test.app",
+        window_id=1,
+    )
 
 
 # ===== B1_RESCROLL TESTS =====
@@ -54,19 +73,19 @@ async def test_b1_scrolls_target_into_view(
         channel_registry=channel_registry_mock,
         idempotency_store=idempotency_store_mock,
         session_writer=session_writer_mock,
-        walk_subtree_fn=AsyncMock(return_value=[MagicMock(label="button")]),
+        walk_subtree_fn=AsyncMock(return_value=[_ui_element("button")]),
         aggregator=None,
     )
 
     # Mock registry returns
-    t1_mock = AsyncMock()
-    c2_mock = AsyncMock()
+    t1_mock = MagicMock()
+    c2_mock = MagicMock()
     c2_mock.fire = AsyncMock(
         return_value=channel_outcome_mock(channel="C2", status="fired")
     )
     translator_registry_mock.get.side_effect = lambda tier: t1_mock if tier == "T1" else None
     channel_registry_mock.get.side_effect = lambda ch: c2_mock if ch == "C2" else None
-    idempotency_store_mock.try_claim.return_value = AsyncMock(claimed_by_channel="C2")
+    idempotency_store_mock.try_claim.return_value = MagicMock(claimed_by_channel="C2")
 
     # Prepare failure context
     ctx = {

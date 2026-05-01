@@ -21,6 +21,7 @@ Pattern:
 """
 from __future__ import annotations
 
+import anyio
 import asyncio
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
@@ -270,7 +271,7 @@ class B1_Rescroll(BranchBase):
             outcome = await c2_channel.fire(
                 action=action,
                 target=translator_target,
-                store=self._idempotency_store,
+                store=self._idempotency,
                 cancel_event=cancel_event,
             )
 
