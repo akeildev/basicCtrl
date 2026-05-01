@@ -5,14 +5,16 @@ coalesced keystroke recording, and automatic Recipe JSON synthesis.
 
 Submodules:
   - schemas.py — ObservedAction, Recipe, RecipeStep, RecipeParam, RecipePrecondition
-  - recorder.py (future) — CGEvent tap consumer, JSONL → ObservedAction conversion
+  - recorder.py — CGEvent tap consumer, JSONL → ObservedAction conversion
+  - coalesce.py — keystroke coalescing via CFRunLoopTimer (0.5s)
   - recipe_synth.py (future) — sequence of ObservedAction → Recipe JSON
-  - coalesce.py (future) — keystroke coalescing via CFRunLoopTimer (0.5s)
 
 All frozen=True per Phase 1-3 precedent.
 """
 from __future__ import annotations
 
+from .coalesce import KeystrokeCoalescer
+from .recorder import LearningRecorder
 from .schemas import (
     ObservedAction,
     Recipe,
@@ -22,6 +24,8 @@ from .schemas import (
 )
 
 __all__ = [
+    "KeystrokeCoalescer",
+    "LearningRecorder",
     "ObservedAction",
     "Recipe",
     "RecipeParam",
