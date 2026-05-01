@@ -1,7 +1,7 @@
 ---
 phase: 6
 slug: private-spis-durability-hardening
-status: draft
+status: in-progress
 nyquist_compliant: false
 wave_0_complete: false
 created: 2026-05-01
@@ -9,68 +9,52 @@ created: 2026-05-01
 
 # Phase 6 — Validation Strategy
 
-> Per-phase validation contract for feedback sampling during execution.
-
----
-
 ## Test Infrastructure
 
 | Property | Value |
 |----------|-------|
-| **Framework** | {pytest 7.x / jest 29.x / vitest / go test / other} |
-| **Config file** | {path or "none — Wave 0 installs"} |
-| **Quick run command** | `{quick command}` |
-| **Full suite command** | `{full command}` |
-| **Estimated runtime** | ~6 seconds |
-
----
+| **Framework** | pytest 7.x + pytest-asyncio 0.23+ |
+| **Config file** | tests/conftest.py (existing Phase 1-5) |
+| **Quick run command** | `pytest tests/test_spi_probes.py -x` |
+| **Full suite command** | `pytest tests/test_spi_*.py -x` |
+| **Estimated runtime** | ~30 seconds |
 
 ## Sampling Rate
 
-- **After every task commit:** Run `{quick run command}`
-- **After every plan wave:** Run `{full suite command}`
-- **Before `/gsd-verify-work`:** Full suite must be green
-- **Max feedback latency:** 6 seconds
-
----
+- **After every task commit:** Run `pytest tests/test_spi_probes.py -x` (~5s)
+- **After every plan wave:** Run `pytest tests/test_spi_*.py -x` (~30s)
+- **Before `/gsd-verify-work`:** Full suite must be green + manual SPI smoke test on Akeil's Mac
+- **Max feedback latency:** 30 seconds
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 6-01-01 | 01 | 1 | REQ-{XX} | T-6-01 / — | {expected secure behavior or "N/A"} | unit | `{command}` | ✅ / ❌ W0 | ⬜ pending |
-
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
-
----
+| Task ID | Plan | Wave | Requirement | Behavior | Test Type | Automated Command | Status |
+|---------|------|------|-------------|----------|-----------|-------------------|--------|
+| 6-01-01 | 01 | 0 | SPI-01..08 | All 8 probes return bool | unit | `pytest tests/test_spi_probes.py -x` | ⬜ pending |
+| 6-01-02 | 01 | 0 | SPI-01..08 | probe_spi_capabilities() returns SPICapabilities | unit | `pytest tests/test_spi_probes.py::test_probe_spi_capabilities_returns_dataclass -xvs` | ⬜ pending |
+| 6-02-01 | 02 | 0 | SPI-01..08 | AppProfile has 8 spi_*_available fields | unit | `pytest tests/test_profile_spi.py::test_app_profile_has_spi_fields -xvs` | ⬜ pending |
 
 ## Wave 0 Requirements
 
-- [ ] `{tests/test_file.py}` — stubs for REQ-{XX}
-- [ ] `{tests/conftest.py}` — shared fixtures
-- [ ] `{framework install}` — if no framework detected
-
-*If none: "Existing infrastructure covers all phase requirements."*
-
----
+- [ ] `tests/test_spi_probes.py` — unit tests for all 8 capability probes
+- [ ] `tests/test_profile_spi.py` — AppProfile SPI field tests
+- [ ] `.planning/phases/06-private-spis-durability-hardening/06-VALIDATION.md` — filled (this file)
 
 ## Manual-Only Verifications
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| {behavior} | REQ-{XX} | {reason} | {steps} |
-
-*If none: "All phase behaviors have automated verification."*
-
----
+| SkyLight channel fires background events with no cursor warp | SPI-01 | Requires Swift visualizer sidecar + manual observation | Phase 6 Wave 1+ after SkyLight bridge ships |
+| AX remote notifications keep Slack trees alive when occluded | SPI-02 | Requires running Slack + occluding window | Phase 6 Wave 1+ integration test |
+| DYLD injection succeeds on arm64e | SPI-06 | Requires arm64e signing proof-of-concept | Phase 6 Wave 3 spike |
 
 ## Validation Sign-Off
 
 - [ ] All tasks have `<automated>` verify or Wave 0 dependencies
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
+- [ ] Wave 0 covers all MISSING test references
 - [ ] No watch-mode flags
-- [ ] Feedback latency < 6s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [ ] Feedback latency < 30s
+- [ ] `nyquist_compliant: true` set in frontmatter after Wave 0 complete
 
-**Approval:** {pending / approved YYYY-MM-DD}
+**Approval:** pending (populated Wave 0)
