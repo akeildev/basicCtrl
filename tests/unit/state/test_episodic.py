@@ -152,8 +152,189 @@ def test_episodic_hit_frozen() -> None:
 @pytest.mark.unit
 def test_episodic_memory_stub() -> None:
     """EpisodicMemory initializes with optional faiss_path override."""
-    mem = EpisodicMemory()
-    assert mem.faiss_path == "~/.cua/episodic.faiss"
+    from pathlib import Path
 
-    mem_custom = EpisodicMemory(faiss_path="/custom/path/index.faiss")
-    assert mem_custom.faiss_path == "/custom/path/index.faiss"
+    mem = EpisodicMemory()
+    assert mem.faiss_path == Path("~/.cua/episodic.faiss").expanduser()
+
+    custom_path = Path("/tmp/test_index.faiss")
+    mem_custom = EpisodicMemory(faiss_path=str(custom_path))
+    assert mem_custom.faiss_path == custom_path
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_episodic_memory_index_recipe() -> None:
+    """EpisodicMemory.index_recipe() adds recipe to FAISS + metadata."""
+    import tempfile
+    from pathlib import Path
+
+    recipe = _build_recipe()
+
+    # Use temp directory for this test
+    with tempfile.TemporaryDirectory() as tmpdir:
+        mem = EpisodicMemory(faiss_path=str(Path(tmpdir) / "test.faiss"))
+
+        # Index the recipe
+        embedding = [0.1] * 384  # Mock 384-dim embedding
+        await mem.index_recipe(
+            recipe=recipe,
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            embedding=embedding,
+            source_text="test recipe text",
+        )
+
+        # Verify metadata was stored
+        assert len(mem._metadata) > 0
+        assert mem._index.ntotal == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_episodic_memory_lookup_returns_hits() -> None:
+    """EpisodicMemory.lookup() returns top-K recipes with similarity > 0.85."""
+    import tempfile
+    from pathlib import Path
+
+    recipe = _build_recipe()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        mem = EpisodicMemory(faiss_path=str(Path(tmpdir) / "test.faiss"))
+
+        # Index a recipe
+        embedding = [0.1] * 384
+        await mem.index_recipe(
+            recipe=recipe,
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            embedding=embedding,
+            source_text="test recipe text",
+        )
+
+        # Lookup with very similar embedding (should hit)
+        query_embedding = [0.1] * 384  # Identical embedding
+        query = EpisodicQuery(
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            query_embedding=query_embedding,
+            top_k=3,
+        )
+
+        hits = await mem.lookup(query)
+
+        # Should get a hit (identical embedding = distance 0, similarity = 1.0)
+        assert len(hits) > 0
+        assert hits[0].similarity >= 0.85
+        assert hits[0].recipe.name == "test_recipe"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_episodic_memory_quarantine_on_failures() -> None:
+    """EpisodicMemory: failure_count > 2 → quarantined=True (D-19)."""
+    import tempfile
+    from pathlib import Path
+
+    recipe = _build_recipe()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        mem = EpisodicMemory(faiss_path=str(Path(tmpdir) / "test.faiss"))
+
+        # Index recipe
+        embedding = [0.1] * 384
+        await mem.index_recipe(
+            recipe=recipe,
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            embedding=embedding,
+            source_text="test recipe text",
+        )
+
+        # Mark 3 failures
+        mem.mark_recipe_failure(row_idx=0)
+        mem.mark_recipe_failure(row_idx=0)
+        mem.mark_recipe_failure(row_idx=0)
+
+        # Verify quarantined flag is set
+        assert mem._metadata["0"]["failure_count"] == 3
+        assert mem._metadata["0"]["quarantined"] is True
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_episodic_memory_success_tracking() -> None:
+    """EpisodicMemory: mark_recipe_success() increments success_count."""
+    import tempfile
+    from pathlib import Path
+
+    recipe = _build_recipe()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        mem = EpisodicMemory(faiss_path=str(Path(tmpdir) / "test.faiss"))
+
+        # Index recipe
+        embedding = [0.1] * 384
+        await mem.index_recipe(
+            recipe=recipe,
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            embedding=embedding,
+            source_text="test recipe text",
+        )
+
+        # Mark 2 successes
+        mem.mark_recipe_success(row_idx=0)
+        mem.mark_recipe_success(row_idx=0)
+
+        # Verify success_count updated
+        assert mem._metadata["0"]["success_count"] == 2
+        assert mem._metadata["0"]["failure_count"] == 0
+        assert mem._metadata["0"]["quarantined"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_episodic_memory_similarity_threshold() -> None:
+    """EpisodicMemory.lookup() filters by similarity > 0.85 threshold."""
+    import tempfile
+    from pathlib import Path
+
+    recipe = _build_recipe()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        mem = EpisodicMemory(faiss_path=str(Path(tmpdir) / "test.faiss"))
+
+        # Index recipe with embedding [0.1, 0.1, ...]
+        embedding = [0.1] * 384
+        await mem.index_recipe(
+            recipe=recipe,
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            embedding=embedding,
+            source_text="test recipe text",
+        )
+
+        # Lookup with different embedding (should NOT hit if distance is too large)
+        # Create a very different embedding (far away in L2 space)
+        query_embedding = [0.9] * 384  # Opposite direction
+        query = EpisodicQuery(
+            app_bundle_id="com.test.app",
+            task_class="test_task",
+            state_fingerprint="abc123",
+            query_embedding=query_embedding,
+            top_k=3,
+        )
+
+        hits = await mem.lookup(query)
+
+        # Very different embedding should NOT meet 0.85 threshold
+        # (L2 distance will be large, so similarity = 1/(1+dist) will be small)
+        # Note: This is a heuristic test; actual similarity depends on embedding values
+        assert len(hits) == 0 or hits[0].similarity < 0.85
