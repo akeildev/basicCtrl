@@ -116,6 +116,18 @@ Remaining priorities:
 
 Each one above unlocks a "real medium proven" tick.
 
+## Dead ends — don't redo these
+
+- **File-tee for structlog under pytest**: tried adding a `CUA_DEBUG_LOG_FILE`
+  env var that adds a file-write processor. Doesn't work because
+  `cache_logger_on_first_use=True` caches loggers BEFORE the conftest's
+  autouse `_configure_structlog` fixture re-runs `configure(testing=True)`.
+  Reverted. If you need to debug logs under pytest, either:
+  (a) drop `print(..., file=sys.stderr, flush=True)` into production code
+      (works — used during F1/F2 debugging), OR
+  (b) flip `cache_logger_on_first_use=False` AND drop the autouse fixture
+      AND set the env var BEFORE `cua_overlay.log` is imported (heavy).
+
 ## Hard constraints (do not violate)
 
 - **NO** modifying existing Swift in `libs/cua-driver/Sources/` (CLAUDE.md).
