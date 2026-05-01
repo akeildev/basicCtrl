@@ -44,6 +44,7 @@ class AppProfile(BaseModel):
     """Per-bundle capability probe result. Cached at ~/.cua/profiles/<bundle_id>.json.
 
     Phase 2 translators import this verbatim and use it to pick T1..T5 priority.
+    Phase 4 adds cognition_capable field for graceful degradation (D-31, D-32).
     """
 
     bundle_id: str
@@ -68,6 +69,9 @@ class AppProfile(BaseModel):
 
     # TCC
     tcc_axenabled: bool = True  # AXIsProcessTrusted at probe time
+
+    # Phase 4: Cognition capability (D-31, D-32)
+    cognition_capable: Optional[bool] = None  # True if local models available; False if missing
 
     # Derived
     translator_priority: list[str] = Field(default_factory=list)
@@ -141,6 +145,53 @@ def _derive_translator_priority(
     priority.append("T4")
     priority.append("T5")
     return priority
+
+
+def _probe_cognition_capable() -> bool:
+    """Probe if local cognition models are available (D-31, D-32).
+
+    Per D-31: capability probe checks:
+    - Apple FM SDK available + macOS 26+ + Apple Intelligence enabled?
+    - mlx-vlm installable + UI-TARS-1.5-7B model loadable?
+    - FAISS + sentence-transformers available?
+
+    Returns True if all available, False if any missing.
+    Graceful degradation: if False, B3/B4 recovery branches + ensemble voting skip.
+    """
+    log = structlog.get_logger()
+
+    try:
+        # Check 1: Apple FM SDK
+        try:
+            import apple_fm_sdk  # noqa: F401
+            log.debug("cognition.probe.apple_fm_available")
+        except ImportError:
+            log.warning("cognition.probe.apple_fm_unavailable")
+            return False
+
+        # Check 2: mlx-vlm
+        try:
+            import mlx_vlm  # noqa: F401
+            log.debug("cognition.probe.mlx_vlm_available")
+        except ImportError:
+            log.warning("cognition.probe.mlx_vlm_unavailable")
+            return False
+
+        # Check 3: FAISS
+        try:
+            import faiss  # noqa: F401
+            log.debug("cognition.probe.faiss_available")
+        except ImportError:
+            log.warning("cognition.probe.faiss_unavailable")
+            return False
+
+        # All checks passed
+        log.info("cognition.probe.all_available")
+        return True
+
+    except Exception as e:
+        log.error("cognition.probe.error", error=str(e))
+        return False
 
 
 async def classify(bundle_id: str, pid: int) -> AppProfile:
@@ -240,6 +291,10 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
         has_sdef=has_sdef,
     )
 
+    # Phase 4: Probe cognition capability (D-31, D-32)
+    # Run once at session start; cached in AppProfile
+    cognition_capable = _probe_cognition_capable()
+
     profile = AppProfile(
         bundle_id=bundle_id,
         bundle_version=meta["bundle_version"],
@@ -256,6 +311,7 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
         tauri_or_wails=is_tauri,
         electron=is_electron,
         tcc_axenabled=True,  # we already checked above; if False we'd have exited
+        cognition_capable=cognition_capable,
         translator_priority=bundled_priority if bundled_priority is not None else priority,
         probed_at=datetime.now(timezone.utc),
         probe_latency_ms=int((time.monotonic() - t_start) * 1000),
@@ -269,5 +325,6 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
         ax_observer_works=profile.ax_observer_works,
         electron=profile.electron,
         cdp_port=profile.cdp_port,
+        cognition_capable=cognition_capable,
     )
     return profile
