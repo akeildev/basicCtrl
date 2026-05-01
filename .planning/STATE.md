@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 06-07 + 06-08: DYLD injection spike + full implementation"
-last_updated: "2026-05-01T22:14:07.541Z"
+stopped_at: "Completed 06-09: Durability hardening — LangGraph PostgresSaver test suite"
+last_updated: "2026-05-01T22:17:51.628Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 61
-  completed_plans: 57
-  percent: 93
+  completed_plans: 58
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Phase: 6 (private-spis-durability-hardening) — EXECUTING
-Plan: 8 of 12
+Plan: 9 of 12
 Status: Ready to execute
 Last activity: 2026-05-01
 
@@ -85,6 +85,7 @@ Progress: [███████░░░] 49/49 plans completed (100%)
 | Phase 06 P03 | 8 | 2 tasks | 2 files |
 | Phase 06 P05 | 5 | 2 tasks | 2 files |
 | Phase 06-private-spis-durability-hardening P06 | 8 | 2 tasks | 5 files |
+| Phase 06-private-spis-durability-hardening P09 | 8min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,7 @@ Recent decisions affecting current work:
 - [Phase 02-translators-racing]: Phase 2 ship gate complete: 5 SC integration tests written, PHASE-2-DEMO.md operator runbook in PHASE-1-DEMO.md format; case-sensitive bundle_ids per D-21; SC #2 uses action_type='click' (D-10 RACE) per WARN-4 for AS stagger observability; SC #4 stress on Calculator + WARN-6 C1/C3 dedup; ready for gsd-verifier
 - [Phase 06]: IOKit IMU enumeration via ioreg(1); graceful skip on Intel
 - [Phase ?]: All Tier-B/C SPIs gracefully skip on default Mac (SIP fully on); is_sip_partial_off() helper centralized in probe.py
+- [Phase 06-private-spis-durability-hardening]: Consolidated durability tests into single tests/test_durability.py module for clarity (not split across integration/)
 
 ### Pending Todos
 
@@ -139,8 +141,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-01T22:14:07.539Z
-Stopped at: Completed 06-07 + 06-08: DYLD injection spike + full implementation
+Last session: 2026-05-01T22:17:51.625Z
+Stopped at: Completed 06-09: Durability hardening — LangGraph PostgresSaver test suite
 Resume file: None
 
 **Phase 5 Summary:**
