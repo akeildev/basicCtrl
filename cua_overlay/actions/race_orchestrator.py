@@ -44,6 +44,8 @@ from cua_overlay.actions.race_policy import RacePolicy, resolve_race_policy
 from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
 from cua_overlay.translators.base import TargetSpec, TranslatorTarget
 from cua_overlay.translators.registry import TranslatorRegistry
+from cua_overlay.visualizer.driver import VisualizerBus
+from cua_overlay.visualizer.hud_driver import HUDDriver
 
 
 _log = structlog.get_logger()
@@ -239,6 +241,16 @@ class RaceOrchestrator:
         # 6. Capture HoarePre.
         before_l1 = await self._l1.snapshot(target.element)
 
+        # 6b. Visualizer ghost cursor (Wave 3 integration).
+        # Show ghost cursor BEFORE firing to visualize where the action targets.
+        if target.element.bbox is not None:
+            bbox_centroid = target.element.bbox.centroid
+            await VisualizerBus.send_ghost_cursor(
+                x=float(bbox_centroid[0]),
+                y=float(bbox_centroid[1]),
+                duration_ms=200,  # 200ms lerp per UI-SPEC
+            )
+
         # 7. Pick channels via registry (D-14 default mapping).
         candidate_channels = self._channels.select(profile.translator_priority, effective)
         if not candidate_channels:
@@ -277,6 +289,31 @@ class RaceOrchestrator:
             ax_element=target.ax_element,
             timeout_ms=50,
         )
+
+        # 10b. Visualizer post-action callbacks (Wave 3 integration).
+        # Send highlight box if target has bbox.
+        if target.element.bbox is not None:
+            await VisualizerBus.send_highlight(
+                bbox_x=target.element.bbox.x,
+                bbox_y=target.element.bbox.y,
+                bbox_width=target.element.bbox.w,
+                bbox_height=target.element.bbox.h,
+                label=target.element.label[:40],
+                tier=action.tier or "T1",
+                channel=action.channel or "C1",
+            )
+        # Send HUD update via hud_driver (action added to history).
+        hud = HUDDriver()
+        if target.element.label:
+            hud.append_action(
+                action_type=action_type,
+                target_label=target.element.label,
+                tier=action.tier or "T1",
+                channel=action.channel or "C1",
+                status="verified" if post.verified else "failed",
+                status_detail=post.healed_to if post.healed_to else None,
+            )
+            hud.send_hud_update()
 
         # 11. Record duplicate-receipt 2s ring buffer (D-19, AFTER verify).
         self._duplicate.record(
