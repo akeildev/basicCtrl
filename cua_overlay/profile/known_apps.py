@@ -43,7 +43,10 @@ KNOWN_APPS: dict[str, KnownApp] = {
         name="Calculator",
         electron=False,
         has_sdef=False,
-        translator_priority=["T1", "T4"],
+        # T5 (Pixel) is the universal fallback per
+        # _derive_translator_priority's contract — must always be present
+        # at the tail.
+        translator_priority=["T1", "T4", "T5"],
         cdp_after_relaunch=False,
         min_known_version=None,
         notes="Phase 1 baseline target",

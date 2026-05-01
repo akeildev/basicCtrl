@@ -19,13 +19,21 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 from cua_overlay.actions.race_policy import RacePolicy
 
-pytestmark = [pytest.mark.integration, pytest.mark.manual]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.manual,
+    pytest.mark.skipif(
+        os.environ.get("CUA_RUN_PAGES") != "1",
+        reason="Pages.app must be open with a document; set CUA_RUN_PAGES=1 to run",
+    ),
+]
 
 
 @pytest.mark.asyncio

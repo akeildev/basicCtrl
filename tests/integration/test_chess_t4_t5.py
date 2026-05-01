@@ -13,12 +13,23 @@ take 1-5s (Pitfall C — wrapped in asyncio.to_thread inside T4).
 from __future__ import annotations
 
 import asyncio
+import os
 
 import pytest
 
 from cua_overlay.actions.race_policy import RacePolicy
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    # Skipped by default — needs Chess.app installed AND uitag (T4 SoM)
+    # able to ground "white pawn at e2" via screen capture, which requires
+    # a visible Chess board and a working ML grounder. Run manually with
+    # CUA_RUN_CHESS=1 after launching Chess and starting a new game.
+    pytest.mark.skipif(
+        os.environ.get("CUA_RUN_CHESS") != "1",
+        reason="Chess.app + uitag grounder required; set CUA_RUN_CHESS=1 to run",
+    ),
+]
 
 
 @pytest.mark.asyncio
@@ -120,13 +131,18 @@ async def test_t4_t5_on_chess_e2_to_e4(chess_launcher) -> None:
         # captures pixel ROI hash for the pre/post diff. Chess board is the
         # whole window's content area; full-window ROI is sufficient for
         # detecting a pawn move.
+        _now = datetime.now(timezone.utc)
         chess_target = UIElement(
-            composite_key="chess_window",
             role="AXWindow",
+            role_path="AXApplication/AXWindow",
             label="Chess",
             bbox=Bbox(x=0, y=0, w=600, h=600),  # placeholder — L1 reads window pixels
-            source=Source.PIXEL,
-            captured_at=datetime.now(timezone.utc),
+            source=[Source.PIXEL],
+            discovered_at=_now,
+            last_seen_at=_now,
+            pid=pid,
+            bundle_id="com.apple.Chess",
+            window_id=0,
         )
         l1_pre = L1Cheap()
         pre_snapshot = await l1_pre.snapshot(chess_target)
