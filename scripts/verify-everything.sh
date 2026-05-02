@@ -146,6 +146,9 @@ run_pytest_gate "memory"         "CUA_RUN_E2E_MEMORY"      "tests/integration/te
 # ANTHROPIC_API_KEY is unset. Either path proving the wire-up is enough.
 run_pytest_gate "recovery-real"  "CUA_RUN_E2E_RECOVERY_REAL" "tests/integration/test_recovery_b3_b4_e2e.py"        "yes"
 run_pytest_gate "canary"         "CUA_RUN_E2E_CANARY"      "tests/integration/test_canary_multi_app.py"            "$HAS_CALCULATOR"
+# J3 cross-app: Calculator + TextEdit produce ~/math.txt. TextEdit is always
+# present so the precondition is just Calculator.
+run_pytest_gate "cross-app"      "CUA_RUN_E2E_CROSS_APP"   "tests/integration/test_cross_app_demo.py"              "$HAS_CALCULATOR"
 
 # ----------------------------------------------------------------------
 # 5. Status table
