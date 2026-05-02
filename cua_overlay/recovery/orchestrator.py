@@ -185,7 +185,7 @@ class RecoveryOrchestrator:
                     "ts": datetime.utcnow().isoformat(),
                 }
                 recovery_log_events.append(event)
-                await self._session.append_action_log(event)
+                self._session.append_action_log(event)
 
                 _log.info("recovery.breaker_tripped", action_id=action_id)
                 await self._escalate_to_user(
@@ -211,7 +211,7 @@ class RecoveryOrchestrator:
                     "ts": datetime.utcnow().isoformat(),
                 }
                 recovery_log_events.append(event)
-                await self._session.append_action_log(event)
+                self._session.append_action_log(event)
 
                 _log.info(
                     "recovery.heal_budget_exceeded",
@@ -279,7 +279,7 @@ class RecoveryOrchestrator:
                     "ts": datetime.utcnow().isoformat(),
                 }
                 recovery_log_events.append(event)
-                await self._session.append_action_log(event)
+                self._session.append_action_log(event)
 
                 _log.info(
                     "recovery.succeeded",
@@ -307,7 +307,7 @@ class RecoveryOrchestrator:
                     "ts": datetime.utcnow().isoformat(),
                 }
                 recovery_log_events.append(event)
-                await self._session.append_action_log(event)
+                self._session.append_action_log(event)
 
                 _log.debug(
                     "recovery.branch_failed",
@@ -354,7 +354,7 @@ class RecoveryOrchestrator:
             "ts": datetime.utcnow().isoformat(),
         }
         recovery_log_events.append(event)
-        await self._session.append_action_log(event)
+        self._session.append_action_log(event)
 
         _log.info(
             "recovery.exhausted",
@@ -481,7 +481,7 @@ class RecoveryOrchestrator:
             "ts": datetime.utcnow().isoformat(),
         }
 
-        await self._session.append_action_log(event)
+        self._session.append_action_log(event)
 
         if self._escalate_callback is not None:
             res = self._escalate_callback(event)

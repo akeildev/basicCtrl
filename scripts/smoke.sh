@@ -121,6 +121,29 @@ else
 fi
 
 # ----------------------------------------------------------------------
+# 4c. End-to-end Recovery Orchestrator demo (live, OPT-IN)
+# ----------------------------------------------------------------------
+echo
+echo "[4c/4] End-to-end Recovery Orchestrator on Calculator (B1-B5 dispatch)"
+echo "  Set CUA_RUN_E2E_RECOVERY=1 to run. Requires Accessibility grant."
+if [[ "${CUA_RUN_E2E_RECOVERY:-0}" == "1" ]]; then
+  pkill -9 -x Calculator 2>/dev/null || true
+  sleep 2
+  REC_OUT=$(CUA_RUN_E2E_RECOVERY=1 uv run pytest \
+      tests/integration/test_recovery_orchestrator_e2e.py \
+      -q --no-header -o addopts="" --tb=short 2>&1 | tail -5 || true)
+  echo "$REC_OUT"
+  if echo "$REC_OUT" | grep -qE "1 passed"; then
+    green "  ✓ RecoveryOrchestrator.attempt drove branches B1+B2+B4 on Calculator"
+  else
+    red "  ✗ Recovery orchestrator e2e failed — investigate above"
+    EXIT_CODE=1
+  fi
+else
+  yellow "  ↷ Skipped (set CUA_RUN_E2E_RECOVERY=1 to run live recovery demo)"
+fi
+
+# ----------------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------------
 hr

@@ -85,7 +85,12 @@ medium when you do proper tests and everything."
 - ❓ Vision / OCR (T4+C3) — non-AX apps (Chess proven that uitag fires but the
   test needs a live game)
 - ❓ Pixel / SkyLight (T5+C1) — universal fallback path
-- ❓ Recovery branches — induce a failure, verify B1-B5 actually take over
+- 🟡 Recovery branches — orchestrator + B1-B5 actually run end-to-end on a
+  synthetic FailureCtx (`test_recovery_orchestrator_e2e.py`); CLASSIFIER +
+  branch_attempt + terminal events all fire. **NOT YET WIRED into the
+  production action path** — see F10. Healing tools call race_orch.execute
+  and stop at verified=False; recovery never kicks in. Wiring it is the
+  next priority.
 - ❓ Cognition layer — ensemble vote on a real action with mocked oracles
 - ❓ Replay engine — record a session, scrub back through it
 - ❓ Durability — kill -9 mid-task, verify resume picks up from last checkpoint
@@ -111,11 +116,30 @@ medium when you do proper tests and everything."
   before each AddNotification so each action gets a fresh refcon.
   Verifier now reports `verified=True, L0=1.0, confidence=1.0` per click,
   14-25ms post-fire. See INTEGRATION-DEBUG.md F9 for full breakdown.
+- **Recovery e2e** + **F11 RESOLVED**. New test
+  `test_recovery_orchestrator_e2e.py` (CUA_RUN_E2E_RECOVERY=1) constructs
+  the full RecoveryOrchestrator with all 5 branches + real classifier +
+  circuit breaker against a running Calculator. Drives a synthetic
+  PERCEPTUAL FailureCtx through `recovery.attempt(...)` and asserts
+  branch_attempt + terminal recovery events emit. Surfaced **F11**:
+  RecoveryOrchestrator was awaiting `session.append_action_log` (sync
+  method) at 6 sites — would've crashed in production but unit tests
+  used AsyncMock so the type mismatch never showed. Fixed by removing
+  `await` everywhere. See INTEGRATION-DEBUG.md F11.
+- **Documented F10**: RecoveryOrchestrator is NOT instantiated anywhere
+  in production. healing_tools call race_orch.execute and stop at
+  verified=False; recovery branches are dead code in production. Wiring
+  it is now top priority for next iteration.
 
 Remaining priorities:
 
-1. **Recovery e2e** — induce a verify failure on a Calculator click (mock the
-   verifier), assert B1 (rescroll) takes over and re-fires.
+1. **Wire RecoveryOrchestrator into production (F10 fix)** — instantiate
+   B1-B5 + classifier + circuit breaker in main.py, call
+   `recovery.attempt(failure_ctx)` from `click_with_healing` (and other
+   healing tools) when `post.verified == False`. Surface
+   `verified | recovered | escalated_to_user` in the tool response.
+   This is the highest-leverage change: turns the 525-test recovery
+   layer from dead code into a real self-healing loop.
 
 2. **Durability e2e** — start a multi-step task, kill the Python process via
    SIGKILL after step 2, restart, verify `resume_from_crash()` picks up at

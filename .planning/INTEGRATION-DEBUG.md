@@ -137,3 +137,95 @@ Latency: 14-25ms post-fire to event arrival. Per-action overhead added
 by the F9 fix: ~50ms warmup `await anyio.sleep(0.05)` between
 subscribe_pending and channel coro construction (lets the AXObserver IPC
 register on the target app's run loop).
+
+---
+
+## F10: RecoveryOrchestrator is orphaned — never wired into the action path
+
+**Affected:** `cua_overlay/mcp_server/healing_tools.py` (all 6 healing tools),
+`cua_overlay/cache/replay.py` (cassette replay).
+
+**Hypothesis:** When `race_orch.execute()` returns `verified=False`,
+something kicks in to retry via recovery branches.
+
+**Evidence against:** `grep -rn 'RecoveryOrchestrator' cua_overlay/` shows
+zero call sites for `RecoveryOrchestrator()` (the constructor) outside of
+`__init__.py` re-exports and `tests/unit/recovery/`. The branches list
+B1-B5 are never even instantiated in production. `click_with_healing` and
+the other healing tools just return `verified: post.verified` and stop.
+
+**Root cause:** Phase-2 wiring only — main.py (mcp_server bootstrap)
+constructs RaceOrchestrator and forwards `post.verified` to the caller,
+but never instantiates RecoveryOrchestrator + branches and never invokes
+them on `verified=False`.
+
+**Implication:** "Self-healing" Mac CU framework's healing layer has 525
+unit tests + 5 branch implementations + a classifier + circuit breaker
++ heal-rate budget — and it has never run on a real failure in
+production. The recovery layer is dead code.
+
+**Fix priority:** High. The whole product premise is "never silently
+fails." Without RecoveryOrchestrator in the path, every verified=False
+result silently fails.
+
+**Suggested fix sequence (next iteration):**
+1. Construct branches B1-B5 in main.py (alongside translator/channel
+   registration) with their real dependency surfaces.
+2. Construct RecoveryOrchestrator with the FailureClassifier + CircuitBreaker.
+3. After `race_orch.execute(...)` returns post.verified=False in
+   click_with_healing, build a FailureCtx and call recovery_orch.attempt().
+4. Surface recovery results in the tool response (verified | recovered |
+   escalated_to_user).
+
+---
+
+## F11: RecoveryOrchestrator awaits a sync method — production crash
+
+**Surfaced by:** `tests/integration/test_recovery_orchestrator_e2e.py`
+(CUA_RUN_E2E_RECOVERY=1) — first time the recovery path was exercised
+against a REAL SessionWriter (unit tests use AsyncMock).
+
+**Symptom:** `TypeError: 'NoneType' object can't be awaited` at
+orchestrator.py:310.
+
+**Root cause:** RecoveryOrchestrator was authored against an interface
+that assumed `session_writer.append_action_log` was async. The real
+SessionWriter implementation is sync (returns None). Six occurrences in
+orchestrator.py: lines 188, 214, 282, 310, 357, 484. Unit tests mocked
+SessionWriter with AsyncMock so the type mismatch never surfaced.
+
+**Fix:** Drop `await` on all six sites (`sed -i '' 's/await
+self\._session\.append_action_log/self._session.append_action_log/g'`).
+The branches' base class `BranchBase._emit_event` already does the sync
+call correctly.
+
+**Side effect:** Unit tests now emit
+`RuntimeWarning: coroutine '_execute_mock_call' was never awaited`
+because the AsyncMock's coroutine is never awaited. Tests still pass
+(they assert call_args, not the await). Worth flipping the unit test
+fixtures to MagicMock instead of AsyncMock for these methods, but
+non-blocking.
+
+**Verification:** `CUA_RUN_E2E_RECOVERY=1 uv run pytest
+tests/integration/test_recovery_orchestrator_e2e.py` — recovery_log_events
+populated, branch_attempt events emitted (B1+B2+B4 for PERCEPTUAL),
+terminal recovery event emitted.
+
+---
+
+## Calculator AX-tree flakiness across many test runs (environmental)
+
+After ~50+ test cycles in a session against Calculator, macOS sometimes
+launches Calculator without rendering its keypad — `AXWindows` reports
+1 window but the AX tree under it has zero AXButton descendants. Closing
++ relaunching Calculator does not always recover; only restarting the
+Mac (or waiting tens of minutes) reliably restores the UI.
+
+**Workaround:** Tests should be designed to cope with this state. The
+existing `calculator_pid` fixture has an AX-readiness probe that should
+detect this and `pytest.skip(...)` gracefully (line 178-181). When debug
+sessions hit this, kill Calculator + wait + try a different test pattern.
+
+**Not a code regression** — the F9-fixed e2e race orchestrator passed
+~6 times in a row earlier in the same session before Calculator entered
+this stuck state.
