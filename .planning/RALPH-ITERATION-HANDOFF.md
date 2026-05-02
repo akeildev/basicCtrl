@@ -70,6 +70,14 @@ medium when you do proper tests and everything."
   → `tests/integration/test_textedit_e2e_typing.py` (CUA_RUN_E2E_TEXTEDIT=1)
   ⚠️ One-time TCC Automation grant required — System Settings → Privacy &
      Security → Automation → approve Python for TextEdit
+- ✅ **Race orchestrator end-to-end** via `RaceOrchestrator.execute(...)` —
+  same Calculator 5+3=8 scenario but through the full Phase 2 path:
+  classify → select_for_priority → resolve+validate → AX subscribe →
+  L1 snapshot → multi-channel race (C2+C1+C3 fan out) → first-claimer
+  idempotency → verify → race_winner/race_loser NDJSON telemetry. T1
+  wins every step (C2 via kAXPress, in-process). C1+C3 lose with
+  `idempotency_lost`. → `tests/integration/test_calculator_race_orchestrator_e2e.py`
+  (CUA_RUN_E2E_RACE=1)
 
 **Mediums NOT yet proven end-to-end (next priorities):**
 - ❓ CDP / Electron (T2+C5) — Slack/Discord/VSCode require relaunch with
@@ -77,8 +85,6 @@ medium when you do proper tests and everything."
 - ❓ Vision / OCR (T4+C3) — non-AX apps (Chess proven that uitag fires but the
   test needs a live game)
 - ❓ Pixel / SkyLight (T5+C1) — universal fallback path
-- ❓ Race orchestrator end-to-end — multiple translators competing, idempotency
-  enforced, structured logging
 - ❓ Recovery branches — induce a failure, verify B1-B5 actually take over
 - ❓ Cognition layer — ensemble vote on a real action with mocked oracles
 - ❓ Replay engine — record a session, scrub back through it
@@ -88,15 +94,25 @@ medium when you do proper tests and everything."
 
 ✅ Done in this iteration:
 - TextEdit T3+C4 e2e demo (commit 8be7708)
+- **Race orchestrator e2e** — full Phase 2 path drives Calculator 5+3=8
+  via `RaceOrchestrator.execute(...)`. T1 wins every step; C1+C3 lose with
+  `idempotency_lost`. NDJSON race telemetry written to action_log.
 
 Remaining priorities:
 
-1. **Race orchestrator e2e** — same Calculator scenario but go through the
-   `RaceOrchestrator.execute(...)` API (not bare T1/C2). Verifies the full
-   Phase 2 racing path actually fires + reports a winner. Heavy wiring
-   (translator_registry, channel_registry, axmgr, aggregator, l1_cheap,
-   classifier, session_writer, idem_store, duplicate_receipt) — see
-   `cua_overlay/actions/race_orchestrator.py:134`.
+1. **Fix F9 (verifier never confirms via push events on Calculator buttons)** —
+   the orchestrator's pre-fire `axmgr.expect(timeout_ms=100)` is structurally
+   a no-op (awaits an event that can't yet arrive — action hasn't fired) AND
+   subscribes at the BUTTON, but Calculator buttons don't fire AXValueChanged
+   (F1). L0Push.collect re-subscribes post-fire so events from the
+   button still wouldn't arrive. Result: `verifier_verified=false` even
+   though clicks demonstrably worked. Two fixes possible:
+   (a) Subscribe at AXApplication root + filter by composite_key (matches
+       F1 fix in test_axobserver.py).
+   (b) Make pre-fire `expect()` a non-blocking subscribe-only call; let
+       L0Push await the future via shared subscription registry.
+   See `cua_overlay/actions/race_orchestrator.py:204-239` and
+   `cua_overlay/verifier/axobserver.py:86`.
 
 2. **Recovery e2e** — induce a verify failure on a Calculator click (mock the
    verifier), assert B1 (rescroll) takes over and re-fires.

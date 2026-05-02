@@ -63,3 +63,61 @@ After F1+F2 fixes, expected:
 - ❓ 1 `phase1_e2e::test_all_six_success_criteria`: aggregate, will surface real issues
 
 Remaining ~6 are independent bugs; investigate one at a time.
+
+---
+
+## F9: RaceOrchestrator pre-fire `axmgr.expect()` is a 100ms no-op
+
+**Surfaced by:** `tests/integration/test_calculator_race_orchestrator_e2e.py`
+(CUA_RUN_E2E_RACE=1) — race telemetry shows winners + losers landing as expected,
+display reads "8", but `verifier_verified=false` on every step.
+
+**Hypothesis:** The orchestrator's `axmgr.expect()` call subscribes correctly
+but blocks for 100ms awaiting an event that cannot yet arrive because the
+action hasn't fired. Then L0Push.collect re-subscribes post-fire (50ms more).
+On Calculator buttons (F1) AXValueChanged never fires either way → confidence=0.0
+→ verifier escalates to L3 → L3 unavailable in Phase 1.
+
+**Evidence:** `cua_overlay/actions/race_orchestrator.py:204-239` calls
+`await self._axmgr.expect(target=target.element, ax_element=target.ax_element,
+notifs=["AXValueChanged","AXFocusedUIElementChanged"], timeout_ms=100)` BEFORE
+the channel coros are even built. `expect()` (axobserver.py:86-130)
+subscribes via the bridge then `await asyncio.wait_for(fut, ...)` — i.e.
+blocks waiting for the event. Action fires at line 270+ after expect()
+returns. So:
+- t=0: subscribe + register waiter
+- t=0..100ms: nothing arrives (action hasn't fired)
+- t=100ms: TimeoutError raised, caught with `error=str(exc)` (empty
+  string for asyncio.TimeoutError) → `race.axmgr_expect_failed` debug log
+- t=100ms+: action actually fires
+- t=100..150ms: verifier's L0Push.collect subscribes AGAIN, awaits 50ms
+- Calculator button doesn't fire AXValueChanged → second timeout
+- L0=0.0, L1=0.0 → confidence=0.0 → escalate L3 → L3 unavailable
+
+**Two compounding bugs:**
+1. **Subscription target wrong (= F1 in this code path).** Subscribing on
+   the BUTTON ax_element won't catch display events. Should subscribe at
+   AXApplication root and filter by composite_key.
+2. **Pre-fire expect() blocks instead of register-only.** Need a
+   `subscribe_only()` variant on AXObserverManager that registers the
+   subscription synchronously and returns the future for the verifier's
+   L0Push to await post-fire. Avoids both the 100ms block AND the
+   double-subscribe cost.
+
+**Why the e2e still passes:** The test only asserts on display-state +
+race telemetry, not on `post.verified`. The framework correctly fires
+the action — verification is the broken layer.
+
+**Fix priority:** High. In production this means every action triggers
+a recovery branch because verifier reports verified=false. That's
+expensive (5-branch parallel recovery at Opus pricing) and incorrect.
+
+**Suggested fix sequence (next iteration):**
+1. Add `axmgr.subscribe_pending(target, notifs, action_id, ax_element) -> Future`
+   that registers the subscription + returns the future without awaiting.
+2. Update `RaceOrchestrator.execute` to call `subscribe_pending` instead of
+   `expect`, then pass the returned future to `Aggregator.verify` so
+   L0Push can `await` it.
+3. For the F1 dimension: pass `ax_element = AXUIElementCreateApplication(pid)`
+   when target.element is a child of an AXApplication; filter events in
+   `_passes_filter` by `event.element_key == sub.element_key`.

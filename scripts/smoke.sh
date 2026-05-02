@@ -98,6 +98,29 @@ else
 fi
 
 # ----------------------------------------------------------------------
+# 4b. End-to-end Race Orchestrator demo (live, OPT-IN, same Calculator scenario)
+# ----------------------------------------------------------------------
+echo
+echo "[4b/4] End-to-end Race Orchestrator on Calculator (full Phase 2 path)"
+echo "  Set CUA_RUN_E2E_RACE=1 to run. Requires Accessibility grant."
+if [[ "${CUA_RUN_E2E_RACE:-0}" == "1" ]]; then
+  pkill -9 -x Calculator 2>/dev/null || true
+  sleep 2
+  RACE_OUT=$(CUA_RUN_E2E_RACE=1 uv run pytest \
+      tests/integration/test_calculator_race_orchestrator_e2e.py \
+      -q --no-header -o addopts="" --tb=short 2>&1 | tail -5 || true)
+  echo "$RACE_OUT"
+  if echo "$RACE_OUT" | grep -qE "1 passed"; then
+    green "  ✓ RaceOrchestrator.execute drove Calculator (T1 wins, race telemetry written)"
+  else
+    red "  ✗ Race orchestrator e2e failed — investigate above"
+    EXIT_CODE=1
+  fi
+else
+  yellow "  ↷ Skipped (set CUA_RUN_E2E_RACE=1 to run live race demo)"
+fi
+
+# ----------------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------------
 hr
@@ -106,6 +129,7 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   echo
   echo "Live demo: CUA_RUN_E2E_CALC=1 ./scripts/smoke.sh"
   echo "Other live targets:"
+  echo "  • CUA_RUN_E2E_RACE=1     → full RaceOrchestrator path on Calculator"
   echo "  • CUA_RUN_E2E_TEXTEDIT=1 → T3+C4 AppleScript writes to TextEdit"
   echo "    (one-time TCC Automation grant required — System Settings → Privacy)"
   echo "  • CUA_RUN_CHESS=1   → T4/T5 grounding on Chess (needs Chess.app + new game)"
