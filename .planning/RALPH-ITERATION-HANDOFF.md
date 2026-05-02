@@ -97,38 +97,44 @@ medium when you do proper tests and everything."
 - **Race orchestrator e2e** — full Phase 2 path drives Calculator 5+3=8
   via `RaceOrchestrator.execute(...)`. T1 wins every step; C1+C3 lose with
   `idempotency_lost`. NDJSON race telemetry written to action_log.
+- **F9 RESOLVED — verifier now actually verifies.** Three stacked bugs:
+  (1) pre-fire `axmgr.expect(timeout_ms=100)` was a 100ms-per-action no-op;
+  fixed by adding `axmgr.subscribe_pending` (sync register + return future)
+  + `axmgr.await_future` (awaits the future post-fire). Orchestrator now
+  hands the future to `aggregator.verify(pre_fire_future=...)` so L0Push
+  awaits it instead of re-subscribing.
+  (2) Subscribing at the button caught no AXValueChanged events (F1 again);
+  fixed by passing `AXUIElementCreateApplication(pid)` as the subscribe
+  target.
+  (3) macOS dedupes `AXObserverAddNotification` by (element, notif); only
+  the FIRST refcon stays active. Fixed by calling `AXObserverRemoveNotification`
+  before each AddNotification so each action gets a fresh refcon.
+  Verifier now reports `verified=True, L0=1.0, confidence=1.0` per click,
+  14-25ms post-fire. See INTEGRATION-DEBUG.md F9 for full breakdown.
 
 Remaining priorities:
 
-1. **Fix F9 (verifier never confirms via push events on Calculator buttons)** —
-   the orchestrator's pre-fire `axmgr.expect(timeout_ms=100)` is structurally
-   a no-op (awaits an event that can't yet arrive — action hasn't fired) AND
-   subscribes at the BUTTON, but Calculator buttons don't fire AXValueChanged
-   (F1). L0Push.collect re-subscribes post-fire so events from the
-   button still wouldn't arrive. Result: `verifier_verified=false` even
-   though clicks demonstrably worked. Two fixes possible:
-   (a) Subscribe at AXApplication root + filter by composite_key (matches
-       F1 fix in test_axobserver.py).
-   (b) Make pre-fire `expect()` a non-blocking subscribe-only call; let
-       L0Push await the future via shared subscription registry.
-   See `cua_overlay/actions/race_orchestrator.py:204-239` and
-   `cua_overlay/verifier/axobserver.py:86`.
-
-2. **Recovery e2e** — induce a verify failure on a Calculator click (mock the
+1. **Recovery e2e** — induce a verify failure on a Calculator click (mock the
    verifier), assert B1 (rescroll) takes over and re-fires.
 
-3. **Durability e2e** — start a multi-step task, kill the Python process via
+2. **Durability e2e** — start a multi-step task, kill the Python process via
    SIGKILL after step 2, restart, verify `resume_from_crash()` picks up at
    step 2 not step 0. Needs local Postgres running (`brew services start
    postgresql@16`).
 
-4. **Browser CDP demo** — opt-in via `CUA_RUN_BROWSER=1`. Spawn a chromium
+3. **Browser CDP demo** — opt-in via `CUA_RUN_BROWSER=1`. Spawn a chromium
    subprocess with `--remote-debugging-port`, navigate to example.com via T2,
    click a link, verify URL changed.
 
-5. **Cognition ensemble e2e** — wire mocked Anthropic + OpenAI clients,
+4. **Cognition ensemble e2e** — wire mocked Anthropic + OpenAI clients,
    verify EnsembleVotingEngine returns the majority decision and structured
    logs include the per-oracle confidence.
+
+5. **Pre-existing flaky test** —
+   `tests/unit/actions/test_race_policy.py::test_race_request_for_destructive_blocked_with_warning`
+   passes alone but fails when run with the full suite (order-dependent).
+   Predates the F9 work — confirmed via `git stash` + full run on stashed
+   tree. Likely structlog/caplog state bleed. Investigate one iteration.
 
 Each one above unlocks a "real medium proven" tick.
 

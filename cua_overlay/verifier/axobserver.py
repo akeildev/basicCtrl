@@ -81,6 +81,60 @@ class AXObserverManager:
                 fut.cancel()
         self._waiters.clear()
 
+    # ---------------------------------------------------------------- subscribe_pending
+
+    def subscribe_pending(
+        self,
+        target: UIElement,
+        notifs: list[str],
+        action_id: str,
+        ax_element: Any = None,
+    ) -> "asyncio.Future[AXEvent]":
+        """Subscribe synchronously, return the Future without awaiting.
+
+        Per F9: the orchestrator must register subscription_ts_ns BEFORE the
+        action fires (Pitfall P28's 5ms guard requires it). expect() awaits
+        the future, which blocks for the whole timeout — wasted time and the
+        waiter is dropped before the action even fires. subscribe_pending
+        gives the caller the future so:
+
+          1. Orchestrator calls subscribe_pending pre-fire (subscription_ts_ns
+             captured BEFORE the action fires).
+          2. Orchestrator hands the future to Aggregator.verify.
+          3. L0Push awaits the future post-fire with its own timeout.
+
+        Returns the Future the dispatcher loop will resolve when a matching
+        event arrives. Caller MUST eventually await it (or cancel it) so the
+        waiter table doesn't leak. await_future() is a helper for the await+
+        timeout+cleanup pattern.
+        """
+        sub = self._bridge.subscribe(
+            pid=target.pid,
+            element=ax_element,
+            element_key=target.composite_key,
+            notifications=notifs,
+            action_id=action_id,
+        )
+        fut: asyncio.Future[AXEvent] = asyncio.get_running_loop().create_future()
+        self._waiters.append((sub, fut, set(notifs)))
+        return fut
+
+    async def await_future(
+        self,
+        fut: "asyncio.Future[AXEvent]",
+        timeout_ms: int,
+    ) -> AXEvent:
+        """Await a future returned by subscribe_pending, with timeout + cleanup.
+
+        Raises asyncio.TimeoutError on timeout; drops the matching waiter from
+        the table so it doesn't leak.
+        """
+        try:
+            return await asyncio.wait_for(fut, timeout=timeout_ms / 1000.0)
+        except asyncio.TimeoutError:
+            self._waiters = [w for w in self._waiters if w[1] is not fut]
+            raise
+
     # ---------------------------------------------------------------- expect
 
     async def expect(
@@ -112,22 +166,16 @@ class AXObserverManager:
         """
         # CRITICAL ORDER: subscribe FIRST, await fut SECOND. The action only
         # fires AFTER expect() returns the future — never before subscription_ts_ns
-        # is recorded.
-        sub = self._bridge.subscribe(
-            pid=target.pid,
-            element=ax_element,
-            element_key=target.composite_key,
-            notifications=notifs,
+        # is recorded. Implemented as subscribe_pending + await_future so both
+        # the legacy single-call path and the new orchestrator-driven path share
+        # the same wire.
+        fut = self.subscribe_pending(
+            target=target,
+            notifs=notifs,
             action_id=action_id,
+            ax_element=ax_element,
         )
-        fut: asyncio.Future[AXEvent] = asyncio.get_running_loop().create_future()
-        self._waiters.append((sub, fut, set(notifs)))
-        try:
-            return await asyncio.wait_for(fut, timeout=timeout_ms / 1000.0)
-        except asyncio.TimeoutError:
-            # Drop the waiter so the table doesn't leak.
-            self._waiters = [w for w in self._waiters if w[1] is not fut]
-            raise
+        return await self.await_future(fut, timeout_ms=timeout_ms)
 
     # ---------------------------------------------------------------- dispatch
 

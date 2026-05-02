@@ -154,6 +154,10 @@ def fake_orchestrator():
 
     axmgr = MagicMock()
     axmgr.expect = AsyncMock(return_value=None)
+    # F9: orchestrator now uses subscribe_pending (sync) instead of awaiting
+    # expect(). Mock returns a sentinel future so the call shape is correct.
+    axmgr.subscribe_pending = MagicMock(return_value=object())
+    axmgr.await_future = AsyncMock(return_value=None)
 
     aggregator = MagicMock()
     aggregator.verify = AsyncMock(return_value=_fake_post(verified=True))
@@ -235,16 +239,23 @@ async def test_race_policy_destructive_force_single_channel(fake_orchestrator) -
 
 @pytest.mark.asyncio
 async def test_subscribe_before_fire_ordering(fake_orchestrator) -> None:
-    """axmgr.expect called BEFORE any channel.fire (Phase 1 hard rule)."""
+    """axmgr.subscribe_pending called BEFORE any channel.fire (Phase 1 hard rule + F9).
+
+    Pre-F9 the orchestrator awaited axmgr.expect(timeout_ms=100), which blocked
+    100ms for an event that couldn't yet arrive (action hadn't fired) and
+    dropped the waiter on timeout. Post-F9 the orchestrator calls
+    subscribe_pending which returns the future synchronously and hands it to
+    Aggregator.verify so L0Push can await it post-fire.
+    """
     fo = fake_orchestrator
     call_order: list[str] = []
-    orig_expect = fo.axmgr.expect
+    orig_subscribe = fo.axmgr.subscribe_pending
 
-    async def _track_expect(*args, **kwargs):
-        call_order.append("axmgr.expect")
-        return await orig_expect(*args, **kwargs)
+    def _track_subscribe(*args, **kwargs):
+        call_order.append("axmgr.subscribe_pending")
+        return orig_subscribe(*args, **kwargs)
 
-    fo.axmgr.expect = _track_expect
+    fo.axmgr.subscribe_pending = _track_subscribe
 
     orig_c2 = fo.c2.fire
 
@@ -262,8 +273,8 @@ async def test_subscribe_before_fire_ordering(fake_orchestrator) -> None:
         payload={},
         race_policy=RacePolicy.AUTO,
     )
-    assert "axmgr.expect" in call_order
-    assert call_order.index("axmgr.expect") < call_order.index("c2.fire")
+    assert "axmgr.subscribe_pending" in call_order
+    assert call_order.index("axmgr.subscribe_pending") < call_order.index("c2.fire")
 
 
 @pytest.mark.asyncio
@@ -414,6 +425,10 @@ async def test_as_stagger_default_500ms_when_c4_present() -> None:
 
     axmgr = MagicMock()
     axmgr.expect = AsyncMock(return_value=None)
+    # F9: orchestrator now uses subscribe_pending (sync) instead of awaiting
+    # expect(). Mock returns a sentinel future so the call shape is correct.
+    axmgr.subscribe_pending = MagicMock(return_value=object())
+    axmgr.await_future = AsyncMock(return_value=None)
 
     aggregator = MagicMock()
     aggregator.verify = AsyncMock(return_value=_fake_post(verified=True))

@@ -106,6 +106,7 @@ class Aggregator:
         before_l2: Optional[L2Snapshot] = None,
         expected_text: Optional[str] = None,
         timeout_ms: int = 50,
+        pre_fire_future: Any = None,
     ) -> HoarePost:
         """Run the L0 → L1 → L2 → L3 escalation ladder; return HoarePost.
 
@@ -146,13 +147,18 @@ class Aggregator:
         async with anyio.create_task_group() as tg:
             async def _l0() -> None:
                 nonlocal l0_signals
-                l0_signals = await self._l0.collect(
+                # pre_fire_future kwarg only passed when set, so test mocks
+                # of L0.collect that don't accept it keep working.
+                kwargs: dict[str, Any] = dict(
                     target=target,
                     notifs=notifs,
                     action_id=action.id,
                     timeout_ms=timeout_ms,
                     ax_element=ax_element,
                 )
+                if pre_fire_future is not None:
+                    kwargs["pre_fire_future"] = pre_fire_future
+                l0_signals = await self._l0.collect(**kwargs)
 
             async def _l1() -> None:
                 nonlocal l1_signals

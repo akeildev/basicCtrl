@@ -70,14 +70,25 @@ class L0Push:
         action_id: str,
         timeout_ms: int = 50,
         ax_element: Any = None,
+        pre_fire_future: Any = None,
     ) -> dict[str, float]:
-        """Initialize all signals to 0; await axmgr.expect() with budget;
+        """Initialize all signals to 0; await an AXObserver future with budget;
         map AXEvent → signal key.
 
-        Caller is responsible for calling ``axmgr.expect()`` BEFORE the action
-        fires. This ``collect()`` runs AFTER the action and consumes the
-        resulting future. The first matching event sets exactly one signal
-        to 1.0; the others remain 0.0.
+        Two paths (F9):
+          1. **pre_fire_future provided** — caller (RaceOrchestrator) already
+             called axmgr.subscribe_pending BEFORE firing the action and is
+             handing us the resulting Future. We await it via
+             axmgr.await_future. subscription_ts_ns < action_fires_ts_ns <
+             event_ts_ns is correctly preserved (Pitfall P28 5ms guard works).
+          2. **No future provided** — legacy path. We call axmgr.expect which
+             subscribes + awaits in one go. Subscription happens AFTER the
+             action has fired, so events emitted *before* this subscribe pass
+             would be filtered by the 5ms guard. The orchestrator/F9 path is
+             preferred.
+
+        The first matching event sets exactly one signal to 1.0; the others
+        remain 0.0.
 
         Note: NSWorkspace and kqueue observers are wired here as constructor
         deps so Phase 2 can race their events into the signal dict; Phase 1
@@ -90,13 +101,18 @@ class L0Push:
         signals.setdefault("kqueue.exit", 0.0)
 
         try:
-            event = await self._axmgr.expect(
-                target=target,
-                notifs=notifs,
-                action_id=action_id,
-                timeout_ms=timeout_ms,
-                ax_element=ax_element,
-            )
+            if pre_fire_future is not None:
+                event = await self._axmgr.await_future(
+                    pre_fire_future, timeout_ms=timeout_ms
+                )
+            else:
+                event = await self._axmgr.expect(
+                    target=target,
+                    notifs=notifs,
+                    action_id=action_id,
+                    timeout_ms=timeout_ms,
+                    ax_element=ax_element,
+                )
             sig_key = _AX_NOTIF_TO_SIGNAL.get(event.notif)
             if sig_key:
                 signals[sig_key] = 1.0

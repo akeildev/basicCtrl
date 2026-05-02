@@ -222,6 +222,7 @@ class AXEventBridge:
                 AXObserverAddNotification,
                 AXObserverCreate,
                 AXObserverGetRunLoopSource,
+                AXObserverRemoveNotification,
             )
             from CoreFoundation import (  # type: ignore[import-not-found]
                 CFRunLoopAddSource,
@@ -294,6 +295,12 @@ class AXEventBridge:
             # echoed back to _callback so we can filter "this specific
             # action's events" (Pitfall P28 part 2). The callback uses
             # _refcon_to_action to recover the original action_id.
+            #
+            # macOS dedupes AXObserverAddNotification by (element, notif) —
+            # if already registered, the OLD refcon stays active and our new
+            # action's events arrive with a stale action_id. Remove first to
+            # force fresh registration with our refcon.
+            AXObserverRemoveNotification(observer, element, notif)
             err = AXObserverAddNotification(
                 observer, element, notif, action_refcon
             )

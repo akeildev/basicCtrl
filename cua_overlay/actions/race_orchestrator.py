@@ -200,43 +200,46 @@ class RaceOrchestrator:
             session_id=session_id or self._session.session_id,
         )
 
-        # 5. Subscribe AX notifs BEFORE fan-out (Phase 1 hard rule).
+        # 5. Subscribe AX notifs BEFORE fan-out (Phase 1 hard rule + F9 fix).
+        # subscribe_pending is sync — it registers the subscription with the
+        # bridge (capturing subscription_ts_ns BEFORE the action fires) and
+        # returns the Future for L0Push to await post-fire. The previous
+        # `await self._axmgr.expect(timeout_ms=100)` was a 100ms-per-action
+        # no-op that dropped the waiter before the action even fired (F9).
+        #
+        # F9 part 2: subscribe at the AXApplication ROOT, not at the button.
+        # Calculator's keypad buttons don't fire AXValueChanged — the display
+        # (a child somewhere else in the AX tree) does. Subscribing at the
+        # root catches notifications from any descendant; per-action_id
+        # filtering ensures we only see THIS action's events.
         notifs = ["AXValueChanged", "AXFocusedUIElementChanged"]
-        if target.ax_element is not None:
-            try:
-                await self._axmgr.expect(
-                    target=target.element,
-                    notifs=notifs,
-                    action_id=action.id,
-                    timeout_ms=100,
-                    ax_element=target.ax_element,
-                )
-            except Exception as exc:  # noqa: BLE001
-                # AX subscription failure is non-fatal — verifier will fall
-                # back to L1 cheap diff. Log and continue.
-                _log.debug(
-                    "race.axmgr_expect_failed",
-                    action_id=action.id,
-                    error=str(exc),
-                )
-        else:
-            # Still call expect with no ax_element so callers can verify the
-            # subscribe-before-fire contract via mocks. Phase 1 manager handles
-            # ax_element=None internally.
-            try:
-                await self._axmgr.expect(
-                    target=target.element,
-                    notifs=notifs,
-                    action_id=action.id,
-                    timeout_ms=100,
-                    ax_element=None,
-                )
-            except Exception as exc:  # noqa: BLE001
-                _log.debug(
-                    "race.axmgr_expect_failed",
-                    action_id=action.id,
-                    error=str(exc),
-                )
+        pre_fire_future = None
+        ax_app_root = _ax_application_root(pid)
+        sub_element = ax_app_root if ax_app_root is not None else target.ax_element
+        try:
+            pre_fire_future = self._axmgr.subscribe_pending(
+                target=target.element,
+                notifs=notifs,
+                action_id=action.id,
+                ax_element=sub_element,
+            )
+            # AXObserver registration crosses an IPC boundary into the target
+            # app's process. Give the target's run loop a tick to install the
+            # observation before we fire the action — without this warmup,
+            # events emitted within the first ~30ms of subscribe propagate
+            # back BEFORE the observer table is live and never reach us.
+            # Empirically this is the same warmup the existing test_axobserver
+            # tests pay via `await asyncio.sleep(0.05)` before _fire_cgevent_click.
+            if pre_fire_future is not None:
+                await anyio.sleep(0.05)
+        except Exception as exc:  # noqa: BLE001
+            # AX subscription failure is non-fatal — verifier falls back to
+            # L1 cheap diff (and L0 returns 0.0 signals).
+            _log.debug(
+                "race.axmgr_subscribe_failed",
+                action_id=action.id,
+                error=str(exc),
+            )
 
         # 6. Capture HoarePre.
         before_l1 = await self._l1.snapshot(target.element)
@@ -280,7 +283,8 @@ class RaceOrchestrator:
                 isinstance(outcome, ChannelOutcome) and outcome.status == "fired"
             ) else -1
 
-        # 10. Verify (Phase 1 ladder).
+        # 10. Verify (Phase 1 ladder). Hand pre_fire_future to L0Push so it
+        # awaits the subscription registered BEFORE the action fired (F9).
         post = await self._agg.verify(
             action=action,
             target=target.element,
@@ -288,6 +292,7 @@ class RaceOrchestrator:
             before_l1=before_l1,
             ax_element=target.ax_element,
             timeout_ms=50,
+            pre_fire_future=pre_fire_future,
         )
 
         # 10b. Visualizer post-action callbacks (Wave 3 integration).
@@ -411,3 +416,20 @@ class RaceOrchestrator:
                     "verifier_verified": post.verified,
                 }
             )
+
+
+def _ax_application_root(pid: int) -> Optional[Any]:
+    """Return AXUIElement for the application root, or None if PyObjC isn't
+    available (CI / non-macOS hosts). Used by F9 subscribe-at-root pattern.
+
+    Cheap call (~10us); the orchestrator does this once per action."""
+    try:
+        from ApplicationServices import (  # type: ignore[import-not-found]
+            AXUIElementCreateApplication,
+        )
+    except ImportError:
+        return None
+    try:
+        return AXUIElementCreateApplication(pid)
+    except Exception:  # noqa: BLE001
+        return None

@@ -196,33 +196,34 @@ async def test_race_orchestrator_drives_calculator_5_plus_3_equals_8(
     race_orch, axmgr, bridge, ws, session = _build_orchestrator(tmp_path)
     pid = calculator_pid
     actions: list = []
+    posts: list = []
 
     try:
         # Reset display.
-        action, _ = await _click_via_race(
+        action, post = await _click_via_race(
             race_orch, pid, ["All Clear", "Clear", "AC", "C"]
         )
-        actions.append(action)
+        actions.append(action); posts.append(post)
         await asyncio.sleep(0.3)
 
-        action, _ = await _click_via_race(race_orch, pid, ["5"])
-        actions.append(action)
+        action, post = await _click_via_race(race_orch, pid, ["5"])
+        actions.append(action); posts.append(post)
         await asyncio.sleep(0.2)
 
-        action, _ = await _click_via_race(
+        action, post = await _click_via_race(
             race_orch, pid, ["+", "Add", "Plus"]
         )
-        actions.append(action)
+        actions.append(action); posts.append(post)
         await asyncio.sleep(0.2)
 
-        action, _ = await _click_via_race(race_orch, pid, ["3"])
-        actions.append(action)
+        action, post = await _click_via_race(race_orch, pid, ["3"])
+        actions.append(action); posts.append(post)
         await asyncio.sleep(0.2)
 
-        action, _ = await _click_via_race(
+        action, post = await _click_via_race(
             race_orch, pid, ["=", "Equals", "Equal"]
         )
-        actions.append(action)
+        actions.append(action); posts.append(post)
         await asyncio.sleep(0.5)
 
         display = _read_calculator_display(pid)
@@ -238,6 +239,17 @@ async def test_race_orchestrator_drives_calculator_5_plus_3_equals_8(
                 f"expected T1 to win on Calculator; got {a.tier!r} for "
                 f"action_id={a.id!r} target_key={a.target_key!r}"
             )
+
+        # Post-F9 fix: verifier sees AXValueChanged from the display via the
+        # AX-application-root subscription. Every click should verify L0 push
+        # (confidence == 1.0). The All Clear click is the exception — when
+        # the display already reads "0" the press doesn't change AXValue, so
+        # AXValueChanged doesn't fire. Skip that one in the assertion.
+        verified_count = sum(1 for p in posts[1:] if p.verified)
+        assert verified_count >= 4, (
+            f"expected >=4 of the last 4 clicks to verify via L0 push; "
+            f"got {verified_count}. posts={[(p.verified, p.confidence) for p in posts]!r}"
+        )
 
         # NDJSON race telemetry sanity check.
         events = [

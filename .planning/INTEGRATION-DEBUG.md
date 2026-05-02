@@ -112,12 +112,28 @@ the action — verification is the broken layer.
 a recovery branch because verifier reports verified=false. That's
 expensive (5-branch parallel recovery at Opus pricing) and incorrect.
 
-**Suggested fix sequence (next iteration):**
-1. Add `axmgr.subscribe_pending(target, notifs, action_id, ax_element) -> Future`
-   that registers the subscription + returns the future without awaiting.
-2. Update `RaceOrchestrator.execute` to call `subscribe_pending` instead of
-   `expect`, then pass the returned future to `Aggregator.verify` so
-   L0Push can `await` it.
-3. For the F1 dimension: pass `ax_element = AXUIElementCreateApplication(pid)`
-   when target.element is a child of an AXApplication; filter events in
-   `_passes_filter` by `event.element_key == sub.element_key`.
+**RESOLVED 2026-05-01.** Three compounding bugs were stacked, each masking the next:
+
+1. **subscribe_pending shipped** (`axobserver.py`). Splits subscribe + await
+   into two sync/async halves so the orchestrator can register pre-fire and
+   the verifier can await post-fire.
+2. **AXApplication root substitution** (`race_orchestrator.py:_ax_application_root`).
+   When target.ax_element is a Calculator button, swap it for
+   AXUIElementCreateApplication(pid) before passing to subscribe_pending.
+   AXObserver propagates from descendants, so this captures the display's
+   AXValueChanged from the button press.
+3. **NEW HIDDEN BUG — third compounding bug surfaced after fix #2:**
+   macOS dedupes AXObserverAddNotification by (element, notif). The first
+   action's refcon stays active across subsequent calls, even when
+   AddNotification is called again with a NEW refcon. So action #2's
+   AXValueChanged fires with action #1's action_id → drops the waiter.
+   **Fix:** Call `AXObserverRemoveNotification(observer, element, notif)`
+   before each AddNotification so each action gets fresh refcon.
+   See `cua_overlay/ax/observer.py:228..308`.
+
+**Verification:** `CUA_RUN_E2E_RACE=1 ./scripts/smoke.sh` reports
+verified=True, L0=1.0, confidence=1.00 on each digit/operator click.
+Latency: 14-25ms post-fire to event arrival. Per-action overhead added
+by the F9 fix: ~50ms warmup `await anyio.sleep(0.05)` between
+subscribe_pending and channel coro construction (lets the AXObserver IPC
+register on the target app's run loop).
