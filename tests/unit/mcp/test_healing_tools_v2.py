@@ -282,3 +282,103 @@ async def test_all_tools_return_phase2_result_shape(fake_proxy_with_tools) -> No
         assert "verifier_confidence" in result["race"]
         assert "near_miss_duplicate_count" in result["race"]
         assert result["session_id"] == "test-session-id"
+
+
+# ----------------------------- F10 — recovery wiring -------------------------
+
+
+async def _build_proxy_with_recovery(verified: bool):
+    """Async helper — spin up healing tools with a configurable verified flag
+    and a mocked RecoveryOrchestrator. Async so it can be awaited from inside
+    pytest-asyncio's event loop (asyncio.run() can't be called there)."""
+    from cua_overlay.actions.race_policy import RacePolicy
+    from cua_overlay.actions.channels.base import ChannelOutcome
+    from cua_overlay.mcp_server.healing_tools import register_healing_tools
+    from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
+
+    proxy = _FakeFastMCP()
+    upstream = MagicMock()
+    deps = MagicMock()
+    deps.session = MagicMock(session_id="test-session-id")
+
+    fake_action = ActionCanonical(
+        id="action-id-recovery", step_idx=0, kind="MUTATE",
+        target_key="axid:test:button", action_type="click", payload={},
+        tier="T1", channel="C2", timestamp_ns=1000,
+        session_id="test-session-id",
+    )
+    fake_post = HoarePost(
+        target_key="axid:test:button",
+        confidence=1.0 if verified else 0.0,
+        tier_signals={"L0": 1.0 if verified else 0.0, "L1": 0.0,
+                       "L2": None, "L3": None},
+        verified=verified, healed_to=None, timestamp_ns=2000,
+    )
+    race_orch = MagicMock()
+    race_orch.execute = AsyncMock(return_value=(fake_action, fake_post))
+
+    recovered_outcome = ChannelOutcome(
+        channel="C4", status="fired", verified=True, fired_at_ns=3000,
+    )
+    recovery_log = [
+        {"event": "recovery.classified", "action_id": "action-id-recovery"},
+        {"event": "branch_attempt", "branch": "B1_RESCROLL"},
+        {"event": "branch_attempt", "branch": "B2_OCR_REGROUNDING"},
+        {"event": "recovery_succeeded", "winner": "B1_RESCROLL"},
+    ]
+    recovery_orch = MagicMock()
+    recovery_orch.attempt = AsyncMock(return_value=(recovered_outcome, recovery_log))
+
+    await register_healing_tools(proxy, upstream, deps, race_orch, recovery_orch)
+
+    return SimpleNamespace(
+        proxy=proxy, race_orch=race_orch, recovery_orch=recovery_orch,
+        action=fake_action, post=fake_post,
+    )
+
+
+@pytest.mark.asyncio
+async def test_click_invokes_recovery_when_verified_false() -> None:
+    """F10: when race_orch returns verified=False, click_with_healing must
+    call recovery_orch.attempt(...) and surface the outcome in the response."""
+    fo = await _build_proxy_with_recovery(verified=False)
+    fn = fo.proxy.tools["click_with_healing"]
+    result = await fn(x=10, y=20, bundle_id="com.test", pid=1, label="btn")
+
+    fo.recovery_orch.attempt.assert_awaited_once()
+    ctx = fo.recovery_orch.attempt.await_args.args[0]
+    assert ctx["bundle_id"] == "com.test"
+    assert ctx["target_key"] == "axid:test:button"
+    assert ctx["confidence"] == 0.0
+    assert ctx["action_type"] == "click"
+    assert ctx["action_id"] == "action-id-recovery"
+
+    assert result["recovery"]["ran"] is True
+    assert result["recovery"]["succeeded"] is True
+    assert "B1_RESCROLL" in result["recovery"]["branches_attempted"]
+    assert result["recovery"]["terminal_event"] == "recovery_succeeded"
+
+
+@pytest.mark.asyncio
+async def test_click_skips_recovery_when_verified_true() -> None:
+    """F10: when race_orch returns verified=True, recovery is NOT invoked."""
+    fo = await _build_proxy_with_recovery(verified=True)
+    fn = fo.proxy.tools["click_with_healing"]
+    result = await fn(x=10, y=20, bundle_id="com.test", pid=1, label="btn")
+
+    fo.recovery_orch.attempt.assert_not_awaited()
+    assert result["recovery"]["ran"] is False
+
+
+@pytest.mark.asyncio
+async def test_send_destructive_skips_recovery_even_when_verified_false() -> None:
+    """F10 + D-11 safety: destructive verbs never trigger automatic recovery
+    branches (which include AppleScript fallback that could double-fire the
+    destructive action)."""
+    fo = await _build_proxy_with_recovery(verified=False)
+    fn = fo.proxy.tools["send_destructive"]
+    result = await fn(target_label="Send", bundle_id="com.test", pid=1)
+    fo.recovery_orch.attempt.assert_not_awaited()
+    # send_destructive doesn't expose a 'recovery' key — it just returns the
+    # raw verified=False outcome.
+    assert "recovery" not in result or result.get("recovery", {}).get("ran") is False

@@ -32,10 +32,77 @@ from mcp.server.fastmcp import FastMCP
 from cua_overlay.actions.race_orchestrator import RaceOrchestrator
 from cua_overlay.actions.race_policy import RacePolicy
 from cua_overlay.mcp_server.main import ProxyDeps
+from cua_overlay.recovery.orchestrator import RecoveryOrchestrator
 from cua_overlay.translators.base import TargetSpec
 
 
 _log = structlog.get_logger()
+
+
+async def _maybe_recover(
+    recovery_orch: Optional[RecoveryOrchestrator],
+    bundle_id: str,
+    action: Any,
+    post: Any,
+    action_type: str,
+) -> dict[str, Any]:
+    """Run RecoveryOrchestrator.attempt(...) when post.verified is False.
+
+    Returns a dict suitable for inclusion in the healing-tool response. Always
+    has a "ran" key (bool); when ran=True, also includes "succeeded",
+    "branches_attempted", "terminal_event", and "events" (the recovery_log).
+
+    Per F10 fix: until this hook existed, every verified=False action silently
+    failed because RecoveryOrchestrator was orphaned. Now we hand back enough
+    info that callers (and the host) can see the heal attempt + outcome.
+    """
+    if recovery_orch is None or post.verified:
+        return {"ran": False}
+
+    failure_ctx = {
+        "bundle_id": bundle_id,
+        "target_key": action.target_key,
+        "hoare_post": post,
+        "confidence": post.confidence,
+        "last_error": "verifier confidence below threshold",
+        "previous_failures_count": 0,
+        "action_id": action.id,
+        "action_type": action_type,
+    }
+    try:
+        outcome, events = await recovery_orch.attempt(failure_ctx)
+    except Exception as exc:  # noqa: BLE001
+        _log.warning(
+            "recovery.attempt_raised",
+            error=str(exc),
+            action_id=action.id,
+            target_key=action.target_key,
+        )
+        return {"ran": True, "succeeded": False, "error": str(exc)}
+
+    succeeded = bool(outcome and outcome.verified)
+    branches = sorted({
+        e.get("branch") for e in events if e.get("event") == "branch_attempt"
+    } - {None})
+    terminal = next(
+        (
+            e.get("event")
+            for e in events
+            if e.get("event") in (
+                "recovery_succeeded",
+                "recovery_failed_max_cycles_reached",
+                "recovery_escalated",
+                "recovery_failed_no_branches",
+            )
+        ),
+        None,
+    )
+    return {
+        "ran": True,
+        "succeeded": succeeded,
+        "branches_attempted": branches,
+        "terminal_event": terminal,
+    }
 
 
 # D-12 SAFE-RACE key combos (race allowed). Everything else falls under D-11
@@ -73,6 +140,7 @@ async def register_healing_tools(
     upstream: ClientSession,
     deps: ProxyDeps,
     race_orch: RaceOrchestrator,
+    recovery_orch: Optional[RecoveryOrchestrator] = None,
 ) -> None:
     """Register MCP-02 healing tools onto the proxy server.
 
@@ -92,6 +160,11 @@ async def register_healing_tools(
             tools that might fall back to upstream calls).
         deps: ProxyDeps (session_id read for response correlation).
         race_orch: Phase 2 RaceOrchestrator (built in main()).
+        recovery_orch: Optional RecoveryOrchestrator. When provided (F10 fix),
+            tools that observe `post.verified == False` automatically call
+            recovery_orch.attempt(...) and surface the recovery outcome in
+            the response. When None, tools degrade to the legacy behaviour
+            (just return verified=False to the caller; no recovery loop).
     """
 
     @proxy.tool(
@@ -132,6 +205,9 @@ async def register_healing_tools(
             session_id=deps.session.session_id,
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
+        recovery_info = await _maybe_recover(
+            recovery_orch, bundle_id, action, post, "click"
+        )
         return {
             "result": None,  # Phase 2 doesn't proxy upstream — race handles delivery
             "session_id": deps.session.session_id,
@@ -139,6 +215,7 @@ async def register_healing_tools(
             "verified": post.verified,
             "confidence": post.confidence,
             "race": _build_race_outcome(action, post, latency_ms),
+            "recovery": recovery_info,
             "note": "Phase 2 race orchestrator; D-29 click_with_healing extended",
         }
 
@@ -169,6 +246,9 @@ async def register_healing_tools(
             session_id=deps.session.session_id,
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
+        recovery_info = await _maybe_recover(
+            recovery_orch, bundle_id, action, post, "type_into_focused"
+        )
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -176,6 +256,7 @@ async def register_healing_tools(
             "verified": post.verified,
             "confidence": post.confidence,
             "race": _build_race_outcome(action, post, latency_ms),
+            "recovery": recovery_info,
             "note": "Phase 2 type_with_healing; D-11 single-channel default",
         }
 
@@ -210,6 +291,9 @@ async def register_healing_tools(
             session_id=deps.session.session_id,
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
+        recovery_info = await _maybe_recover(
+            recovery_orch, bundle_id, action, post, action_type
+        )
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -217,6 +301,7 @@ async def register_healing_tools(
             "verified": post.verified,
             "confidence": post.confidence,
             "race": _build_race_outcome(action, post, latency_ms),
+            "recovery": recovery_info,
             "note": f"Phase 2 scroll_with_healing; kind={action_kind}",
         }
 
@@ -247,6 +332,9 @@ async def register_healing_tools(
             session_id=deps.session.session_id,
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
+        recovery_info = await _maybe_recover(
+            recovery_orch, bundle_id, action, post, "set_value"
+        )
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -254,6 +342,7 @@ async def register_healing_tools(
             "verified": post.verified,
             "confidence": post.confidence,
             "race": _build_race_outcome(action, post, latency_ms),
+            "recovery": recovery_info,
             "note": "Phase 2 set_value_with_healing; D-11 single-channel",
         }
 
@@ -336,6 +425,9 @@ async def register_healing_tools(
             session_id=deps.session.session_id,
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
+        recovery_info = await _maybe_recover(
+            recovery_orch, bundle_id, action, post, action_type
+        )
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -343,6 +435,7 @@ async def register_healing_tools(
             "verified": post.verified,
             "confidence": post.confidence,
             "race": _build_race_outcome(action, post, latency_ms),
+            "recovery": recovery_info,
             "note": f"Phase 2 key_combo_with_healing; combo={combo_lower}; type={action_type}",
         }
 

@@ -259,10 +259,70 @@ async def main() -> None:
             session_writer=session,
         )
 
-        # 8. Register healing tools (Phase 2: 6 tools through RaceOrchestrator).
+        # 7.6 Build RecoveryOrchestrator + B1-B5 branches (F10 fix). Without
+        # this, healing tools call race_orch.execute → return verified=False →
+        # silently fail. Wiring the recovery layer turns that into an actual
+        # self-healing loop.
+        from cua_overlay.recovery import (  # noqa: E402
+            B1_Rescroll,
+            B2_OCRRegrounding,
+            B3_WorldReplan,
+            B4_PlannerRequery,
+            B5_AppleScriptFallback,
+            RecoveryOrchestrator,
+        )
+        from cua_overlay.recovery.circuit_breaker import CircuitBreaker  # noqa: E402
+        from cua_overlay.recovery.classifier import FailureClassifier  # noqa: E402
+        from cua_overlay.ax.walker import walk_subtree  # noqa: E402
+
+        recovery_branches = [
+            B1_Rescroll(
+                translator_registry=translator_registry,
+                channel_registry=channel_registry,
+                idempotency_store=idem_store,
+                session_writer=session,
+                walk_subtree_fn=walk_subtree,
+                aggregator=aggregator,
+                l1_cheap=l1,
+            ),
+            B2_OCRRegrounding(
+                translator_registry=translator_registry,
+                channel_registry=channel_registry,
+                idempotency_store=idem_store,
+                session_writer=session,
+                aggregator=aggregator,
+            ),
+            B3_WorldReplan(
+                idempotency_store=idem_store,
+                session_writer=session,
+            ),
+            B4_PlannerRequery(
+                idempotency_store=idem_store,
+                session_writer=session,
+            ),
+            B5_AppleScriptFallback(
+                translator_registry=translator_registry,
+                channel_registry=channel_registry,
+                idempotency_store=idem_store,
+                session_writer=session,
+                aggregator=aggregator,
+            ),
+        ]
+        recovery_orch = RecoveryOrchestrator(
+            classifier=FailureClassifier(),
+            circuit_breaker=CircuitBreaker(),
+            branches_list=recovery_branches,
+            session_writer=session,
+            aggregator=aggregator,
+        )
+
+        # 8. Register healing tools (Phase 2: 6 tools through RaceOrchestrator
+        # + auto-recovery on verified=False per F10).
         from cua_overlay.mcp_server.healing_tools import register_healing_tools
 
-        await register_healing_tools(proxy_server, upstream, deps, race_orch)
+        await register_healing_tools(
+            proxy_server, upstream, deps, race_orch, recovery_orch
+        )
 
         log.info(
             "proxy.ready",
