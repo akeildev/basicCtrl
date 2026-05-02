@@ -25,6 +25,7 @@ dependencies = [
   "faiss-cpu>=1.13.2",
   "ultralytics>=8.4.46",
   "python-chess>=1.999",
+  "sentence-transformers>=5.4.1",
 ]
 
 [project.optional-dependencies]

@@ -47,11 +47,15 @@ async def test_resolve_returns_none_on_label_miss() -> None:
     t = T1AXTranslator()
     elem_other = _fake_uielement("OtherButton")
     fake_walk = [(elem_other, object())]  # list[(UIElement, ax_ref)]
-    with patch.object(t, "_get_app_element", return_value=object()):
-        with patch.object(t, "_walk_with_refs", return_value=fake_walk):
-            target = await t.resolve(
-                "com.apple.calculator", 1234, TargetSpec(label="5")
-            )
+    with patch(
+        "cua_overlay.ax.window_manager.ensure_real_window",
+        return_value=object(),
+    ):
+        with patch.object(t, "_get_app_element", return_value=object()):
+            with patch.object(t, "_walk_with_refs", return_value=fake_walk):
+                target = await t.resolve(
+                    "com.apple.calculator", 1234, TargetSpec(label="5")
+                )
     assert target is None
 
 
@@ -61,15 +65,32 @@ async def test_resolve_matches_by_label() -> None:
     elem = _fake_uielement("5")
     ax_ref = object()
     fake_walk = [(elem, ax_ref)]
-    with patch.object(t, "_get_app_element", return_value=object()):
-        with patch.object(t, "_walk_with_refs", return_value=fake_walk):
-            with patch.object(t, "validate", return_value=True):
-                target = await t.resolve(
-                    "com.apple.calculator", 1234, TargetSpec(label="5")
-                )
+    with patch(
+        "cua_overlay.ax.window_manager.ensure_real_window",
+        return_value=object(),
+    ):
+        with patch.object(t, "_get_app_element", return_value=object()):
+            with patch.object(t, "_walk_with_refs", return_value=fake_walk):
+                with patch.object(t, "validate", return_value=True):
+                    target = await t.resolve(
+                        "com.apple.calculator", 1234, TargetSpec(label="5")
+                    )
     assert target is not None
     assert target.element.label == "5"
     assert target.ax_element is ax_ref
+
+
+async def test_resolve_returns_none_when_no_real_windows() -> None:
+    """Phase H: pid with no visible windows short-circuits before walk."""
+    t = T1AXTranslator()
+    with patch(
+        "cua_overlay.ax.window_manager.ensure_real_window",
+        return_value=None,
+    ):
+        target = await t.resolve(
+            "com.apple.calculator", 1234, TargetSpec(label="5")
+        )
+    assert target is None
 
 
 async def test_validate_rate_limited_returns_false() -> None:

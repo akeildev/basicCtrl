@@ -276,13 +276,48 @@ class T1AXTranslator:
         Honors the canonical Translator Protocol: returns None if T1 cannot
         address the target (TCC revoked, AX-poor app, label miss). The race
         orchestrator handles None by falling to the next translator.
+
+        Phase H: filter out targets whose pid has no real (non-minimized,
+        non-hidden) windows — saves a 200ms AX walk on apps that present a
+        process but no UI yet. Wraps the walk in retry_on_stale_ax so a
+        single stale-handle error (-25204) re-attaches and retries instead
+        of bubbling.
         """
+        from cua_overlay.ax.window_manager import (
+            ensure_real_window,
+            retry_on_stale_ax,
+        )
+
+        # Quick "does this pid have any visible window?" probe. We do NOT
+        # auto-activate from a translator (that would yank focus mid-race).
+        try:
+            window = await ensure_real_window(pid, activate_if_not_frontmost=False)
+        except Exception as exc:  # noqa: BLE001
+            _log.debug("t1.window_probe_error", pid=pid, error=str(exc))
+            window = None
+        if window is None:
+            _log.debug(
+                "t1.no_real_windows", pid=pid, bundle_id=bundle_id, label=target_spec.label
+            )
+            return None
+
         ax_app = await self._get_app_element(pid)
         if ax_app is None:
             return None
 
+        async def _walk():
+            return await self._walk_with_refs(ax_app, pid, bundle_id)
+
+        async def _on_retry():
+            # Stale AXUIElement handle — re-create the app element and let
+            # the next iteration walk a fresh tree.
+            nonlocal ax_app
+            fresh = await self._get_app_element(pid)
+            if fresh is not None:
+                ax_app = fresh
+
         try:
-            nodes = await self._walk_with_refs(ax_app, pid, bundle_id)
+            nodes = await retry_on_stale_ax(_walk, on_retry=_on_retry)
         except Exception as exc:  # noqa: BLE001 — translator never raises
             _log.warning("t1.walker_error", pid=pid, error=str(exc))
             return None

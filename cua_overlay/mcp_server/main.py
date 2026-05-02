@@ -294,12 +294,29 @@ async def main() -> None:
 
         api_key_present = bool(os.environ.get("ANTHROPIC_API_KEY"))
 
+        # Memory layer (D-18..D-21). EpisodicMemory + Embedder + LearningLoop
+        # are constructed unconditionally — sentence-transformers is lazy
+        # so we don't pay the model-download cost until the first embed.
+        from cua_overlay.agents.embedder import Embedder  # noqa: E402
+        from cua_overlay.agents.learning_loop import LearningLoop  # noqa: E402
+        from cua_overlay.learning.recipe_synth import RecipeSynthesizer  # noqa: E402
+        from cua_overlay.state.episodic import EpisodicMemory  # noqa: E402
+
+        episodic_memory = EpisodicMemory()
+        embedder = Embedder()
+        synthesizer = RecipeSynthesizer()
+        learning_loop = LearningLoop(
+            embedder=embedder,
+            episodic=episodic_memory,
+            synthesizer=synthesizer,
+        )
+
         def _planner_factory(ctx):
             if ctx is not None and MCPSamplingPlanner.host_supports_sampling(ctx):
-                return MCPSamplingPlanner(ctx)
+                return MCPSamplingPlanner(ctx, episodic=episodic_memory)
             if api_key_present:
                 try:
-                    return Planner()
+                    return Planner(episodic=episodic_memory)
                 except CognitionDisabledError:
                     return None
             return None
@@ -379,7 +396,12 @@ async def main() -> None:
         from cua_overlay.mcp_server.healing_tools import register_healing_tools
 
         await register_healing_tools(
-            proxy_server, upstream, deps, race_orch, recovery_orch
+            proxy_server,
+            upstream,
+            deps,
+            race_orch,
+            recovery_orch,
+            learning_loop=learning_loop,
         )
 
         log.info(

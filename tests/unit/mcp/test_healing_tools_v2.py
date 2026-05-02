@@ -94,7 +94,8 @@ def fake_proxy_with_tools():
 
 
 def test_six_tools_registered(fake_proxy_with_tools) -> None:
-    """D-29: 6 healing tools registered after register_healing_tools."""
+    """D-29: 6 healing tools registered. Memory loop adds register_task_complete
+    (J1+ memory wire) so the registered set is now 7 by default."""
     expected = {
         "click_with_healing",
         "type_with_healing",
@@ -102,6 +103,7 @@ def test_six_tools_registered(fake_proxy_with_tools) -> None:
         "set_value_with_healing",
         "send_destructive",
         "key_combo_with_healing",
+        "register_task_complete",
     }
     assert set(fake_proxy_with_tools.proxy.tools.keys()) == expected
 

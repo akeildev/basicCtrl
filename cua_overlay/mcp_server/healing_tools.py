@@ -141,12 +141,43 @@ def _build_race_outcome(
     }
 
 
+async def _maybe_record_action(
+    learning_loop: Optional[Any],
+    action: Any,
+    post: Any,
+    gesture_type: str,
+) -> None:
+    """Best-effort: append an ObservedAction to the learning buffer.
+
+    No-op when `learning_loop` is None (memory layer disabled at boot)
+    or when the verifier didn't return `verified=True`. Failures here
+    must not break the tool call, so we swallow exceptions.
+    """
+    if learning_loop is None:
+        return
+    if not getattr(post, "verified", False):
+        return
+    try:
+        await learning_loop.record_action(
+            action=action,
+            verified=True,
+            gesture_type=gesture_type,
+        )
+    except Exception as exc:  # noqa: BLE001
+        _log.warning(
+            "learning_loop.record_failed",
+            error=str(exc),
+            action_id=getattr(action, "id", None),
+        )
+
+
 async def register_healing_tools(
     proxy: FastMCP,
     upstream: ClientSession,
     deps: ProxyDeps,
     race_orch: RaceOrchestrator,
     recovery_orch: Optional[RecoveryOrchestrator] = None,
+    learning_loop: Optional[Any] = None,
 ) -> None:
     """Register MCP-02 healing tools onto the proxy server.
 
@@ -215,6 +246,7 @@ async def register_healing_tools(
         recovery_info = await _maybe_recover(
             recovery_orch, bundle_id, action, post, "click", ctx=ctx
         )
+        await _maybe_record_action(learning_loop, action, post, "click")
         return {
             "result": None,  # Phase 2 doesn't proxy upstream — race handles delivery
             "session_id": deps.session.session_id,
@@ -257,6 +289,7 @@ async def register_healing_tools(
         recovery_info = await _maybe_recover(
             recovery_orch, bundle_id, action, post, "type_into_focused", ctx=ctx
         )
+        await _maybe_record_action(learning_loop, action, post, "keystroke")
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -303,6 +336,7 @@ async def register_healing_tools(
         recovery_info = await _maybe_recover(
             recovery_orch, bundle_id, action, post, action_type, ctx=ctx
         )
+        await _maybe_record_action(learning_loop, action, post, "scroll")
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -345,6 +379,7 @@ async def register_healing_tools(
         recovery_info = await _maybe_recover(
             recovery_orch, bundle_id, action, post, "set_value", ctx=ctx
         )
+        await _maybe_record_action(learning_loop, action, post, "keystroke")
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -439,6 +474,7 @@ async def register_healing_tools(
         recovery_info = await _maybe_recover(
             recovery_orch, bundle_id, action, post, action_type, ctx=ctx
         )
+        await _maybe_record_action(learning_loop, action, post, "keystroke")
         return {
             "result": None,
             "session_id": deps.session.session_id,
@@ -450,6 +486,40 @@ async def register_healing_tools(
             "note": f"Phase 2 key_combo_with_healing; combo={combo_lower}; type={action_type}",
         }
 
+    @proxy.tool(
+        name="register_task_complete",
+        description=(
+            "Memory loop: synthesize a Recipe from the per-session "
+            "ObservedAction buffer and index it into FAISS so future runs "
+            "of the same (app, task_class) short-circuit to the recipe "
+            "instead of calling the planner LLM (D-20 episodic-first). "
+            "Call this once at the end of a successful task."
+        ),
+    )
+    async def register_task_complete(
+        task_label: str,
+        task_class: str,
+        app_bundle_id: str,
+        state_fingerprint: Optional[str] = None,
+    ) -> dict[str, Any]:
+        if learning_loop is None:
+            return {"flushed": False, "reason": "learning_loop_unavailable"}
+        result = await learning_loop.flush_to_recipe(
+            task_label=task_label,
+            task_class=task_class,
+            app_bundle_id=app_bundle_id,
+            state_fingerprint=state_fingerprint,
+        )
+        return {
+            "flushed": result.flushed,
+            "reason": result.reason,
+            "recipe_name": result.recipe_name,
+            "app_bundle_id": result.app_bundle_id,
+            "task_class": result.task_class,
+            "state_fingerprint": result.state_fingerprint,
+            "step_count": result.step_count,
+        }
+
     _log.info(
         "healing_tools.registered",
         tools=[
@@ -459,6 +529,8 @@ async def register_healing_tools(
             "set_value_with_healing",
             "send_destructive",
             "key_combo_with_healing",
+            "register_task_complete",
         ],
         phase=2,
+        memory_loop=learning_loop is not None,
     )
