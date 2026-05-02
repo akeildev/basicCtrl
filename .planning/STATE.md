@@ -2,16 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: "v1.0 Milestone Complete — All 6 Phases + 61 Plans + 79 Requirements"
-status: v1.0-released
-stopped_at: "Completed 06-12: v1.0 ship-gate verification + state updates"
-last_updated: "2026-05-01T23:45:00.000Z"
-last_activity: 2026-05-01
+status: v1.0-released-hardened
+stopped_at: "Post-v1.0 ULTRAPLAN: Phase D verify-everything green (8 gates pass, 2 skip-clean)"
+last_updated: "2026-05-02T20:35:00.000Z"
+last_activity: 2026-05-02
 progress:
   total_phases: 6
   completed_phases: 6
   total_plans: 61
   completed_plans: 61
   percent: 100
+post_v1_hardening:
+  ultraplan: "~/.claude/plans/ultraplan-finish-deep-stearns.md"
+  phase_a: "complete (CLAUDE.md truth-up + scripts/preflight.sh + F12 fix)"
+  phase_b: "complete (cognition graceful disable + B3/B4 real wire + F13 fix)"
+  phase_c: "complete (observability CLIs + 5 new e2e gates via 2 parallel agents)"
+  phase_d: "complete (smoke.sh expansion + verify-everything.sh + F14 mitigation)"
+  f_bugs_added: ["F12 structlog→stderr", "F13 Critic None tier", "F14 Calculator NSUserDefaults"]
 ---
 
 # Project State

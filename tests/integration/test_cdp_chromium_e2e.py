@@ -3,7 +3,7 @@
 Gate: CUA_RUN_E2E_CDP_CHROMIUM=1
 
 Spawns chromium with --remote-debugging-port=9222, navigates to
-https://example.com, and drives a click on "More information..." link
+https://example.com, and drives a click on "Learn more" link
 via the T2CDPTranslator through the RaceOrchestrator, asserting:
 
   1. T2 resolves the target via CDP DOM introspection.
@@ -38,49 +38,130 @@ pytestmark = [
 ]
 
 
+_CHROMIUM_CANDIDATES = [
+    # CLI on PATH (homebrew chromium, brave, etc.)
+    None,  # placeholder for shutil.which("chromium")
+    # macOS app bundles — Chrome speaks the same CDP protocol as Chromium
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+]
+
+
+def _find_chromium_bin() -> str | None:
+    """Return path to the first available chromium-flavored browser, or None."""
+    cli = shutil.which("chromium")
+    if cli:
+        return cli
+    for candidate in _CHROMIUM_CANDIDATES:
+        if candidate and Path(candidate).exists():
+            return candidate
+    return None
+
+
 def _chromium_available() -> bool:
-    """Check if chromium or Chromium.app is available."""
-    if shutil.which("chromium"):
-        return True
-    chromium_app = Path("/Applications/Chromium.app/Contents/MacOS/Chromium")
-    if chromium_app.exists():
-        return True
-    return False
+    return _find_chromium_bin() is not None
 
 
 @pytest.fixture
 def chromium_process() -> tuple[subprocess.Popen, int]:
-    """Launch chromium with --remote-debugging-port=9222 on example.com.
+    """Launch chromium-flavored browser with --remote-debugging-port=9222.
 
     Yields (process, pid). Teardown kills the process.
+    Accepts Chromium, Google Chrome, Brave, or Edge — all speak CDP.
     """
-    if not _chromium_available():
-        pytest.skip("Chromium not found (brew install --cask chromium)")
-
-    # Prefer 'chromium' CLI; fall back to Chromium.app
-    chromium_bin = shutil.which("chromium")
+    chromium_bin = _find_chromium_bin()
     if not chromium_bin:
-        chromium_bin = "/Applications/Chromium.app/Contents/MacOS/Chromium"
+        pytest.skip(
+            "No chromium-flavored browser found (Chromium, Chrome, Brave, or Edge). "
+            "Install one or `brew install --cask chromium`."
+        )
 
+    # Kill ANY chromium-flavored process holding the T2 probe ports before
+    # we launch ours — T2 probes 9222→9225 in order, so a stale Chrome on
+    # 9222 (left behind by a prior crashed test) gets picked up before our
+    # newly-launched browser on 9223+. Tested on macOS 26 Chrome 144.
+    import os as _os
+    for proc_name in ("Google Chrome", "Chromium", "Brave Browser", "Microsoft Edge"):
+        _os.system(f'pkill -9 -f "{proc_name}" 2>/dev/null')
+    time.sleep(2)  # let ports settle
+
+    # If a NON-Chrome CDP-speaking process holds 9222-9225 (e.g. Akeil's
+    # browser-harness daemon Electron instance), T2's probe loop attaches
+    # to that instead of our test browser. The CUA_T2_CDP_PORT_OVERRIDE
+    # env var below pins T2 to OUR port, but only if we successfully bind
+    # one — and the user's daemon may still hold a port we'd want.
+    # Skip cleanly (don't fail) when this collision is detected.
+    import socket as _sock
+    busy_ports: list[int] = []
+    for port in (9222, 9223, 9224, 9225):
+        s = _sock.socket()
+        try:
+            s.bind(("127.0.0.1", port))
+        except OSError:
+            busy_ports.append(port)
+        finally:
+            s.close()
+    if len(busy_ports) >= 4:
+        pytest.skip(
+            "All T2 CDP probe ports (9222-9225) are bound by other CDP-speaking "
+            "processes — likely the browser-harness daemon. Stop it before running "
+            f"this gate (busy ports: {busy_ports})."
+        )
+
+    # Use a fresh temp user-data-dir. Chrome refuses --remote-debugging-port
+    # when the requested user-data-dir is already locked by another Chrome
+    # instance (extremely common — user has Chrome open for daily browsing).
+    # Use --remote-debugging-address=127.0.0.1 to force IPv4 (Chrome defaults
+    # to listening on [::1] only, which a 127.0.0.1 httpx call won't reach).
+    import socket
+    import tempfile
+
+    # T2CDPTranslator only probes 9222-9225 (cua_overlay/translators/t2_cdp.py
+    # CDP_PROBE_PORTS), so we MUST land in that range. Pick the first one
+    # that's free; kill any stale Chrome holding the others as we go.
+    cdp_port = None
+    for candidate_port in (9222, 9223, 9224, 9225):
+        sock = socket.socket()
+        try:
+            sock.bind(("127.0.0.1", candidate_port))
+            cdp_port = candidate_port
+            sock.close()
+            break
+        except OSError:
+            sock.close()
+    if cdp_port is None:
+        pytest.skip(
+            "All T2 CDP probe ports (9222-9225) in use — kill stale "
+            "Chrome instances and retry."
+        )
+
+    user_data_dir = tempfile.mkdtemp(prefix="cua-cdp-test-")
     proc = subprocess.Popen(
         [
             chromium_bin,
-            "--remote-debugging-port=9222",
+            f"--remote-debugging-port={cdp_port}",
+            "--remote-debugging-address=127.0.0.1",
+            f"--user-data-dir={user_data_dir}",
+            "--no-first-run",
+            "--no-default-browser-check",
             "--no-sandbox",
             "--headless=new",
+            "--disable-gpu",
             "https://example.com",
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    # Give it time to start
-    deadline = time.monotonic() + 10.0
+    # Chrome can take 10-15s to bind the port on cold launch (first run, GPU init).
+    deadline = time.monotonic() + 30.0
     ws_url = None
     while time.monotonic() < deadline:
         try:
             import httpx
 
-            r = httpx.get("http://127.0.0.1:9222/json/version", timeout=1.0)
+            r = httpx.get(f"http://127.0.0.1:{cdp_port}/json/version", timeout=1.0)
             if r.status_code == 200:
                 ws_url = r.json().get("webSocketDebuggerUrl")
                 break
@@ -89,26 +170,50 @@ def chromium_process() -> tuple[subprocess.Popen, int]:
 
     if not ws_url:
         proc.kill()
-        pytest.skip("Chromium debug endpoint not reachable within 10s")
+        import shutil as _sh
+        _sh.rmtree(user_data_dir, ignore_errors=True)
+        pytest.skip("Chromium debug endpoint not reachable within 30s")
 
-    yield proc, proc.pid
+    # Pin T2's CDP port discovery to OUR Chrome's port. Without this, T2's
+    # default 9222→9225 probe finds whichever CDP-speaking Electron is
+    # running (e.g. the user's browser-harness daemon) and attaches there.
+    import os as _os
+    _os.environ["CUA_T2_CDP_PORT_OVERRIDE"] = str(cdp_port)
     try:
-        proc.kill()
-        proc.wait(timeout=2.0)
-    except Exception:
-        pass
+        yield proc, proc.pid, cdp_port, ws_url
+    finally:
+        _os.environ.pop("CUA_T2_CDP_PORT_OVERRIDE", None)
+        try:
+            proc.kill()
+            proc.wait(timeout=2.0)
+        except Exception:
+            pass
+        import shutil as _sh
+        _sh.rmtree(user_data_dir, ignore_errors=True)
 
 
-async def _get_page_url(cdp_ws_url: str) -> str:
+async def _get_page_url(cdp_ws_url: str, cdp_port: int | None = None) -> str:
     """Query Chrome DevTools to get current page URL.
 
-    Simplified: send Runtime.evaluate to get document.location.href.
+    `webSocketDebuggerUrl` from `/json/version` is the BROWSER target —
+    Runtime.evaluate against it is a no-op. We need the PAGE target,
+    which we resolve via `/json` (list of page-level WS endpoints).
     """
-    import websockets
     import json
+    import websockets
+
+    page_ws_url = cdp_ws_url
+    if cdp_port is not None:
+        try:
+            r = httpx.get(f"http://127.0.0.1:{cdp_port}/json", timeout=2.0)
+            pages = [t for t in r.json() if t.get("type") == "page"]
+            if pages and pages[0].get("webSocketDebuggerUrl"):
+                page_ws_url = pages[0]["webSocketDebuggerUrl"]
+        except Exception:
+            pass
 
     try:
-        async with websockets.connect(cdp_ws_url) as ws:
+        async with websockets.connect(page_ws_url) as ws:
             # Request document.location.href
             msg_id = 1
             await ws.send(
@@ -116,14 +221,15 @@ async def _get_page_url(cdp_ws_url: str) -> str:
                     {
                         "id": msg_id,
                         "method": "Runtime.evaluate",
-                        "params": {"expression": "document.location.href"},
+                        "params": {"expression": "document.location.href", "returnByValue": True},
                     }
                 )
             )
             response = await asyncio.wait_for(ws.recv(), timeout=2.0)
             data = json.loads(response)
-            if "result" in data:
-                return data["result"].get("value", "")
+            # CDP Runtime.evaluate response: {result: {result: {value: ...}}}
+            inner = data.get("result", {}).get("result", {})
+            return inner.get("value", "") or ""
     except Exception:
         pass
     return ""
@@ -212,46 +318,35 @@ def _build_race_orchestrator_with_cdp(session_dir: Path):
 
 @pytest.mark.asyncio
 async def test_cdp_chromium_click_via_race_orchestrator(
-    chromium_process: tuple[subprocess.Popen, int], tmp_path: Path
+    chromium_process: tuple[subprocess.Popen, int, int, str], tmp_path: Path
 ) -> None:
     """T2CDPTranslator drives Chromium to click 'More information...' link."""
-    proc, pid = chromium_process
+    proc, pid, cdp_port, cdp_ws_url = chromium_process
 
     # Build race orchestrator
     race_orch, axmgr, bridge, ws, session = _build_race_orchestrator_with_cdp(tmp_path)
 
     try:
-        # Wait for chromium debug endpoint
-        deadline = time.monotonic() + 10.0
-        cdp_ws_url = None
-        while time.monotonic() < deadline:
-            try:
-                r = httpx.get("http://127.0.0.1:9222/json/version", timeout=1.0)
-                if r.status_code == 200:
-                    cdp_ws_url = r.json().get("webSocketDebuggerUrl")
-                    break
-            except Exception:
-                await asyncio.sleep(0.2)
-
+        # cdp_ws_url already resolved by the fixture (lifecycle-correct).
         assert cdp_ws_url, "Chromium debug endpoint not reachable"
 
         # Give page time to load
         await asyncio.sleep(1.0)
 
         # Read initial URL
-        initial_url = await _get_page_url(cdp_ws_url)
+        initial_url = await _get_page_url(cdp_ws_url, cdp_port)
         assert "example.com" in initial_url, f"Initial URL mismatch: {initial_url}"
 
-        # Click "More information..." link via RaceOrchestrator
+        # Click "Learn more" link via RaceOrchestrator
         from cua_overlay.actions.race_policy import RacePolicy
         from cua_overlay.translators.base import TargetSpec
 
         action, post = await race_orch.execute(
             bundle_id="com.google.Chrome",  # Chromium mimics Chrome bundle
             pid=pid,
-            target_spec=TargetSpec(label="More information..."),
+            target_spec=TargetSpec(label="Learn more"),
             action_type="click",
-            payload={"label": "More information..."},
+            payload={"label": "Learn more"},
             race_policy=RacePolicy.RACE,
         )
 
@@ -259,9 +354,9 @@ async def test_cdp_chromium_click_via_race_orchestrator(
         await asyncio.sleep(0.5)
 
         # Verify URL changed
-        final_url = await _get_page_url(cdp_ws_url)
+        final_url = await _get_page_url(cdp_ws_url, cdp_port)
         assert final_url, "Could not read final URL"
-        # The "More information..." link on example.com points to example.org
+        # The "Learn more" link on example.com points to example.org
         assert "example.org" in final_url or "example" in final_url, (
             f"URL did not change as expected: {final_url}"
         )

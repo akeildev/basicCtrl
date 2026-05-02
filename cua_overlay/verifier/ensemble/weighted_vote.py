@@ -57,20 +57,28 @@ class WeightedVote:
             "cdp.dom_modified": 0.6,
             "l1.window_diff": 0.3,
             "l1.dhash_changed": 0.3,
+            # browser-harness §I1: a CDP navigation/DOM-mutation event after
+            # the click is strong evidence the click landed. For browsers
+            # this is often the ONLY available positive signal because
+            # Chrome doesn't fire AX events.
+            "l1.cdp_event_changed": 0.7,
         },
         "type": {
             "ax.value_changed": 0.8,
             "ax.selected_text_changed": 0.5,
             "cdp.dom_attribute_modified": 0.7,
             "l1.pasteboard_changed": 0.1,  # negative class — should NOT change on type
+            "l1.cdp_event_changed": 0.5,
         },
         "scroll": {
             "ax.layout_changed": 0.7,
             "l1.window_diff": 0.5,
             "l1.dhash_changed": 0.4,
+            "l1.cdp_event_changed": 0.4,
         },
         "set_value": {
             "ax.value_changed": 0.9,
+            "l1.cdp_event_changed": 0.5,
         },
     }
 

@@ -74,7 +74,8 @@ def _fake_target(
 
 
 class _FakeCDPClient:
-    """Fake CDPClient context manager. Records all dispatched mouse events."""
+    """Fake CDPClient supporting both legacy `__aenter__/.send` and the new
+    `start/stop/send_raw/_event_registry` daemon API."""
 
     last_instance: "_FakeCDPClient | None" = None
 
@@ -82,7 +83,8 @@ class _FakeCDPClient:
         self.ws_url = ws_url
         self.events: list[dict[str, Any]] = []
         _FakeCDPClient.last_instance = self
-        # Build the cdp.send.<Domain>.<method> attribute tree.
+
+        # Legacy `cdp.send.<Domain>.<method>` tree (kept so older tests work).
         self.send = MagicMock()
         async def _dispatch(params: dict[str, Any] | None = None,
                             sessionId: str | None = None) -> dict[str, Any]:
@@ -90,11 +92,57 @@ class _FakeCDPClient:
             return {}
         self.send.Input.dispatchMouseEvent = _dispatch
 
+        # CDPDaemon expects an `_event_registry.handle_event` async callable.
+        registry = MagicMock()
+        async def _noop_handle(method: str, params: dict, session_id=None):
+            return None
+        registry.handle_event = _noop_handle
+        self._event_registry = registry
+
+    # Daemon lifecycle hooks.
+    async def start(self) -> None:
+        return None
+
+    async def stop(self) -> None:
+        return None
+
+    async def send_raw(
+        self,
+        method: str,
+        params: dict[str, Any] | None = None,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        # Record click events; canned responses for setup-time daemon calls.
+        if method == "Input.dispatchMouseEvent":
+            self.events.append({"params": params, "sessionId": session_id})
+            return {}
+        if method == "Target.getTargets":
+            return {
+                "targetInfos": [
+                    {"type": "page", "url": "https://example.com", "targetId": "T1"}
+                ]
+            }
+        if method == "Target.attachToTarget":
+            return {"sessionId": "fake-session"}
+        # Best-effort domain enables in CDPDaemon._attach_real_page.
+        return {}
+
+    # Legacy `async with CDPClient(...)` compatibility.
     async def __aenter__(self) -> "_FakeCDPClient":
         return self
 
     async def __aexit__(self, *a: Any) -> bool:
         return False
+
+
+@pytest.fixture(autouse=True)
+async def _reset_cdp_daemon_cache():
+    """Each test starts with no cached CDPDaemon — without this, the second
+    test in a session reuses the first test's _FakeCDPClient instance."""
+    from cua_overlay.translators import cdp_daemon
+
+    yield
+    await cdp_daemon.close_all()
 
 
 @pytest.fixture

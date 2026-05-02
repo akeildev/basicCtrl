@@ -116,7 +116,7 @@ async def test_t3_c4_writes_text_to_textedit(
     sw = SessionWriter(base=tmp_path)
     store = IdempotencyTokenStore(sw)
     t3 = T3AppleScriptTranslator()
-    chan = C4AppleScriptChannel(t3=t3)
+    chan = C4AppleScriptChannel(translator=t3)
 
     target_spec = TargetSpec(
         as_verb=f'set text of front document to "{text}"',

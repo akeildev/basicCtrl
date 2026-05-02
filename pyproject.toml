@@ -23,6 +23,7 @@ dependencies = [
   "anthropic>=0.34",
   "openai>=1.50",
   "faiss-cpu>=1.13.2",
+  "ultralytics>=8.4.46",
 ]
 
 [project.optional-dependencies]

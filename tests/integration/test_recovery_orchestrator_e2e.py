@@ -74,8 +74,11 @@ def _build_recovery_stack(session_dir: Path):
     from cua_overlay.recovery import (
         B1_Rescroll,
         B2_OCRRegrounding,
-        B3_WorldReplan,
-        B4_PlannerRequery,
+        # This test exercises stub-style B3/B4 dispatch (no LLM); use the
+        # explicit _Stub aliases since the unsuffixed names now point at the
+        # Phase 4 real branches that require Planner/WMP/Critic dependencies.
+        B3_WorldReplan_Stub as B3_WorldReplan,
+        B4_PlannerRequery_Stub as B4_PlannerRequery,
         B5_AppleScriptFallback,
         RecoveryOrchestrator,
     )

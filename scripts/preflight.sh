@@ -150,11 +150,23 @@ else
   row "OPENAI_API_KEY"      WARN "unset → L3 verifier + ensemble disabled"
 fi
 
-# chromium for CDP gate
-if command -v chromium >/dev/null 2>&1 || command -v "Chromium" >/dev/null 2>&1; then
-  row "chromium binary"      OK "CUA_RUN_E2E_CDP_CHROMIUM available"
+# Chromium-flavored browser for CDP gate (Chromium, Chrome, Brave, Edge — all speak CDP)
+CHROMIUM_FOUND=""
+if command -v chromium >/dev/null 2>&1; then
+  CHROMIUM_FOUND="chromium (CLI)"
+elif [[ -d "/Applications/Chromium.app" ]]; then
+  CHROMIUM_FOUND="Chromium.app"
+elif [[ -d "/Applications/Google Chrome.app" ]]; then
+  CHROMIUM_FOUND="Google Chrome.app"
+elif [[ -d "/Applications/Brave Browser.app" ]]; then
+  CHROMIUM_FOUND="Brave Browser.app"
+elif [[ -d "/Applications/Microsoft Edge.app" ]]; then
+  CHROMIUM_FOUND="Microsoft Edge.app"
+fi
+if [[ -n "$CHROMIUM_FOUND" ]]; then
+  row "chromium-flavored browser" OK "$CHROMIUM_FOUND → CUA_RUN_E2E_CDP_CHROMIUM available"
 else
-  row "chromium binary"      WARN "install: brew install --cask chromium → unlocks chromium CDP gate"
+  row "chromium-flavored browser" WARN "install Chrome/Chromium/Brave/Edge → unlocks CDP gate"
 fi
 
 # Calculator (already required by demo)

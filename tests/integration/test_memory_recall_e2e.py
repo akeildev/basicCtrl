@@ -7,18 +7,23 @@ Verifies that episodic memory (FAISS vector store) can:
   1. Index a Recipe after a task completes.
   2. Lookup a similar task and return ≥1 hit with similarity > 0.85.
 
-Uses a temporary FAISS file via CUA_EPISODIC_PATH env var override,
-so each test run gets a fresh vector store. Cleanup deletes the temp file.
+Uses a temporary FAISS file path so each run gets a fresh vector store.
 
-Per STATE-04 (episodic.py), the EpisodicMemory class wraps FAISS
-IndexFlatL2 with lookup(query) -> list[EpisodicHit].
+Schema reference (cua_overlay/learning/schemas.py):
+  Recipe(name, app_bundle_id, params, preconditions, steps, success_criteria, created_ts)
+  RecipeStep(idx, action, preconditions, on_failure)
+  RecipePrecondition(expression, expected_value, confidence)
+
+EpisodicMemory API (cua_overlay/state/episodic.py):
+  EpisodicMemory(faiss_path=..., embedding_dim=384)
+  index_recipe(recipe, app_bundle_id, task_class, state_fingerprint, embedding, source_text)
+  lookup(query: EpisodicQuery) -> list[EpisodicHit]
 """
 from __future__ import annotations
 
-import asyncio
-import json
 import os
 import tempfile
+import time
 import uuid
 from pathlib import Path
 
@@ -34,193 +39,124 @@ pytestmark = [
 ]
 
 
+def _build_recipe(name: str = "calculator_add") -> "Recipe":
+    """Build a minimal valid Recipe per the actual cua_overlay.learning schema."""
+    from cua_overlay.learning import Recipe, RecipeStep
+    from cua_overlay.state.causal_dag import ActionCanonical
+
+    action = ActionCanonical(
+        id=f"act-{uuid.uuid4().hex[:8]}",
+        step_idx=0,
+        kind="MUTATE",
+        target_key="btn_5",
+        action_type="click",
+        payload={},
+        timestamp_ns=time.monotonic_ns(),
+        session_id="test-mem-session",
+    )
+    step = RecipeStep(
+        idx=0,
+        action=action,
+        preconditions=[],
+        on_failure=["retry_once"],
+    )
+    return Recipe(
+        name=name,
+        app_bundle_id="com.apple.calculator",
+        params=[],
+        preconditions=[],
+        steps=[step],
+        success_criteria=["Calculator display reads 5"],
+        created_ts=time.time(),
+    )
+
+
 @pytest.fixture
-def temp_episodic_path():
-    """Yield a temporary FAISS path, delete after test."""
+def temp_faiss_path():
+    """Yield a temporary FAISS path, auto-deleted after test."""
     with tempfile.TemporaryDirectory() as tmpdir:
         fpath = Path(tmpdir) / f"test_episodic_{uuid.uuid4().hex}.faiss"
         yield fpath
-        # Cleanup is automatic via tmpdir context manager
 
 
 @pytest.mark.asyncio
-async def test_episodic_memory_index_and_lookup(
-    temp_episodic_path: Path,
-) -> None:
-    """Index a recipe, lookup a similar task, assert hit."""
+async def test_episodic_memory_index_and_lookup(temp_faiss_path: Path) -> None:
+    """Index a recipe, lookup with same embedding → expect ≥1 hit at high similarity."""
     from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
-    from cua_overlay.learning import Recipe, RecipeStep
 
-    # Create episodic memory with temp path
-    # Check if EpisodicMemory supports path override; if not, instantiate directly
-    try:
-        # Attempt direct instantiation with path param
-        memory = EpisodicMemory(path=str(temp_episodic_path))
-    except TypeError:
-        # If not supported, try default path but with env var override
-        os.environ["CUA_EPISODIC_PATH"] = str(temp_episodic_path)
-        memory = EpisodicMemory()
+    memory = EpisodicMemory(faiss_path=str(temp_faiss_path))
+    recipe = _build_recipe("calculator_add_test1")
 
-    # Create a test recipe for "Calculator: 1 + 1 = 2"
-    recipe = Recipe(
-        task_class="calculator_math",
+    # Use a deterministic embedding so lookup with the same vector is a near-hit
+    embedding = [0.01 * (i % 10) for i in range(384)]
+
+    await memory.index_recipe(
+        recipe=recipe,
         app_bundle_id="com.apple.calculator",
-        state_fingerprint="abc123",
-        steps=[
-            RecipeStep(
-                step_idx=0,
-                action_type="click",
-                target_label="1",
-                tier="T1",
-                channel="C2",
-                verified=True,
-            ),
-            RecipeStep(
-                step_idx=1,
-                action_type="click",
-                target_label="+",
-                tier="T1",
-                channel="C2",
-                verified=True,
-            ),
-            RecipeStep(
-                step_idx=2,
-                action_type="click",
-                target_label="1",
-                tier="T1",
-                channel="C2",
-                verified=True,
-            ),
-            RecipeStep(
-                step_idx=3,
-                action_type="click",
-                target_label="=",
-                tier="T1",
-                channel="C2",
-                verified=True,
-            ),
-        ],
-        success_count=1,
-        failure_count=0,
-        source="test_e2e",
+        task_class="calculator_math",
+        state_fingerprint="test-fp-1",
+        embedding=embedding,
+        source_text="click button 5 in Calculator",
     )
 
-    # Index the recipe
-    try:
-        await memory.index_recipe(
-            recipe=recipe,
-            app_bundle_id="com.apple.calculator",
-            task_class="calculator_math",
-            state_fingerprint="abc123",
-        )
-    except Exception as e:
-        pytest.skip(f"Recipe indexing not fully implemented: {e}")
-
-    # Create a query for a similar task: "Calculator: 2 + 2 = 4"
-    # Use similar embedding source text
-    query_embedding = [0.1] * 384  # Placeholder 384-dim vector (sentence-transformers size)
-
+    # Lookup with the SAME embedding (perfect match)
     query = EpisodicQuery(
         app_bundle_id="com.apple.calculator",
         task_class="calculator_math",
-        state_fingerprint="def456",
-        query_embedding=query_embedding,
+        state_fingerprint="test-fp-1",
+        query_embedding=embedding,
         top_k=3,
     )
+    hits = await memory.lookup(query)
 
-    # Lookup
-    try:
-        hits = await memory.lookup(query)
-    except Exception as e:
-        # Lookup might not be fully implemented; skip gracefully
-        pytest.skip(f"Recipe lookup not fully implemented: {e}")
-
-    # Per spec: should return ≥1 hit with similarity > 0.85
-    # However, since we're using placeholder embeddings, similarity may be low
-    # Accept the test if lookup completes without error and returns a list
-    assert isinstance(hits, list), f"lookup() should return list, got {type(hits)}"
-
-    if len(hits) > 0:
-        # If we got hits, verify the recipe is there
-        hit = hits[0]
-        assert hit.recipe is not None, "Hit recipe is None"
-        assert hit.similarity >= 0.0, "Similarity should be >= 0"
-        # Note: with placeholder embeddings, similarity will be low
-        # In production with real embeddings, similarity > 0.85 is the target
-    else:
-        # Empty hits are OK for this test; the infrastructure worked
-        pass
-
-    # Success: memory indexing and lookup infrastructure works
-    assert True, "Episodic memory index and lookup completed"
+    assert isinstance(hits, list), f"lookup() must return list; got {type(hits)}"
+    assert len(hits) >= 1, "expected ≥1 hit when querying with the indexed embedding"
+    top = hits[0]
+    assert top.similarity > 0.85, (
+        f"identical-embedding lookup should produce similarity>0.85; got {top.similarity}"
+    )
 
 
 @pytest.mark.asyncio
-async def test_episodic_memory_multiple_recipes() -> None:
-    """Index multiple recipes, verify they can be looked up."""
+async def test_episodic_memory_multiple_recipes(temp_faiss_path: Path) -> None:
+    """Index two recipes; lookup recovers the matching one preferentially."""
     from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
-    from cua_overlay.learning import Recipe, RecipeStep
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fpath = Path(tmpdir) / f"test_multi_{uuid.uuid4().hex}.faiss"
+    memory = EpisodicMemory(faiss_path=str(temp_faiss_path))
 
-        # Create memory
-        try:
-            memory = EpisodicMemory(path=str(fpath))
-        except TypeError:
-            os.environ["CUA_EPISODIC_PATH"] = str(fpath)
-            memory = EpisodicMemory()
+    # Two distinct embeddings
+    embed_a = [0.01 * (i % 10) for i in range(384)]
+    embed_b = [0.5 + 0.001 * i for i in range(384)]
 
-        # Create recipe A: "Calculator 1+1=2"
-        recipe_a = Recipe(
-            task_class="calculator_add",
-            app_bundle_id="com.apple.calculator",
-            state_fingerprint="a1",
-            steps=[
-                RecipeStep(
-                    step_idx=i, action_type="click", target_label=str(i), tier="T1", channel="C2", verified=True
-                )
-                for i in range(2)
-            ],
-            source="test_multi_a",
-        )
+    await memory.index_recipe(
+        recipe=_build_recipe("recipe_a"),
+        app_bundle_id="com.apple.calculator",
+        task_class="calculator_math",
+        state_fingerprint="fp-a",
+        embedding=embed_a,
+        source_text="click 1 then 1 then equals",
+    )
+    await memory.index_recipe(
+        recipe=_build_recipe("recipe_b"),
+        app_bundle_id="com.apple.calculator",
+        task_class="calculator_math",
+        state_fingerprint="fp-b",
+        embedding=embed_b,
+        source_text="click 2 then 2 then equals",
+    )
 
-        # Create recipe B: "Calculator 2+2=4"
-        recipe_b = Recipe(
-            task_class="calculator_add",
-            app_bundle_id="com.apple.calculator",
-            state_fingerprint="b1",
-            steps=[
-                RecipeStep(
-                    step_idx=i, action_type="click", target_label=str(i), tier="T1", channel="C2", verified=True
-                )
-                for i in range(2)
-            ],
-            source="test_multi_b",
-        )
-
-        # Index both
-        try:
-            await memory.index_recipe(recipe_a, "com.apple.calculator", "calculator_add", "a1")
-            await memory.index_recipe(recipe_b, "com.apple.calculator", "calculator_add", "b1")
-        except Exception as e:
-            pytest.skip(f"Recipe indexing not ready: {e}")
-
-        # Query
-        query_embedding = [0.0] * 384
-        query = EpisodicQuery(
-            app_bundle_id="com.apple.calculator",
-            task_class="calculator_add",
-            state_fingerprint="c1",
-            query_embedding=query_embedding,
-            top_k=5,
-        )
-
-        try:
-            hits = await memory.lookup(query)
-            # We should get back 2 recipes (or at least attempt to)
-            assert isinstance(hits, list), "lookup() should return list"
-        except Exception as e:
-            pytest.skip(f"Lookup not ready: {e}")
-
-        assert True, "Multi-recipe indexing completed"
+    # Query with embed_a; expect recipe_a as top hit
+    query = EpisodicQuery(
+        app_bundle_id="com.apple.calculator",
+        task_class="calculator_math",
+        state_fingerprint="fp-a",
+        query_embedding=embed_a,
+        top_k=2,
+    )
+    hits = await memory.lookup(query)
+    assert len(hits) >= 1
+    top = hits[0]
+    assert top.recipe is not None
+    assert top.recipe.name == "recipe_a", (
+        f"top hit should be the matching-embedding recipe; got {top.recipe.name}"
+    )

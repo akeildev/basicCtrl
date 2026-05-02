@@ -161,9 +161,15 @@ class T3AppleScriptTranslator:
         return target.as_target_spec is not None and len(target.as_target_spec) > 0
 
     async def execute(
-        self, source: str, args: tuple = ()
+        self,
+        source: str,
+        args: tuple = (),
+        *,
+        timeout_sec: Optional[float] = None,
+        retry_on_transient: bool = True,
     ) -> tuple[str, Optional[str]]:
-        """Run AppleScript ``source`` on the dedicated thread pool.
+        """Run AppleScript ``source`` on the dedicated thread pool with
+        timeout + one transient-error retry (browser-harness §I3).
 
         Returns a ``(result_str, error_str_or_None)`` tuple. Errors NEVER
         escape — both compile errors and runtime errors are caught and
@@ -175,6 +181,14 @@ class T3AppleScriptTranslator:
 
         Per CONTEXT.md D-04: runs on ``self._exec`` (dedicated cua-as pool),
         NOT ``asyncio.to_thread`` which uses the default executor.
+
+        Browser-harness §I3 additions:
+          - ``timeout_sec`` bounds each fire so a stalled AppleEvent
+            listener can't block the racing budget. Translates to
+            ``ae_timeout: <Ns>`` error string on expiry.
+          - ``retry_on_transient`` retries ONCE on AppleEvent codes
+            -1712 (timeout), -1708, -609, -10000 — the AS-equivalent of
+            browser-harness's stale-session re-attach.
         """
         loop = asyncio.get_running_loop()
 
@@ -197,8 +211,21 @@ class T3AppleScriptTranslator:
             except Exception as exc:  # noqa: BLE001 — AppleEvent / runtime errors
                 return ("", f"runtime_error: {exc}")
 
-        # D-04 / T-2-03: dedicated executor, NOT loop's default. This is the
-        # whole point of the class — never let AS calls leak onto the main
-        # asyncio loop's worker threads where they could starve other tasks
-        # or pile up if the target app's AppleEvent listener stalls.
-        return await loop.run_in_executor(self._exec, _sync)
+        async def _attempt() -> tuple[str, Optional[str]]:
+            # D-04 / T-2-03: dedicated executor, NOT loop's default. This is
+            # the whole point of the class — never let AS calls leak onto
+            # the main asyncio loop's worker threads where they could
+            # starve other tasks or pile up if the target app's
+            # AppleEvent listener stalls.
+            return await loop.run_in_executor(self._exec, _sync)
+
+        from cua_overlay.translators.as_daemon import (
+            run_with_resilience,
+            _DEFAULT_TIMEOUT_SEC,
+        )
+
+        return await run_with_resilience(
+            _attempt,
+            timeout_sec=timeout_sec if timeout_sec is not None else _DEFAULT_TIMEOUT_SEC,
+            retry_on_transient=retry_on_transient,
+        )

@@ -43,7 +43,7 @@ _DHASH_THRESHOLD_BITS: int = 5
 class L1Snapshot:
     """Pre-action snapshot to diff against post-action state.
 
-    All three sub-check sources are captured atomically so the diff is
+    All four sub-check sources are captured atomically so the diff is
     apples-to-apples.
     """
 
@@ -51,6 +51,25 @@ class L1Snapshot:
     pasteboard_change_count: int
     roi_dhash: Optional[str]  # hex string of 64-bit dHash, or None on capture fail
     captured_at: float
+    # L1d (browser-harness §I1): index into the CDPDaemon event ring buffer
+    # AT THE MOMENT of pre-snapshot. Post-snapshot we read events that arrived
+    # AFTER this timestamp_ns and look for navigation / DOM-mutation evidence.
+    cdp_event_baseline_ns: int = 0
+
+
+# Browser-harness §I1: CDP events that count as "post-action observable change."
+# Page.frameNavigated/loadEventFired = navigation; Page.domContentEventFired =
+# render. DOM.attribute/childNode = mutation. Network.responseReceived =
+# request triggered by the click. Any of these post-action ⇒ success signal.
+_CDP_SUCCESS_EVENTS: frozenset[str] = frozenset({
+    "Page.frameNavigated",
+    "Page.loadEventFired",
+    "Page.domContentEventFired",
+    "DOM.attributeModified",
+    "DOM.childNodeInserted",
+    "DOM.documentUpdated",
+    "Network.responseReceived",
+})
 
 
 class L1Cheap:
@@ -104,6 +123,7 @@ class L1Cheap:
             pasteboard_change_count=results["pasteboard"],
             roi_dhash=results["roi_dhash"],
             captured_at=t,
+            cdp_event_baseline_ns=time.monotonic_ns(),
         )
 
     # ---------------------------------------------------------------- run
@@ -157,7 +177,50 @@ class L1Cheap:
             # No fingerprint on either side; treat as no signal.
             signals["l1.dhash_changed"] = 0.0
 
+        # L1d: CDP event signal (browser-harness §I1).
+        # Only fires when there's a CDPDaemon attached to target.pid — i.e.,
+        # this action went through T2/C5. Reads the daemon's bounded event
+        # ring buffer and looks for navigation / DOM-mutation evidence
+        # AFTER the pre-snapshot baseline. Chrome doesn't fire AX events
+        # so without this signal CDP actions verify=False even when the
+        # click landed and triggered navigation.
+        signals["l1.cdp_event_changed"] = await self._cdp_event_signal(
+            target.pid, before.cdp_event_baseline_ns
+        )
+
         return signals
+
+    async def _cdp_event_signal(self, pid: int, baseline_ns: int) -> float:
+        """Return 1.0 if a known success-class CDP event arrived for `pid`
+        after `baseline_ns`, else 0.0. Returns 0.0 for non-CDP apps (no
+        cached daemon) — does not synthesize evidence.
+
+        Polls the daemon's event ring for up to ~250ms because the click
+        → Page.frameNavigated round-trip can take 100-300ms (network
+        latency on the link target) and L1.run typically fires within
+        single-digit ms of the click landing."""
+        try:
+            from cua_overlay.translators.cdp_daemon import find_for_pid
+        except Exception:  # noqa: BLE001
+            return 0.0
+        daemon = find_for_pid(pid)
+        if daemon is None:
+            return 0.0
+        # Poll up to ~1s in 100ms slices for a success event.
+        for _ in range(10):
+            for evt in daemon.events:
+                ts = evt.get("ts_ns", 0)
+                method = evt.get("method", "")
+                if ts > baseline_ns and method in _CDP_SUCCESS_EVENTS:
+                    self._log.debug(
+                        "l1.cdp_event_match",
+                        pid=pid,
+                        method=method,
+                        ts_ns=ts,
+                    )
+                    return 1.0
+            await asyncio.sleep(0.1)
+        return 0.0
 
     # ---------------------------------------------------------------- helpers (sync, run in to_thread)
 

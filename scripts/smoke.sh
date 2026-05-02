@@ -144,6 +144,43 @@ else
 fi
 
 # ----------------------------------------------------------------------
+# Post-v1.0 hardening gates (added 2026-05-02 per ULTRAPLAN Phase D)
+# ----------------------------------------------------------------------
+# Each gate runs the corresponding e2e test when its env var is set;
+# otherwise skips cleanly. None affects EXIT_CODE unless explicitly opted in.
+
+run_gate() {
+  local name="$1" envvar="$2" testpath="$3" required_dep="$4"
+  echo
+  echo "[$name] $testpath"
+  if [[ "${!envvar:-0}" != "1" ]]; then
+    yellow "  ↷ Skipped (set $envvar=1 to run)"
+    return
+  fi
+  if [[ -n "$required_dep" ]] && ! eval "$required_dep" >/dev/null 2>&1; then
+    yellow "  ↷ Skipped (dependency missing: $required_dep)"
+    return
+  fi
+  GATE_OUT=$(env "$envvar=1" uv run pytest "$testpath" -q --no-header -o addopts="" --tb=short 2>&1 | tail -6 || true)
+  echo "$GATE_OUT"
+  if echo "$GATE_OUT" | grep -qE "passed"; then
+    green "  ✓ $name passed"
+  elif echo "$GATE_OUT" | grep -qE "skipped" && ! echo "$GATE_OUT" | grep -qE "failed|error"; then
+    yellow "  ↷ skipped (within-test gate)"
+  else
+    red "  ✗ $name failed"
+    EXIT_CODE=1
+  fi
+}
+
+run_gate "5/CDP-CHROMIUM" "CUA_RUN_E2E_CDP_CHROMIUM" "tests/integration/test_cdp_chromium_e2e.py" "command -v chromium || command -v Chromium"
+run_gate "6/DURABILITY"   "CUA_RUN_E2E_DURABILITY"   "tests/integration/test_durability_sigkill_resume_e2e.py" "psql -d postgresql://localhost:5432/cua_maximalist -c 'SELECT 1'"
+run_gate "7/VISUALIZER"   "CUA_RUN_E2E_VISUALIZER"   "tests/integration/test_visualizer_socket_e2e.py" "test -x libs/cua-driver/.build/arm64-apple-macosx/debug/cua-driver"
+run_gate "8/MEMORY"       "CUA_RUN_E2E_MEMORY"       "tests/integration/test_memory_recall_e2e.py" ""
+run_gate "9/RECOVERY-REAL" "CUA_RUN_E2E_RECOVERY_REAL" "tests/integration/test_recovery_b3_b4_e2e.py" "test -n \"\$ANTHROPIC_API_KEY\""
+run_gate "10/CANARY"      "CUA_RUN_E2E_CANARY"       "tests/integration/test_canary_multi_app.py" ""
+
+# ----------------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------------
 hr
@@ -152,14 +189,18 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   echo
   echo "Live demo: CUA_RUN_E2E_CALC=1 ./scripts/smoke.sh"
   echo "Other live targets:"
-  echo "  • CUA_RUN_E2E_RACE=1     → full RaceOrchestrator path on Calculator"
-  echo "  • CUA_RUN_E2E_TEXTEDIT=1 → T3+C4 AppleScript writes to TextEdit"
-  echo "    (one-time TCC Automation grant required — System Settings → Privacy)"
-  echo "  • CUA_RUN_CHESS=1   → T4/T5 grounding on Chess (needs Chess.app + new game)"
-  echo "  • CUA_RUN_PAGES=1   → T3 AppleScript on Pages toolbar (needs open document)"
-  echo "  • Live SC#3 overlay-excluded screencap: see PHASE-5-DEMO.md"
-  echo "  • Live DYLD inject smoke: see PHASE-6-DEMO.md"
-  echo "  • SIP partial-off (csrutil enable --without dtrace,fs) → unlocks ES + DTrace"
+  echo "  • CUA_RUN_E2E_RACE=1            → RaceOrchestrator on Calculator"
+  echo "  • CUA_RUN_E2E_RECOVERY=1        → B1-B5 dispatch on Calculator"
+  echo "  • CUA_RUN_E2E_TEXTEDIT=1        → T3+C4 AppleScript on TextEdit"
+  echo "  • CUA_RUN_E2E_CDP_CHROMIUM=1    → T2+C5 on chromium (post-v1.0)"
+  echo "  • CUA_RUN_E2E_DURABILITY=1      → SIGKILL+resume (post-v1.0)"
+  echo "  • CUA_RUN_E2E_VISUALIZER=1      → visualizer socket (post-v1.0)"
+  echo "  • CUA_RUN_E2E_MEMORY=1          → FAISS recall (post-v1.0)"
+  echo "  • CUA_RUN_E2E_RECOVERY_REAL=1   → B3/B4 real path (needs ANTHROPIC_API_KEY)"
+  echo "  • CUA_RUN_E2E_CANARY=1          → 3+ apps in one MCP session (post-v1.0)"
+  echo "  • CUA_RUN_CHESS=1               → T4/T5 grounding on Chess"
+  echo "  • CUA_RUN_PAGES=1               → T3 AppleScript on Pages"
+  echo "  • Run everything: ./scripts/verify-everything.sh"
 else
   red "SMOKE FAILED — see output above."
 fi

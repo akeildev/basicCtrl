@@ -132,30 +132,33 @@ class C5CDPInputChannel:
         cx = bbox.x + bbox.w / 2
         cy = bbox.y + bbox.h / 2
 
-        # 4. Dispatch the click pair. Re-open the CDPClient (ws is local;
-        # ~10ms handshake). The async-with ensures the socket closes on
-        # cancellation propagation (T-2-08).
+        # 4. Dispatch the click pair via the long-lived CDPDaemon (browser-harness
+        # integration §F3). The daemon already owns an attached session for this
+        # browser; we dispatch on the same session_id T2 used. Saves the ~10ms
+        # per-fire socket handshake we used to pay with `async with CDPClient(...)`.
+        # Stale-session retry happens inside daemon.call().
         try:
-            async with self._cdp_client_factory(ws_url) as cdp:
-                # mousePressed.
-                await cdp.send.Input.dispatchMouseEvent(
-                    params={
-                        "type": "mousePressed",
-                        "x": cx, "y": cy,
+            from cua_overlay.translators.cdp_daemon import get_or_create
+
+            # `bundle_id` is best-effort — the daemon was already created by T2
+            # under the real bundle_id, so this lookup hits the cache.
+            daemon = await get_or_create(
+                pid=target.element.pid,
+                ws_url=ws_url,
+                bundle_id=target.element.bundle_id or "",
+                client_factory=self._cdp_client_factory,
+            )
+            for evt in ("mousePressed", "mouseReleased"):
+                await daemon.call(
+                    "Input.dispatchMouseEvent",
+                    {
+                        "type": evt,
+                        "x": cx,
+                        "y": cy,
                         "button": "left",
                         "clickCount": 1,
                     },
-                    sessionId=target.cdp_session_id,
-                )
-                # mouseReleased.
-                await cdp.send.Input.dispatchMouseEvent(
-                    params={
-                        "type": "mouseReleased",
-                        "x": cx, "y": cy,
-                        "button": "left",
-                        "clickCount": 1,
-                    },
-                    sessionId=target.cdp_session_id,
+                    session_id=target.cdp_session_id,
                 )
         except Exception as exc:  # noqa: BLE001 — never raise across channel boundary
             _log.warning("c5.fire_error", action_id=action.id, error=str(exc))

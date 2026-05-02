@@ -297,3 +297,35 @@ candidates with explicit `tier="T1"`. The B3/B4 real-path replan flow
 constructs candidates with no tier (race assigns it later), so tests
 that route through B4 would have. The new
 `tests/integration/test_recovery_b3_b4_e2e.py` pins this.
+
+---
+
+## F14: Calculator persists state to NSUserDefaults across `pkill`
+
+**Discovered:** 2026-05-02 during ULTRAPLAN Phase D (verify-everything sequencing).
+
+**Affected:** Any sequential e2e run that touches Calculator twice
+(verify-everything.sh runs calc → race → recovery → canary). After the
+first gate sets `display=8`, subsequent gates that "click AC then 5+3="
+end up with `display=18` instead.
+
+**Evidence:** `defaults read com.apple.calculator` on a `pkill -9`-killed
+Calculator shows `RestoreInputValue = "5+5+";` and `LastResultValue = "18E+0";`.
+macOS Calculator restores these from `~/Library/Preferences/com.apple.calculator.plist`
+on the next launch — `pkill` does not clear them, so even after a clean
+process kill the next launch starts mid-calculation. The framework's
+"AC" click then only clears the visible display, not the operation
+buffer; the next "5+3=" composes with the restored buffer prefix.
+
+**Workaround / fix in this repo:** `scripts/verify-everything.sh` runs
+`defaults delete com.apple.calculator` before every Calculator-touching
+gate. Each test in isolation is unaffected (no prior state from same
+process). Sequenced runs are now deterministic.
+
+**Not a code regression in the framework** — this is a macOS Calculator
+behavior. The fix lives in the test harness.
+
+**Future:** the `tests/integration/conftest.py` `calculator_pid` fixture
+could perform the same defaults-delete in its setup phase to make this
+fix permanent across all e2e callers.
+

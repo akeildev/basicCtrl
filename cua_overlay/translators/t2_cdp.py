@@ -67,8 +67,24 @@ class T2CDPTranslator:
         Returns the ``webSocketDebuggerUrl`` from the first 200-OK response,
         or None if all probes fail. The 0.5s per-port timeout keeps total
         worst-case latency under 2s when nothing is listening (P8 path).
+
+        Test override: ``CUA_T2_CDP_PORT_OVERRIDE`` env var pins the probe
+        to a single port. Used by tests to coexist with the user's other
+        running CDP instances (browser-harness daemon on port 9223 etc.)
+        — without this, T2 attaches to whatever CDP listens first, which
+        in a dev environment is usually NOT the test's Chrome.
         """
-        for port in CDP_PROBE_PORTS:
+        import os
+        override = os.environ.get("CUA_T2_CDP_PORT_OVERRIDE")
+        ports: tuple[int, ...]
+        if override:
+            try:
+                ports = (int(override),)
+            except ValueError:
+                ports = CDP_PROBE_PORTS
+        else:
+            ports = CDP_PROBE_PORTS
+        for port in ports:
             try:
                 async with httpx.AsyncClient(timeout=0.5) as client:
                     r = await client.get(f"http://localhost:{port}/json/version")
@@ -125,34 +141,47 @@ class T2CDPTranslator:
         pid: int,
         target_spec: TargetSpec,
     ) -> Optional[TranslatorTarget]:
-        """Attach via cdp-use, query DOM, return TranslatorTarget with cdp handles.
+        """Attach via CDPDaemon (long-lived per browser), query DOM, return target.
 
         Returns None on any of:
             * No CDP port reachable (P8 — user hasn't relaunched yet)
             * No workspace target matches the bundle filter (Pitfall D)
             * cdp-use unavailable (import failure)
-            * No css selector in target_spec
-            * DOM.querySelector returns nodeId=0 (selector miss)
+            * Neither CSS selector nor label provided in target_spec
+            * DOM resolution misses on both selector and text-content fallback
             * DOM.getBoxModel returns invalid quad
             * Any CDP-level exception (translator must never raise — orchestrator
               treats None as "this translator can't address this target")
-        """
-        # NOTE: D-03 — cdp-use is the direct dep (no sibling-tool import).
-        try:
-            from cdp_use.client import CDPClient  # type: ignore[import-not-found]
-        except ImportError:
-            _log.error("t2.cdp_use_unavailable", hint="install cdp-use==1.4.5")
-            return None
 
+        browser-harness integration §F2/G2: uses CDPDaemon.get_or_create
+        instead of per-fire CDPClient (saves ~10ms per call + enables
+        stale-session re-attach + event tap), and falls back to text-
+        content search when no CSS selector is provided or it misses.
+        """
         ws_url = await self._discover_ws_url(pid)
         if ws_url is None:
             return None
 
+        from cua_overlay.translators.cdp_daemon import get_or_create
+
         try:
-            async with CDPClient(ws_url) as cdp:
-                # 1. Target list filter for workspace renderer (Pitfall D / D-24).
-                targets = await cdp.send.Target.getTargets()
-                target_infos = targets.get("targetInfos", [])
+            daemon = await get_or_create(pid=pid, ws_url=ws_url, bundle_id=bundle_id)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("t2.daemon_open_failed", bundle_id=bundle_id, error=str(exc))
+            return None
+
+        try:
+            # 1. D-24 workspace filter. If we know this bundle has a specific
+            # workspace renderer (Slack, Cursor, Obsidian), pick that target
+            # and re-attach the daemon to it. For generic browsers, the
+            # daemon's default attach (first real page) is correct.
+            targets_resp = await daemon.call("Target.getTargets")
+            target_infos = targets_resp.get("targetInfos", [])
+            if bundle_id in (
+                "com.tinyspeck.slackmacgap",
+                "com.todesktop.230313mzl4w4u92",
+                "md.obsidian",
+            ):
                 workspace = self._pick_workspace_target(target_infos, bundle_id)
                 if workspace is None:
                     _log.info(
@@ -161,30 +190,30 @@ class T2CDPTranslator:
                         target_count=len(target_infos),
                     )
                     return None
+                if workspace["targetId"] != getattr(daemon, "_attached_target_id", None):
+                    if not await daemon.reattach_to(workspace["targetId"]):
+                        return None
+                    daemon._attached_target_id = workspace["targetId"]  # type: ignore[attr-defined]
 
-                # 2. Attach with flatten=True (Pitfall B — flatten is mandatory).
-                # Without flatten, DOM calls hang silently waiting for a separate
-                # session-event pump that we never registered.
-                attach = await cdp.send.Target.attachToTarget(
-                    params={"targetId": workspace["targetId"], "flatten": True}
-                )
-                session_id = attach.get("sessionId")
-                if session_id is None:
-                    _log.warning("t2.attach_no_session", target=workspace.get("targetId"))
-                    return None
+            session_id = daemon.session_id
+            if session_id is None:
+                _log.warning("t2.daemon_no_session", bundle_id=bundle_id)
+                return None
 
-                # 3. Resolve element by CSS selector. T2 requires target_spec.css;
-                # if the caller only passed AX hints, this translator can't help.
-                if not target_spec.css:
-                    _log.debug("t2.no_css_selector", bundle_id=bundle_id)
-                    return None
-                doc = await cdp.send.DOM.getDocument(sessionId=session_id)
-                root_node_id = doc.get("root", {}).get("nodeId")
-                if root_node_id is None:
-                    return None
-                node_search = await cdp.send.DOM.querySelector(
-                    params={"nodeId": root_node_id, "selector": target_spec.css},
-                    sessionId=session_id,
+            # 2. Resolve element. Prefer CSS selector when given; fall back
+            # to text-content match (browser-harness §G — fixes the
+            # "More information…" / label-only case).
+            doc = await daemon.call("DOM.getDocument", session_id=session_id)
+            root_node_id = doc.get("root", {}).get("nodeId")
+            if root_node_id is None:
+                return None
+
+            node_id = 0
+            if target_spec.css:
+                node_search = await daemon.call(
+                    "DOM.querySelector",
+                    {"nodeId": root_node_id, "selector": target_spec.css},
+                    session_id=session_id,
                 )
                 node_id = node_search.get("nodeId", 0)
                 if node_id == 0:
@@ -193,45 +222,104 @@ class T2CDPTranslator:
                         bundle_id=bundle_id,
                         selector=target_spec.css,
                     )
-                    return None
+            if node_id == 0 and target_spec.label:
+                node_id = await self._find_node_by_text(
+                    daemon, session_id, target_spec.label
+                )
+                if node_id == 0:
+                    _log.debug(
+                        "t2.text_content_miss",
+                        bundle_id=bundle_id,
+                        label=target_spec.label,
+                    )
+            if node_id == 0:
+                return None
 
-                # 4. Get box model → content quad center.
-                # CDP returns content quad as [x1,y1, x2,y2, x3,y3, x4,y4]
-                # with vertices in clockwise order; the diagonal averages
-                # ((x1+x3)/2, (y1+y3)/2) give the center.
-                box = await cdp.send.DOM.getBoxModel(
-                    params={"nodeId": node_id}, sessionId=session_id
-                )
-                quad = box.get("model", {}).get("content", [])
-                if len(quad) < 8:
-                    _log.warning("t2.invalid_box_model", node_id=node_id)
-                    return None
-                cx = (quad[0] + quad[4]) / 2
-                cy = (quad[1] + quad[5]) / 2
+            # 3. Get box model → content quad center.
+            box = await daemon.call(
+                "DOM.getBoxModel", {"nodeId": node_id}, session_id=session_id
+            )
+            quad = box.get("model", {}).get("content", [])
+            if len(quad) < 8:
+                _log.warning("t2.invalid_box_model", node_id=node_id)
+                return None
+            cx = (quad[0] + quad[4]) / 2
+            cy = (quad[1] + quad[5]) / 2
 
-                now = datetime.now(timezone.utc)
-                element = UIElement(
-                    role="AXUnknown",
-                    role_path=f"CDPElement[{node_id}]",
-                    label=target_spec.label or target_spec.css,
-                    bbox=Bbox(x=cx - 10, y=cy - 10, w=20, h=20),
-                    pid=pid,
-                    bundle_id=bundle_id,
-                    window_id=0,
-                    discovered_at=now,
-                    last_seen_at=now,
-                    source=[Source.CDP],
-                )
-                return TranslatorTarget(
-                    element=element,
-                    cdp_node_id=node_id,
-                    cdp_session_id=session_id,
-                    grounded_bbox=Bbox(x=cx - 10, y=cy - 10, w=20, h=20),
-                    extras={"ws_url": ws_url},
-                )
+            now = datetime.now(timezone.utc)
+            element = UIElement(
+                role="AXUnknown",
+                role_path=f"CDPElement[{node_id}]",
+                label=target_spec.label or target_spec.css,
+                bbox=Bbox(x=cx - 10, y=cy - 10, w=20, h=20),
+                pid=pid,
+                bundle_id=bundle_id,
+                window_id=0,
+                discovered_at=now,
+                last_seen_at=now,
+                source=[Source.CDP],
+            )
+            return TranslatorTarget(
+                element=element,
+                cdp_node_id=node_id,
+                cdp_session_id=session_id,
+                grounded_bbox=Bbox(x=cx - 10, y=cy - 10, w=20, h=20),
+                extras={"ws_url": ws_url},
+            )
         except Exception as exc:  # noqa: BLE001 — translator must never raise
             _log.warning("t2.resolve_error", bundle_id=bundle_id, error=str(exc))
             return None
+
+    async def _find_node_by_text(
+        self, daemon: Any, session_id: str, label: str
+    ) -> int:
+        """Fallback: locate a clickable element whose visible text or aria-label
+        matches `label`. Returns nodeId or 0.
+
+        Borrowed from browser-harness's pattern of pairing coordinate clicks
+        with screenshot-driven discovery — the agent says "click 'Send'", we
+        find what's actually labeled "Send".
+        """
+        # Escape backticks/backslashes for safe template-literal embedding.
+        safe = label.replace("\\", "\\\\").replace("`", "\\`")
+        expr = (
+            "(()=>{const L=`" + safe + "`;"
+            "const els=Array.from(document.querySelectorAll('a,button,input,[role=button],[role=link]'));"
+            "const m=els.find(e=>{const t=(e.innerText||e.textContent||'').trim();"
+            "return t===L||t.startsWith(L)||(e.ariaLabel||'').trim()===L||(e.title||'').trim()===L;});"
+            "return m?1:0;})()"
+        )
+        try:
+            r = await daemon.call(
+                "Runtime.evaluate",
+                {"expression": expr, "returnByValue": True},
+                session_id=session_id,
+            )
+            if not r.get("result", {}).get("value"):
+                return 0
+            # Re-run to fetch the matching element as a remoteObject + nodeId.
+            object_query = (
+                "(()=>{const L=`" + safe + "`;"
+                "const els=Array.from(document.querySelectorAll('a,button,input,[role=button],[role=link]'));"
+                "return els.find(e=>{const t=(e.innerText||e.textContent||'').trim();"
+                "return t===L||t.startsWith(L)||(e.ariaLabel||'').trim()===L||(e.title||'').trim()===L;});})()"
+            )
+            r2 = await daemon.call(
+                "Runtime.evaluate",
+                {"expression": object_query, "returnByValue": False},
+                session_id=session_id,
+            )
+            obj = r2.get("result", {})
+            object_id = obj.get("objectId")
+            if not object_id:
+                return 0
+            req = await daemon.call(
+                "DOM.requestNode", {"objectId": object_id}, session_id=session_id
+            )
+            return int(req.get("nodeId", 0))
+        except Exception as exc:  # noqa: BLE001
+            _log.debug("t2.text_search_error", label=label, error=str(exc))
+            return 0
 
     async def validate(self, target: TranslatorTarget) -> bool:
         """T2 validity check: cdp_session_id + cdp_node_id must be present.
