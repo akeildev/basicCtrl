@@ -89,8 +89,14 @@ class BranchBase:
 
 from .b1_rescroll import B1_Rescroll
 from .b2_ocr_reground import B2_OCRRegrounding
-from .b3_world_replan_stub import B3_WorldReplan
-from .b4_planner_reqry_stub import B4_PlannerRequery
+# Real Phase 4 B3/B4 are wired by main.py when ANTHROPIC_API_KEY is set.
+# The stub variants below are retained for the no-key fallback path
+# (CognitionDisabledError → main.py substitutes B3_WorldReplan_Stub /
+# B4_PlannerRequery_Stub). Both export the same Protocol shape.
+from .b3_world_replan import B3RecoveryBranch as B3_WorldReplan
+from .b3_world_replan_stub import B3_WorldReplan as B3_WorldReplan_Stub
+from .b4_planner_replan import B4RecoveryBranch as B4_PlannerRequery
+from .b4_planner_reqry_stub import B4_PlannerRequery as B4_PlannerRequery_Stub
 from .b5_applescript import B5_AppleScriptFallback
 
 __all__ = [
@@ -99,6 +105,8 @@ __all__ = [
     "B1_Rescroll",
     "B2_OCRRegrounding",
     "B3_WorldReplan",
+    "B3_WorldReplan_Stub",
     "B4_PlannerRequery",
+    "B4_PlannerRequery_Stub",
     "B5_AppleScriptFallback",
 ]

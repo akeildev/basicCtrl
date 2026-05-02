@@ -276,11 +276,25 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 
 ## Current Status & Next Step
 
-**Phase:** 1 of 6 — Foundation + State + Verifier
-**Plans:** 0 / TBD
-**Status:** Ready to plan (CONTEXT.md not yet written; user picked Claude's discretion on all gray areas)
+**Milestone:** v1.0-released (2026-05-01)
+**Phases:** 6 / 6 complete
+**Plans:** 61 / 61 complete (100%)
+**Tests:** 525+ unit, 27 integration, all green
+**Status:** Post-v1.0 hardening — observability + Phase 4 cognition wire-up
 
-### Standard Flow (per phase)
+See `.planning/STATE.md` and `.planning/MILESTONE-V1.0.md` for full state.
+
+### Active work (post-v1.0 hardening)
+Plan: `~/.claude/plans/ultraplan-finish-deep-stearns.md`
+
+| Phase | Goal | Status |
+|---|---|---|
+| A | Truth-up + preflight + MCP boot proof | in progress |
+| B | Phase 4 cognition wire (B3/B4 real, graceful disable) | pending |
+| C | Observability CLIs + 5 new e2e gates | pending |
+| D | verify-everything.sh + canary integration | pending |
+
+### Standard Flow (legacy, per pre-v1.0 phase)
 ```
 /gsd-discuss-phase N   →  N-CONTEXT.md  (decisions)
 /gsd-plan-phase N      →  N-RESEARCH.md + N-PLAN.md  (tasks)
@@ -294,11 +308,6 @@ Shortcuts:
 - `/gsd-next` — auto-route to next logical step
 - `/gsd-fast` — trivial inline task, no planning overhead
 - `/gsd-autonomous` — discuss → plan → execute all phases unattended (use with care)
-
-### Phase 1 Goal (locked)
-Python overlay can probe any Mac app, write a typed state graph, and verify a click via push events + cheap deterministic checks in **<50ms** — without touching cua-driver Swift code.
-
-**Phase 1 success criteria** live in `.planning/ROADMAP.md` §"Phase 1".
 
 ### Where to find things
 | Artifact | Path |

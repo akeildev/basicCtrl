@@ -96,6 +96,7 @@ class DurableExecutor:
                 "DurableExecutor not setup() — call setup() before checkpoint()"
             )
         from langgraph.checkpoint.base import empty_checkpoint
+        import hashlib
 
         config = {
             "configurable": {
@@ -119,13 +120,27 @@ class DurableExecutor:
         checkpoint["channel_values"] = {"state": state_payload}
         checkpoint["channel_versions"] = {"state": version}
 
+        # Compute state hash for observability
+        import json
+        state_hash = hashlib.sha256(
+            json.dumps(state_payload, sort_keys=True, default=str).encode()
+        ).hexdigest()[:16]
+
+        self._log.info(
+            "ckpt.commit_start",
+            session_id=session_id,
+            step_idx=step_idx,
+        )
+
         await self._saver.aput(
             config, checkpoint, metadata={}, new_versions={"state": version}
         )
+
         self._log.info(
-            "durable.checkpoint_written",
+            "ckpt.commit_end",
             session_id=session_id,
             step_idx=step_idx,
+            state_hash=state_hash,
         )
 
     async def latest_checkpoint(self, session_id: str) -> Optional[dict[str, Any]]:
@@ -156,6 +171,15 @@ class DurableExecutor:
         state = channel_values.get("state")
         if not isinstance(state, dict):
             return None
+
+        # Emit resume event
+        step_idx = state.get("step_idx", -1)
+        self._log.info(
+            "ckpt.resume_from_crash",
+            session_id=session_id,
+            step_idx=step_idx,
+        )
+
         return state
 
     def _mask_conn(self) -> str:

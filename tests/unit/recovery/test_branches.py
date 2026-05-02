@@ -23,8 +23,8 @@ from cua_overlay.actions.channels.base import ChannelOutcome
 from cua_overlay.recovery.branches import (
     B1_Rescroll,
     B2_OCRRegrounding,
-    B3_WorldReplan,
-    B4_PlannerRequery,
+    B3_WorldReplan_Stub as B3_WorldReplan,
+    B4_PlannerRequery_Stub as B4_PlannerRequery,
     B5_AppleScriptFallback,
     RecoveryBranch,
 )

@@ -16,7 +16,15 @@ Submodules:
 """
 
 from . import branches
-from .branches import B1_Rescroll, B2_OCRRegrounding, B3_WorldReplan, B4_PlannerRequery, B5_AppleScriptFallback
+from .branches import (
+    B1_Rescroll,
+    B2_OCRRegrounding,
+    B3_WorldReplan,
+    B3_WorldReplan_Stub,
+    B4_PlannerRequery,
+    B4_PlannerRequery_Stub,
+    B5_AppleScriptFallback,
+)
 from .circuit_breaker import CircuitBreaker, BreakState
 from .classifier import FailureClass, FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
 from .heal_event import HealEvent
@@ -27,7 +35,9 @@ __all__ = [
     "B1_Rescroll",
     "B2_OCRRegrounding",
     "B3_WorldReplan",
+    "B3_WorldReplan_Stub",
     "B4_PlannerRequery",
+    "B4_PlannerRequery_Stub",
     "B5_AppleScriptFallback",
     "BreakState",
     "CircuitBreaker",

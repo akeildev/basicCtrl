@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import structlog
 from pydantic import ValidationError
 
+from cua_overlay.cognition.exceptions import CognitionDisabledError
 from cua_overlay.cognition.schemas import PlanCandidate
 
 if TYPE_CHECKING:
@@ -52,7 +53,10 @@ class Planner:
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+            log.warning("planner.disabled", reason="no_api_key", env="ANTHROPIC_API_KEY")
+            raise CognitionDisabledError(
+                module="Planner", reason="ANTHROPIC_API_KEY not set"
+            )
 
         self.episodic = episodic
         self.max_steps = max_steps
@@ -246,7 +250,12 @@ class WorldModelPredictor:
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+            log.warning(
+                "world_model.disabled", reason="no_api_key", env="ANTHROPIC_API_KEY"
+            )
+            raise CognitionDisabledError(
+                module="WorldModelPredictor", reason="ANTHROPIC_API_KEY not set"
+            )
 
         self._client = None
 

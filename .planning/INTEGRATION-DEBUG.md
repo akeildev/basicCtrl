@@ -229,3 +229,71 @@ sessions hit this, kill Calculator + wait + try a different test pattern.
 **Not a code regression** — the F9-fixed e2e race orchestrator passed
 ~6 times in a row earlier in the same session before Calculator entered
 this stuck state.
+
+---
+
+## F12: structlog NDJSON leaks to STDOUT, corrupts MCP stdio protocol
+
+**Discovered:** 2026-05-02 during ULTRAPLAN Phase A3 (MCP boot proof).
+
+**Affected:** Anything that uses the cua-maximalist MCP server over the
+official MCP stdio transport (Claude Code MCP host, MCP Inspector,
+strict third-party MCP clients).
+
+**Evidence:** Booted `uv run python -m cua_overlay.mcp_server` as a
+subprocess with JSON-RPC over stdin/stdout. Sent `initialize`. Got
+**44 structlog NDJSON events on STDOUT** (session.created, durable.setup_complete,
+upstream.connected, …) **before** the JSON-RPC `initialize` response.
+The MCP protocol spec reserves stdout for JSON-RPC frames only; logs
+must go to stderr.
+
+**Root cause:** `cua_overlay/log.py:configure()` calls `structlog.configure(processors=...)`
+without specifying `logger_factory`. structlog's default
+`PrintLoggerFactory(file=sys.stdout)` is then used, which writes every
+event to stdout. Smoke + integration tests never caught this because
+they import functions directly — they never spawn the MCP server as a
+subprocess and read its stdout as JSON-RPC.
+
+**Why MCP Inspector / lenient clients still appear to work:** structlog
+events happen to be valid JSON, just not valid JSON-RPC frames.
+Per-line JSON-RPC parsers that skip malformed/unknown frames keep
+going. Strict parsers will error.
+
+**Fix:** Add `logger_factory=structlog.PrintLoggerFactory(file=sys.stderr)`
+to the `structlog.configure(...)` call in `log.py`. One line, no public
+API change. Plan A3 fix.
+
+**Acceptance:** Re-run the boot probe and assert STDOUT contains zero
+non-JSON-RPC frames during `initialize`/`tools/list`.
+
+---
+
+## F13: Critic._compare_pair crashes on `None <= None`
+
+**Discovered:** 2026-05-02 during ULTRAPLAN Phase B6 (B3/B4 real-path e2e).
+
+**Affected:** B4_PLANNER_REPLAN whenever Critic.rank_candidates is invoked
+with candidates whose tier is unset (which is the normal case for replan
+candidates — the race winner sets tier *after* the candidate is ranked).
+
+**Evidence:** `B4.attempt(ctx)` returns None with `branch_failed
+reason=ranking_error error="'<=' not supported between instances of
+'NoneType' and 'NoneType'"`. Stack trace points at
+`critic.py:113 _compare_pair tie-break`.
+
+**Root cause:** `getattr(candidate, "tier", "T1")` returns the actual
+attribute value (which is `None`), not the default `"T1"`. The default
+only fires when the attribute is missing. `None <= None` raises in 3.x.
+
+**Fix:** Coerce `None` to `"T1"` explicitly:
+```python
+a_tier = getattr(candidate_a, "tier", None) or "T1"
+b_tier = getattr(candidate_b, "tier", None) or "T1"
+```
+Same pattern in `_compute_specificity`. One-line change each.
+
+**Why unit tests didn't catch it:** existing critic tests construct
+candidates with explicit `tier="T1"`. The B3/B4 real-path replan flow
+constructs candidates with no tier (race assigns it later), so tests
+that route through B4 would have. The new
+`tests/integration/test_recovery_b3_b4_e2e.py` pins this.

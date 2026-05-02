@@ -14,6 +14,7 @@ asyncio await boundary inside a TaskGroup.
 """
 from __future__ import annotations
 
+import sys
 from typing import Any, MutableMapping
 
 import structlog
@@ -56,12 +57,24 @@ def configure(testing: bool = False) -> None:
             emitted events. Production code calls ``configure()`` with no
             args at module import time.
     """
+    import os
+
     processors: list[Any] = [
         merge_contextvars,
         _redact_sensitive,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.add_log_level,
     ]
+
+    # CUA_DEBUG=1: use DEBUG level and enable TraceBus
+    if os.environ.get("CUA_DEBUG") == "1":
+        # Add TraceBus processor (best-effort event distribution)
+        from cua_overlay.observability.bus import bus_processor
+        processors.append(bus_processor)
+        log_level = "DEBUG"
+    else:
+        log_level = "INFO"
+
     if testing:
         processors.append(structlog.processors.dict_tracebacks)
         processors.append(structlog.testing.LogCapture())
@@ -71,7 +84,15 @@ def configure(testing: bool = False) -> None:
     structlog.configure(
         processors=processors,
         cache_logger_on_first_use=True,
+        # F12: route NDJSON to stderr. STDOUT is reserved for the MCP
+        # JSON-RPC frame stream when the overlay runs as an MCP stdio server;
+        # logs on STDOUT corrupt the protocol channel for strict clients.
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
     )
+
+    # Set the root logger level
+    import logging
+    logging.basicConfig(level=getattr(logging, log_level))
 
 
 # Production default: configure on import so any module that does

@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import structlog
 
+from cua_overlay.cognition.exceptions import CognitionDisabledError
+
 if TYPE_CHECKING:
     from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
     from cua_overlay.state.graph import StateGraph
@@ -44,7 +46,12 @@ class VerifierLLM:
         """
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY not set")
+            log.warning(
+                "verifier_llm.disabled", reason="no_api_key", env="OPENAI_API_KEY"
+            )
+            raise CognitionDisabledError(
+                module="VerifierLLM", reason="OPENAI_API_KEY not set"
+            )
 
         self.model = model
         self.batch_size = batch_size

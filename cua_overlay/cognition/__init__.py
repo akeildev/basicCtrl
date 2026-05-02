@@ -12,6 +12,7 @@ from __future__ import annotations
 from .apple_fm import AppleFMClassifier
 from .critic import Critic
 from .ensemble import EnsembleVotingEngine
+from .exceptions import CognitionDisabledError
 from .grounder import Grounder
 from .planner import Planner, WorldModelPredictor
 from .schemas import (
@@ -28,6 +29,7 @@ from .verifier_llm import VerifierLLM
 __all__ = [
     "AppleFMClassifier",
     "AppleFMOutput",
+    "CognitionDisabledError",
     "Critic",
     "EnsembleVotingEngine",
     "EnsembleVote",

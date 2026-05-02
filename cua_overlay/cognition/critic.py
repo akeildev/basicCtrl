@@ -107,9 +107,12 @@ class Critic:
         elif b_specificity > a_specificity:
             return 1  # B wins
         else:
-            # Tie: prefer by alphabetical order (deterministic)
-            a_tier = getattr(candidate_a, "tier", "T1")
-            b_tier = getattr(candidate_b, "tier", "T1")
+            # Tie: prefer by alphabetical order (deterministic).
+            # F13 fix: ActionCanonical.tier defaults to None (set by race winner),
+            # not "T1" — so getattr-with-default returned None and `None <= None`
+            # raised TypeError. Coerce missing tier to "T1" explicitly.
+            a_tier = getattr(candidate_a, "tier", None) or "T1"
+            b_tier = getattr(candidate_b, "tier", None) or "T1"
             return 0 if a_tier <= b_tier else 1
 
     def _compute_specificity(self, action: ActionCanonical) -> float:
@@ -119,8 +122,10 @@ class Critic:
         """
         specificity = 0.5  # Baseline
 
-        # Prefer T1 (specific AX target) over T5 (pixel fallback)
-        tier = getattr(action, "tier", "T1")
+        # Prefer T1 (specific AX target) over T5 (pixel fallback).
+        # F13 fix: ActionCanonical.tier is None until race winner sets it; the
+        # `or "T1"` guard makes this resilient to that.
+        tier = getattr(action, "tier", None) or "T1"
         tier_priority = {"T1": 0.95, "T2": 0.85, "T3": 0.75, "T4": 0.65, "T5": 0.55}
         specificity = tier_priority.get(tier, 0.5)
 

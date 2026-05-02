@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from typing import Optional
 from pathlib import Path
 
+import structlog
+
 from cua_overlay.visualizer.models import (
     HUDCommand,
     HUDActionEntry,
@@ -57,11 +59,17 @@ class HUDDriver:
 
     def send_hud_update(self) -> None:
         """Send HUD command to Swift visualizer via unix socket."""
+        log = structlog.get_logger()
         cmd = HUDCommand(
             entries=self.action_history,
             session_start_iso=self.session_start_iso,
             goal=self.current_goal,
             timestamp_ns=int(datetime.now(timezone.utc).timestamp() * 1e9),
+        )
+
+        log.debug(
+            "viz.send_attempt",
+            num_entries=len(self.action_history),
         )
 
         try:
@@ -71,14 +79,24 @@ class HUDDriver:
             # Connect to socket and send
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.connect(str(self.SOCKET_PATH))
+            log.debug("viz.socket_connected")
             sock.sendall((json_str + "\n").encode("utf-8"))
             sock.close()
-        except (FileNotFoundError, ConnectionRefusedError, BrokenPipeError):
-            # Socket not ready yet (Wave 1 still building) — silent fail
-            pass
-        except Exception:
-            # Other errors also silent — HUD is non-critical
-            pass
+            log.debug("viz.frame_rendered")
+        except (FileNotFoundError, ConnectionRefusedError, BrokenPipeError) as e:
+            # Socket not ready yet (Wave 1 still building) — log but continue
+            log.debug(
+                "viz.send_failed",
+                error=type(e).__name__,
+                reason="socket_not_ready",
+            )
+        except Exception as e:
+            # Other errors — log and continue (HUD is non-critical)
+            log.debug(
+                "viz.send_failed",
+                error=type(e).__name__,
+                reason=str(e)[:100],
+            )
 
     def clear_history(self) -> None:
         """Clear all actions from HUD."""

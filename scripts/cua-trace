@@ -1,0 +1,185 @@
+#!/usr/bin/env -S uv run python
+"""cua-trace — waterfall trace viewer for action_log.ndjson.
+
+Usage:
+    cua-trace <action_id> [--session <session_id>] [--root ~/.cua/sessions]
+
+Reads action_log.ndjson files and filters by trace_id, printing a waterfall
+with relative timestamps, event names, and key fields. Flags gaps >10ms and
+errors in red using rich.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Waterfall trace viewer for action_log.ndjson")
+    parser.add_argument("action_id", help="Trace ID to filter by")
+    parser.add_argument(
+        "--session",
+        default=None,
+        help="Specific session ID (optional; searches all if omitted)",
+    )
+    parser.add_argument(
+        "--root",
+        default=str(Path.home() / ".cua" / "sessions"),
+        help="Root sessions directory (default ~/.cua/sessions)",
+    )
+    return parser.parse_args()
+
+
+def find_session_dirs(root: Path, session_id: Optional[str] = None) -> list[Path]:
+    """Find session directories to search."""
+    if not root.exists():
+        return []
+    if session_id:
+        specific = root / session_id
+        return [specific] if specific.exists() else []
+    return sorted([d for d in root.iterdir() if d.is_dir()])
+
+
+def load_action_log(session_dir: Path) -> list[dict]:
+    """Load and parse action_log.ndjson from a session directory."""
+    action_log_path = session_dir / "action_log.ndjson"
+    if not action_log_path.exists():
+        return []
+    events = []
+    try:
+        with open(action_log_path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        events.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+    except Exception:
+        pass
+    return events
+
+
+def filter_by_trace_id(events: list[dict], trace_id: str) -> list[dict]:
+    """Filter events by trace_id field."""
+    return [e for e in events if e.get("trace_id") == trace_id]
+
+
+def get_timestamp_ns(event: dict) -> Optional[int]:
+    """Extract timestamp_ns or compute from timestamp."""
+    if "timestamp_ns" in event:
+        return event["timestamp_ns"]
+    # Try to compute from ISO timestamp
+    if "timestamp" in event:
+        try:
+            dt = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+            return int(dt.timestamp() * 1e9)
+        except Exception:
+            pass
+    return None
+
+
+def format_waterfall(events: list[dict]) -> str:
+    """Format events as a waterfall with relative times."""
+    if not events:
+        return "No events found for this trace_id."
+
+    # Sort by timestamp
+    events_sorted = sorted(
+        events,
+        key=lambda e: get_timestamp_ns(e) or 0
+    )
+
+    # Establish baseline
+    base_ns = get_timestamp_ns(events_sorted[0]) or 0
+
+    console = Console()
+    table = Table(title=f"Trace: {events[0].get('trace_id', 'unknown')}", show_header=True)
+    table.add_column("Time", style="cyan")
+    table.add_column("Event", style="magenta")
+    table.add_column("Key Fields", style="green")
+
+    prev_ns = base_ns
+    for event in events_sorted:
+        event_ns = get_timestamp_ns(event) or base_ns
+        delta_ms = (event_ns - prev_ns) / 1e6
+        rel_ms = (event_ns - base_ns) / 1e6
+
+        # Time cell with gap warning
+        time_str = f"[+{rel_ms:.1f}ms]"
+        if delta_ms > 10:
+            time_str += f" ⚠ gap={delta_ms:.0f}ms"
+        time_cell = Text(time_str)
+
+        # Event name
+        event_name = event.get("event", "unknown")
+        if event.get("level") == "error" or "error" in event:
+            event_cell = Text(event_name, style="red bold")
+        else:
+            event_cell = Text(event_name)
+
+        # Key fields
+        key_fields = []
+        for key in ["status", "translator", "channel", "tier", "step_idx", "result"]:
+            if key in event and event[key] is not None:
+                key_fields.append(f"{key}={event[key]}")
+        fields_str = ", ".join(key_fields) if key_fields else "-"
+
+        table.add_row(time_cell, event_cell, fields_str)
+        prev_ns = event_ns
+
+    console.print(table)
+    return ""
+
+
+def main() -> int:
+    """Main entry point."""
+    args = parse_args()
+
+    # Find session directories
+    root = Path(args.root)
+    if not root.exists():
+        console = Console()
+        console.print(f"[red]Error: root directory not found: {root}[/red]")
+        return 2
+
+    session_dirs = find_session_dirs(root, args.session)
+    if not session_dirs:
+        console = Console()
+        console.print(
+            f"[red]Error: no sessions found in {root}"
+            + (f" or session {args.session} not found" if args.session else "")
+            + "[/red]"
+        )
+        return 2
+
+    # Search for matching events
+    all_events = []
+    for session_dir in session_dirs:
+        events = load_action_log(session_dir)
+        filtered = filter_by_trace_id(events, args.action_id)
+        all_events.extend(filtered)
+
+    if not all_events:
+        console = Console()
+        console.print(f"[yellow]No events found for trace_id={args.action_id}[/yellow]")
+        return 1
+
+    # Print waterfall
+    console = Console()
+    format_waterfall(all_events)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

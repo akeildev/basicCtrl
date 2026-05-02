@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+import structlog
 
 if TYPE_CHECKING:
     from cua_overlay.learning import Recipe
@@ -178,6 +179,7 @@ class EpisodicMemory:
         """
         import numpy as np
 
+        log = structlog.get_logger()
         self._load_faiss()
 
         # Add embedding to FAISS index
@@ -206,6 +208,15 @@ class EpisodicMemory:
         self._save_index()
         self._save_metadata()
 
+        # Emit structured event
+        log.info(
+            "memory.write",
+            app_bundle_id=app_bundle_id,
+            task_class=task_class,
+            row_idx=row_idx,
+            recipe_name=getattr(recipe, "name", "unknown"),
+        )
+
     async def lookup(
         self,
         query: EpisodicQuery,
@@ -223,9 +234,23 @@ class EpisodicMemory:
         """
         import numpy as np
 
+        log = structlog.get_logger()
         self._load_faiss()
 
+        # Emit lookup start event
+        log.info(
+            "memory.lookup",
+            app_bundle_id=query.app_bundle_id,
+            task_class=query.task_class,
+        )
+
         if self._index is None or self._index.ntotal == 0:
+            log.info(
+                "memory.miss",
+                app_bundle_id=query.app_bundle_id,
+                task_class=query.task_class,
+                reason="empty_index",
+            )
             return []
 
         # FAISS nearest-neighbor search
@@ -279,6 +304,23 @@ class EpisodicMemory:
                 )
                 hits.append(hit)
 
+        # Emit hit or miss event
+        if hits:
+            log.info(
+                "memory.hit",
+                app_bundle_id=query.app_bundle_id,
+                task_class=query.task_class,
+                num_hits=len(hits),
+                top_similarity=hits[0].similarity if hits else None,
+            )
+        else:
+            log.info(
+                "memory.miss",
+                app_bundle_id=query.app_bundle_id,
+                task_class=query.task_class,
+                reason="no_matches_above_threshold",
+            )
+
         return hits
 
     def mark_recipe_success(self, row_idx: int) -> None:
@@ -297,6 +339,7 @@ class EpisodicMemory:
 
         Per D-19: On >2 failures, mark quarantined=True (recipe surfaces as low-confidence only).
         """
+        log = structlog.get_logger()
         self._load_faiss()
 
         if str(row_idx) in self._metadata:
@@ -305,6 +348,18 @@ class EpisodicMemory:
             # Quarantine on >2 failures (D-19)
             if self._metadata[str(row_idx)]["failure_count"] > 2:
                 self._metadata[str(row_idx)]["quarantined"] = True
+                log.warning(
+                    "memory.quarantine",
+                    row_idx=row_idx,
+                    recipe_name=self._metadata[str(row_idx)].get("recipe_name", "unknown"),
+                    failure_count=self._metadata[str(row_idx)]["failure_count"],
+                )
+            else:
+                log.info(
+                    "memory.failure_recorded",
+                    row_idx=row_idx,
+                    failure_count=self._metadata[str(row_idx)]["failure_count"],
+                )
 
             self._save_metadata()
 

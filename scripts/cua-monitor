@@ -1,0 +1,243 @@
+#!/usr/bin/env -S uv run python
+"""cua-monitor — live TUI for action logs via TraceBus or file tail.
+
+Usage:
+    cua-monitor [--session <sid>] [--root ~/.cua/sessions] [--bus /tmp/cua-trace-bus.sock]
+
+If the bus socket exists, connects to it and streams live events.
+Otherwise, tail-follows the latest action_log.ndjson file under --root.
+
+Display: live actions, timing percentiles (p50/p95/p99), recovery indicators.
+"""
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import socket
+import sys
+import time
+from pathlib import Path
+from typing import Optional
+
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
+from rich.text import Text
+
+
+class ActionMonitor:
+    """Monitor for live action logs."""
+
+    def __init__(self, session_id: Optional[str], root: Path, bus_path: Path):
+        self.session_id = session_id
+        self.root = root
+        self.bus_path = bus_path
+        self.actions: list[dict] = []
+        self.start_time = time.time()
+        self.console = Console()
+
+    async def read_from_bus(self) -> None:
+        """Connect to TraceBus socket and stream events."""
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.connect(str(self.bus_path))
+            self.console.print(f"[green]Connected to {self.bus_path}[/green]")
+
+            buffer = ""
+            while True:
+                try:
+                    data = sock.recv(4096).decode("utf-8")
+                    if not data:
+                        break
+                    buffer += data
+                    while "\n" in buffer:
+                        line, buffer = buffer.split("\n", 1)
+                        if line.strip():
+                            try:
+                                event = json.loads(line)
+                                self.actions.append(event)
+                                # Keep only last 20
+                                if len(self.actions) > 20:
+                                    self.actions = self.actions[-20:]
+                            except json.JSONDecodeError:
+                                pass
+                except Exception:
+                    break
+        except (FileNotFoundError, ConnectionRefusedError):
+            self.console.print(f"[yellow]Bus not available, falling back to file tail[/yellow]")
+            await self.read_from_file()
+
+    async def read_from_file(self) -> None:
+        """Tail-follow the latest action_log.ndjson file."""
+        session_dir = None
+        if self.session_id:
+            session_dir = self.root / self.session_id
+        else:
+            # Find the most recent session
+            if self.root.exists():
+                sessions = sorted([d for d in self.root.iterdir() if d.is_dir()])
+                if sessions:
+                    session_dir = sessions[-1]
+
+        if not session_dir or not session_dir.exists():
+            self.console.print("[red]No session directory found[/red]")
+            return
+
+        action_log = session_dir / "action_log.ndjson"
+        if not action_log.exists():
+            self.console.print(f"[yellow]No action_log.ndjson in {session_dir}[/yellow]")
+            return
+
+        # Load existing events
+        try:
+            with open(action_log) as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            event = json.loads(line)
+                            self.actions.append(event)
+                        except json.JSONDecodeError:
+                            pass
+        except Exception:
+            pass
+
+        self.console.print(f"[green]Tailing {action_log}[/green]")
+
+        # Tail follow
+        last_pos = action_log.stat().st_size
+        while True:
+            try:
+                current_size = action_log.stat().st_size
+                if current_size > last_pos:
+                    with open(action_log) as f:
+                        f.seek(last_pos)
+                        for line in f:
+                            if line.strip():
+                                try:
+                                    event = json.loads(line)
+                                    self.actions.append(event)
+                                    if len(self.actions) > 20:
+                                        self.actions = self.actions[-20:]
+                                except json.JSONDecodeError:
+                                    pass
+                    last_pos = current_size
+                await asyncio.sleep(0.5)
+            except Exception:
+                await asyncio.sleep(1)
+
+    def render_table(self) -> Table:
+        """Render the current action table."""
+        table = Table(title="Live Actions", show_header=True)
+        table.add_column("Time", style="cyan", width=12)
+        table.add_column("Event", style="magenta", width=20)
+        table.add_column("Status", style="green", width=12)
+        table.add_column("Details", width=40)
+
+        for action in self.actions[-20:]:  # Last 20 actions
+            elapsed = time.time() - self.start_time
+            timestamp = action.get("timestamp", "")
+            event_name = action.get("event", "unknown")[:18]
+
+            status = action.get("status", "-")
+            if action.get("level") == "error":
+                status_cell = Text(status, style="red bold")
+            else:
+                status_cell = Text(status)
+
+            # Details
+            details = []
+            for key in ["translator", "channel", "tier"]:
+                if key in action and action[key]:
+                    details.append(f"{key[0]}={action[key]}")
+            details_str = " ".join(details) if details else "-"
+
+            table.add_row(
+                Text(f"[+{elapsed:.1f}s]", style="cyan"),
+                Text(event_name),
+                status_cell,
+                details_str[:40],
+            )
+
+        # Add timing stats
+        timings = []
+        for action in self.actions:
+            if "elapsed_ms" in action:
+                timings.append(action["elapsed_ms"])
+
+        if timings:
+            timings.sort()
+            p50 = timings[len(timings) // 2]
+            p95 = timings[int(len(timings) * 0.95)]
+            p99 = timings[int(len(timings) * 0.99)]
+            table.add_row(
+                Text("", style="dim"),
+                Text("Timing Percentiles", style="bold"),
+                Text(f"p50={p50:.0f}ms", style="blue"),
+                Text(f"p95={p95:.0f}ms p99={p99:.0f}ms", style="blue"),
+            )
+
+        return table
+
+    async def run(self) -> None:
+        """Run the monitor loop."""
+        # Try bus first, fall back to file
+        if self.bus_path.exists():
+            read_task = asyncio.create_task(self.read_from_bus())
+        else:
+            read_task = asyncio.create_task(self.read_from_file())
+
+        # Render loop
+        try:
+            with Live(self.render_table(), refresh_per_second=2, console=self.console) as live:
+                while True:
+                    live.update(self.render_table())
+                    await asyncio.sleep(0.5)
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Exiting[/yellow]")
+            read_task.cancel()
+            try:
+                await read_task
+            except asyncio.CancelledError:
+                pass
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Live TUI for action logs")
+    parser.add_argument(
+        "--session",
+        default=None,
+        help="Specific session ID (optional)",
+    )
+    parser.add_argument(
+        "--root",
+        default=str(Path.home() / ".cua" / "sessions"),
+        help="Root sessions directory (default ~/.cua/sessions)",
+    )
+    parser.add_argument(
+        "--bus",
+        default=str(Path("/tmp/cua-trace-bus.sock")),
+        help="Bus socket path (default /tmp/cua-trace-bus.sock)",
+    )
+    return parser.parse_args()
+
+
+async def main() -> int:
+    """Main entry point."""
+    args = parse_args()
+    root = Path(args.root)
+    bus_path = Path(args.bus)
+
+    monitor = ActionMonitor(args.session, root, bus_path)
+    try:
+        await monitor.run()
+        return 0
+    except Exception as e:
+        console = Console()
+        console.print(f"[red]Error: {e}[/red]")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))
