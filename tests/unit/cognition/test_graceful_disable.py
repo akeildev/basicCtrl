@@ -36,12 +36,13 @@ class TestGracefulDisable:
             p = Planner()
         assert p.api_key == "sk-test"
 
-    def test_world_model_raises_cognition_disabled_when_key_missing(self):
+    def test_world_model_heuristic_mode_when_key_missing(self):
+        # J1 contract change: WMP's predict() is heuristic-only in Phase 4,
+        # so it must boot without ANTHROPIC_API_KEY. B3 can then drive replan
+        # via MCPSamplingPlanner without an Anthropic SDK key.
         with patch.dict("os.environ", {}, clear=True):
-            with pytest.raises(CognitionDisabledError) as exc:
-                WorldModelPredictor()
-        assert exc.value.module == "WorldModelPredictor"
-        assert "ANTHROPIC_API_KEY" in exc.value.reason
+            wmp = WorldModelPredictor()
+        assert wmp.api_key is None
 
     def test_world_model_succeeds_when_key_present(self):
         with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "sk-test"}):

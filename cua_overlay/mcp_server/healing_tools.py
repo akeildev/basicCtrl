@@ -27,7 +27,7 @@ from typing import Any, Literal, Optional
 
 import structlog
 from mcp.client.session import ClientSession
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 
 from cua_overlay.actions.race_orchestrator import RaceOrchestrator
 from cua_overlay.actions.race_policy import RacePolicy
@@ -45,6 +45,7 @@ async def _maybe_recover(
     action: Any,
     post: Any,
     action_type: str,
+    ctx: Optional[Context] = None,
 ) -> dict[str, Any]:
     """Run RecoveryOrchestrator.attempt(...) when post.verified is False.
 
@@ -55,6 +56,10 @@ async def _maybe_recover(
     Per F10 fix: until this hook existed, every verified=False action silently
     failed because RecoveryOrchestrator was orphaned. Now we hand back enough
     info that callers (and the host) can see the heal attempt + outcome.
+
+    Per J1: thread the live FastMCP `Context` through `failure_ctx["ctx"]`
+    so B3/B4's planner factory can pick MCPSamplingPlanner over the SDK
+    Planner when the host advertises sampling.
     """
     if recovery_orch is None or post.verified:
         return {"ran": False}
@@ -68,6 +73,7 @@ async def _maybe_recover(
         "previous_failures_count": 0,
         "action_id": action.id,
         "action_type": action_type,
+        "ctx": ctx,
     }
     try:
         outcome, events = await recovery_orch.attempt(failure_ctx)
@@ -185,6 +191,7 @@ async def register_healing_tools(
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
         prefer_tier: Optional[Literal["T1", "T2", "T3", "T4", "T5"]] = None,
         prefer_channel: Optional[Literal["C1", "C2", "C3", "C4", "C5"]] = None,
+        ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
         """Click (x, y) on the target app with race + verify wrap. See
         register_healing_tools docstring for full semantics."""
@@ -206,7 +213,7 @@ async def register_healing_tools(
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
         recovery_info = await _maybe_recover(
-            recovery_orch, bundle_id, action, post, "click"
+            recovery_orch, bundle_id, action, post, "click", ctx=ctx
         )
         return {
             "result": None,  # Phase 2 doesn't proxy upstream — race handles delivery
@@ -233,6 +240,7 @@ async def register_healing_tools(
         pid: int,
         target_label: str = "",
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
+        ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
         """D-11 — type_into_focused is single-channel."""
         t_start = time.monotonic()
@@ -247,7 +255,7 @@ async def register_healing_tools(
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
         recovery_info = await _maybe_recover(
-            recovery_orch, bundle_id, action, post, "type_into_focused"
+            recovery_orch, bundle_id, action, post, "type_into_focused", ctx=ctx
         )
         return {
             "result": None,
@@ -275,6 +283,7 @@ async def register_healing_tools(
         pid: int,
         action_kind: Literal["absolute", "delta"] = "delta",
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
+        ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
         """D-10 absolute = race; D-11 delta = single-channel."""
         action_type = (
@@ -292,7 +301,7 @@ async def register_healing_tools(
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
         recovery_info = await _maybe_recover(
-            recovery_orch, bundle_id, action, post, action_type
+            recovery_orch, bundle_id, action, post, action_type, ctx=ctx
         )
         return {
             "result": None,
@@ -319,6 +328,7 @@ async def register_healing_tools(
         bundle_id: str,
         pid: int,
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
+        ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
         """D-11 — set_value is single-channel."""
         t_start = time.monotonic()
@@ -333,7 +343,7 @@ async def register_healing_tools(
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
         recovery_info = await _maybe_recover(
-            recovery_orch, bundle_id, action, post, "set_value"
+            recovery_orch, bundle_id, action, post, "set_value", ctx=ctx
         )
         return {
             "result": None,
@@ -404,6 +414,7 @@ async def register_healing_tools(
         bundle_id: str,
         pid: int,
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
+        ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
         """D-11/D-12 — orchestrator picks via resolve_race_policy.
 
@@ -426,7 +437,7 @@ async def register_healing_tools(
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
         recovery_info = await _maybe_recover(
-            recovery_orch, bundle_id, action, post, action_type
+            recovery_orch, bundle_id, action, post, action_type, ctx=ctx
         )
         return {
             "result": None,

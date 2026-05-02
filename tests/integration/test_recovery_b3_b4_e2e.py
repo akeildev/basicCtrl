@@ -1,18 +1,18 @@
 """B3/B4 real recovery branch wire-up — Phase 4 path verification.
 
-Per ULTRAPLAN Phase B6: when ANTHROPIC_API_KEY is set, main.py constructs
-the real B3RecoveryBranch + B4RecoveryBranch (not the stubs). This test
-verifies the wire-up holds end-to-end through one branch attempt cycle.
+Original (Phase B6): when ANTHROPIC_API_KEY is set, main.py constructs the
+real B3RecoveryBranch + B4RecoveryBranch (not the stubs). The TestB3RealPath /
+TestB4RealPath classes verify that wire-up via a mocked anthropic client.
 
-Approach (cost-conscious): use a real Planner/WMP/Critic constructor (so the
-ANTHROPIC_API_KEY validation runs), but mock the anthropic.Anthropic client
-so no real API calls are made — burns no tokens.
+J1 addition: TestB3SamplingPath / TestB4SamplingPath verify the same
+end-to-end recovery flow when the planner is `MCPSamplingPlanner` driven by a
+mocked FastMCP `Context` — i.e. the *no-API-key* path that lets Claude Code
+service the LLM call via `sampling/createMessage`. These classes run
+unconditionally when the gate env var is set, regardless of HAS_KEY.
 
 To run a *real-API* version that hits Opus, set
 `CUA_RUN_E2E_RECOVERY_REAL_LIVE=1` (additional env var). That variant
 intentionally costs ~$0.05 per run.
-
-Both variants skip cleanly when the env var or key is unset.
 """
 from __future__ import annotations
 
@@ -201,6 +201,160 @@ class TestB4RealPath:
         outcome = await b4.attempt(fake_failure_ctx)
 
         assert outcome is not None
+        events = [c.args[0] for c in session_writer.append_action_log.call_args_list]
+        kinds = [e.get("event") for e in events]
+        assert "branch_attempt" in kinds
+        assert "branch_success" in kinds
+
+
+# ---------------------------------------------------------------------------
+# J1 — Sampling-mode path (no ANTHROPIC_API_KEY required)
+# ---------------------------------------------------------------------------
+
+
+def _sampling_ctx_returning(json_payload: str) -> MagicMock:
+    """Build a fake FastMCP Context whose session.create_message returns
+    a CreateMessageResult-like object with .content.text == json_payload."""
+    ctx = MagicMock()
+    ctx.session.check_client_capability = MagicMock(return_value=True)
+    ctx.session.create_message = AsyncMock(
+        return_value=MagicMock(content=MagicMock(text=json_payload))
+    )
+    return ctx
+
+
+def _planner_factory_using_ctx():
+    """Mirror main.py's _planner_factory but skip the SDK Planner branch
+    so the test exercises ONLY the sampling path."""
+    from cua_overlay.cognition import MCPSamplingPlanner
+
+    def factory(ctx):
+        if ctx is not None and MCPSamplingPlanner.host_supports_sampling(ctx):
+            return MCPSamplingPlanner(ctx)
+        return None
+
+    return factory
+
+
+@pytest.mark.integration
+class TestB3SamplingPath:
+    """B3 with MCPSamplingPlanner — proves J1 wire-up holds without a key."""
+
+    @pytest.mark.asyncio
+    async def test_b3_replans_via_sampling_when_host_supports_it(
+        self, session_writer, idempotency_store, fake_failure_ctx
+    ):
+        from cua_overlay.cognition import WorldModelPredictor
+        from cua_overlay.recovery.branches import B3_WorldReplan
+
+        wmp = WorldModelPredictor()  # heuristic, no key
+
+        ctx = _sampling_ctx_returning(
+            json.dumps(
+                {
+                    "steps": [
+                        {
+                            "kind": "MUTATE",
+                            "target_key": "btn_5",
+                            "action_type": "click",
+                            "payload": {},
+                        }
+                    ],
+                    "preconds": [],
+                    "success_criteria": ["sampled recovery"],
+                }
+            )
+        )
+        fake_failure_ctx["ctx"] = ctx
+
+        b3 = B3_WorldReplan(
+            idempotency_store=idempotency_store,
+            session_writer=session_writer,
+            world_model_predictor=wmp,
+            planner_factory=_planner_factory_using_ctx(),
+        )
+
+        outcome = await b3.attempt(fake_failure_ctx)
+        assert outcome is not None, "B3 should produce a replan via sampling"
+        ctx.session.create_message.assert_awaited()  # the host saw the request
+
+        events = [c.args[0] for c in session_writer.append_action_log.call_args_list]
+        kinds = [e.get("event") for e in events]
+        assert "branch_attempt" in kinds
+        assert "branch_success" in kinds
+
+    @pytest.mark.asyncio
+    async def test_b3_emits_no_planner_available_when_host_lacks_sampling(
+        self, session_writer, idempotency_store, fake_failure_ctx
+    ):
+        from cua_overlay.cognition import WorldModelPredictor
+        from cua_overlay.recovery.branches import B3_WorldReplan
+
+        wmp = WorldModelPredictor()
+
+        ctx = MagicMock()
+        ctx.session.check_client_capability = MagicMock(return_value=False)
+        fake_failure_ctx["ctx"] = ctx
+
+        b3 = B3_WorldReplan(
+            idempotency_store=idempotency_store,
+            session_writer=session_writer,
+            world_model_predictor=wmp,
+            planner_factory=_planner_factory_using_ctx(),
+        )
+
+        outcome = await b3.attempt(fake_failure_ctx)
+        assert outcome is None
+
+        events = [c.args[0] for c in session_writer.append_action_log.call_args_list]
+        reasons = [e.get("reason") for e in events if e.get("event") == "branch_failed"]
+        assert "no_planner_available" in reasons
+
+
+@pytest.mark.integration
+class TestB4SamplingPath:
+    """B4 with MCPSamplingPlanner — proves J1 wire-up holds without a key."""
+
+    @pytest.mark.asyncio
+    async def test_b4_ranks_sampling_candidates(
+        self, session_writer, idempotency_store, fake_failure_ctx
+    ):
+        from cua_overlay.cognition import Critic
+        from cua_overlay.recovery.branches import B4_PlannerRequery
+
+        critic = Critic()
+
+        ctx = _sampling_ctx_returning(
+            json.dumps(
+                {
+                    "steps": [
+                        {
+                            "kind": "MUTATE",
+                            "target_key": "btn_5",
+                            "action_type": "click",
+                            "payload": {},
+                        }
+                    ],
+                    "preconds": [],
+                    "success_criteria": ["sampled recovery"],
+                }
+            )
+        )
+        fake_failure_ctx["ctx"] = ctx
+
+        b4 = B4_PlannerRequery(
+            idempotency_store=idempotency_store,
+            session_writer=session_writer,
+            critic=critic,
+            planner_factory=_planner_factory_using_ctx(),
+            num_candidates=2,
+        )
+
+        outcome = await b4.attempt(fake_failure_ctx)
+        assert outcome is not None
+        # B4 calls planner.plan_action `num_candidates` times → ≥2 sampling roundtrips
+        assert ctx.session.create_message.await_count >= 2
+
         events = [c.args[0] for c in session_writer.append_action_log.call_args_list]
         kinds = [e.get("event") for e in events]
         assert "branch_attempt" in kinds

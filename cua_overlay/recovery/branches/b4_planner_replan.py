@@ -14,7 +14,7 @@ Failure modes tracked for RL training + future improvements.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import structlog
 
@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from cua_overlay.recovery.classifier import FailureCtx
     from cua_overlay.state.causal_dag import ActionCanonical
     from cua_overlay.state.graph import StateGraph
+
+PlannerFactory = Callable[[Optional[Any]], Optional[Any]]
 
 
 class B4RecoveryBranch(BranchBase):
@@ -45,8 +47,9 @@ class B4RecoveryBranch(BranchBase):
         self,
         idempotency_store: IdempotencyTokenStore,
         session_writer: SessionWriter,
-        planner: Planner,
         critic: Critic,
+        planner: Optional[Planner] = None,
+        planner_factory: Optional[PlannerFactory] = None,
         num_candidates: int = 3,
     ):
         """Initialize B4 recovery branch.
@@ -54,8 +57,12 @@ class B4RecoveryBranch(BranchBase):
         Args:
             idempotency_store: IdempotencyTokenStore for try_claim (T-3-05)
             session_writer: SessionWriter for event emission
-            planner: Planner instance for generating candidates
             critic: Critic instance for ranking candidates
+            planner: Default planner instance (legacy path; kept for tests).
+            planner_factory: Optional factory `factory(ctx) -> planner | None`.
+                Takes precedence over `planner` when set; per-call materialised
+                from `failure_ctx["ctx"]` so MCPSamplingPlanner can serve
+                replan requests without an Anthropic SDK key.
             num_candidates: Number of replan candidates to generate (default 3)
         """
         super().__init__(
@@ -64,6 +71,7 @@ class B4RecoveryBranch(BranchBase):
             _session_writer=session_writer,
         )
         self._planner = planner
+        self._planner_factory = planner_factory
         self._critic = critic
         self._num_candidates = num_candidates
         self._log = structlog.get_logger()
@@ -162,6 +170,27 @@ class B4RecoveryBranch(BranchBase):
             )
             return None
 
+        # J1: resolve planner per-call. Factory wins over the legacy default
+        # so `failure_ctx["ctx"]` (FastMCP Context) can drive MCPSamplingPlanner.
+        planner = self._planner
+        if self._planner_factory is not None:
+            planner = self._planner_factory(failure_ctx.get("ctx"))
+        if planner is None:
+            self._log.info(
+                "b4.no_planner_available",
+                action_id=action_id,
+                target_key=target_key,
+            )
+            await self._emit_event(
+                {
+                    "event": "branch_failed",
+                    "branch": "B4_PLANNER_REPLAN",
+                    "reason": "no_planner_available",
+                    "action_id": action_id,
+                }
+            )
+            return None
+
         try:
             # D-23: Generate N candidate replans with different prompts
             self._log.info(
@@ -175,7 +204,7 @@ class B4RecoveryBranch(BranchBase):
 
             for i, prompt in enumerate(prompts[: self._num_candidates]):
                 try:
-                    plan_candidate = await self._planner.plan_action(
+                    plan_candidate = await planner.plan_action(
                         task_description=prompt,
                         current_state=current_state,
                     )

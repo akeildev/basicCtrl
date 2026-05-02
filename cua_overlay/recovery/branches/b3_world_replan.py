@@ -12,7 +12,7 @@ Failure modes tracked for RL training + future improvements.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import structlog
 
@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from cua_overlay.recovery.classifier import FailureCtx
     from cua_overlay.state.causal_dag import ActionCanonical
     from cua_overlay.state.graph import StateGraph
+
+PlannerFactory = Callable[[Optional[Any]], Optional[Any]]
 
 
 class B3RecoveryBranch(BranchBase):
@@ -43,7 +45,8 @@ class B3RecoveryBranch(BranchBase):
         idempotency_store: IdempotencyTokenStore,
         session_writer: SessionWriter,
         world_model_predictor: WorldModelPredictor,
-        planner: Planner,
+        planner: Optional[Planner] = None,
+        planner_factory: Optional[PlannerFactory] = None,
     ):
         """Initialize B3 recovery branch.
 
@@ -51,7 +54,14 @@ class B3RecoveryBranch(BranchBase):
             idempotency_store: IdempotencyTokenStore for try_claim (T-3-05)
             session_writer: SessionWriter for event emission
             world_model_predictor: WorldModelPredictor instance for prediction
-            planner: Planner instance for replanning
+            planner: Default planner instance (legacy path; kept for tests).
+            planner_factory: Optional factory `factory(ctx) -> planner | None`.
+                Takes precedence over `planner` when set: J1 wiring lets the
+                orchestrator pass the live FastMCP `Context` via
+                `failure_ctx["ctx"]` so the factory can pick
+                MCPSamplingPlanner over the API-key-gated SDK Planner.
+                When the factory returns None (no planner available), B3
+                emits a `branch_failed` event and returns None.
         """
         super().__init__(
             name=self.name,
@@ -60,6 +70,7 @@ class B3RecoveryBranch(BranchBase):
         )
         self._world_model = world_model_predictor
         self._planner = planner
+        self._planner_factory = planner_factory
         self._log = structlog.get_logger()
         self._cancel_event = None  # Will be set by recovery orchestrator
 
@@ -156,6 +167,28 @@ class B3RecoveryBranch(BranchBase):
             )
             return None
 
+        # J1: resolve planner per-call. Factory wins over the legacy default
+        # so `failure_ctx["ctx"]` (FastMCP Context) can drive the choice
+        # between MCPSamplingPlanner and the SDK Planner.
+        planner = self._planner
+        if self._planner_factory is not None:
+            planner = self._planner_factory(failure_ctx.get("ctx"))
+        if planner is None:
+            self._log.info(
+                "b3.no_planner_available",
+                action_id=action_id,
+                target_key=target_key,
+            )
+            await self._emit_event(
+                {
+                    "event": "branch_failed",
+                    "branch": "B3_WORLD_REPLAN",
+                    "reason": "no_planner_available",
+                    "action_id": action_id,
+                }
+            )
+            return None
+
         try:
             # D-22: Call world_model.predict() to forecast post-state
             self._log.info(
@@ -183,7 +216,7 @@ class B3RecoveryBranch(BranchBase):
             )
 
             # Call planner to generate replanned action(s)
-            replanned_candidate = await self._planner.plan_action(
+            replanned_candidate = await planner.plan_action(
                 task_description=task_description,
                 current_state=current_state,
             )

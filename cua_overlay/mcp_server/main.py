@@ -277,33 +277,53 @@ async def main() -> None:
         from cua_overlay.recovery.classifier import FailureClassifier  # noqa: E402
         from cua_overlay.ax.walker import walk_subtree  # noqa: E402
 
-        # B3/B4 Phase 4 wire-up. Real branches need ANTHROPIC_API_KEY; if absent,
-        # fall back to stubs that emit phase_3_stub events so the recovery loop
-        # still completes (just without LLM-driven replan).
+        # B3/B4 Phase 4 wire-up. J1: planner picked per-call by a factory:
+        #   1. host advertises sampling → MCPSamplingPlanner (no key needed)
+        #   2. ANTHROPIC_API_KEY set     → SDK Planner
+        #   3. neither                   → factory returns None, B3/B4 emit
+        #                                  no_planner_available + branch_failed
+        # WorldModelPredictor + Critic are heuristic-only in Phase 4 so they
+        # boot without a key.
         from cua_overlay.cognition import (  # noqa: E402
             CognitionDisabledError,
             Critic,
+            MCPSamplingPlanner,
             Planner,
             WorldModelPredictor,
         )
 
+        api_key_present = bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+        def _planner_factory(ctx):
+            if ctx is not None and MCPSamplingPlanner.host_supports_sampling(ctx):
+                return MCPSamplingPlanner(ctx)
+            if api_key_present:
+                try:
+                    return Planner()
+                except CognitionDisabledError:
+                    return None
+            return None
+
         try:
-            _planner = Planner()
             _wmp = WorldModelPredictor()
             _critic = Critic()
             b3_branch = B3_WorldReplan(
                 idempotency_store=idem_store,
                 session_writer=session,
                 world_model_predictor=_wmp,
-                planner=_planner,
+                planner_factory=_planner_factory,
             )
             b4_branch = B4_PlannerRequery(
                 idempotency_store=idem_store,
                 session_writer=session,
-                planner=_planner,
                 critic=_critic,
+                planner_factory=_planner_factory,
             )
-            log.info("recovery.b3_b4.real_path_enabled")
+            log.info(
+                "recovery.b3_b4.real_path_enabled",
+                api_key_present=api_key_present,
+                sampling_capable_at_call_time="probed_per_call",
+            )
         except CognitionDisabledError as exc:
             log.warning(
                 "recovery.b3_b4.stubbed",

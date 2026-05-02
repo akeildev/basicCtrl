@@ -139,7 +139,12 @@ run_pytest_gate "cdp-chromium"   "CUA_RUN_E2E_CDP_CHROMIUM" "tests/integration/t
 run_pytest_gate "durability"     "CUA_RUN_E2E_DURABILITY"  "tests/integration/test_durability_sigkill_resume_e2e.py" "$HAS_POSTGRES"
 run_pytest_gate "visualizer"     "CUA_RUN_E2E_VISUALIZER"  "tests/integration/test_visualizer_socket_e2e.py"       "$HAS_VIZ_BIN"
 run_pytest_gate "memory"         "CUA_RUN_E2E_MEMORY"      "tests/integration/test_memory_recall_e2e.py"           "yes"
-run_pytest_gate "recovery-real"  "CUA_RUN_E2E_RECOVERY_REAL" "tests/integration/test_recovery_b3_b4_e2e.py"        "$HAS_ANTHROPIC"
+# recovery-real: J1 turned this gate into always-runnable. The sampling-path
+# tests (TestB3SamplingPath / TestB4SamplingPath) exercise the no-API-key
+# path via MCPSamplingPlanner + a mocked FastMCP Context; the legacy
+# api-key-gated tests (TestB3RealPath / TestB4RealPath) skip cleanly when
+# ANTHROPIC_API_KEY is unset. Either path proving the wire-up is enough.
+run_pytest_gate "recovery-real"  "CUA_RUN_E2E_RECOVERY_REAL" "tests/integration/test_recovery_b3_b4_e2e.py"        "yes"
 run_pytest_gate "canary"         "CUA_RUN_E2E_CANARY"      "tests/integration/test_canary_multi_app.py"            "$HAS_CALCULATOR"
 
 # ----------------------------------------------------------------------

@@ -15,6 +15,7 @@ from .ensemble import EnsembleVotingEngine
 from .exceptions import CognitionDisabledError
 from .grounder import Grounder
 from .planner import Planner, WorldModelPredictor
+from .sampling_planner import MCPSamplingPlanner
 from .schemas import (
     AppleFMOutput,
     EnsembleVote,
@@ -34,6 +35,7 @@ __all__ = [
     "EnsembleVotingEngine",
     "EnsembleVote",
     "Grounder",
+    "MCPSamplingPlanner",
     "OracleOutput",
     "PlanCandidate",
     "Planner",

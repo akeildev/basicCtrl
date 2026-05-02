@@ -245,19 +245,22 @@ class WorldModelPredictor:
     def __init__(self, api_key: Optional[str] = None):
         """Initialize world-model predictor.
 
+        Phase 4 ships only the heuristic path; the api_key is reserved for a
+        future small-model upgrade. We accept a missing key so B3 can still
+        replan via MCPSamplingPlanner without an Anthropic SDK key.
+
         Args:
-            api_key: Anthropic API key for small specialized model (defaults to env)
+            api_key: Anthropic API key for the future small specialized
+                model. Optional — heuristic prediction works without it.
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            log.warning(
-                "world_model.disabled", reason="no_api_key", env="ANTHROPIC_API_KEY"
-            )
-            raise CognitionDisabledError(
-                module="WorldModelPredictor", reason="ANTHROPIC_API_KEY not set"
-            )
-
         self._client = None
+        if not self.api_key:
+            log.info(
+                "world_model.heuristic_only",
+                reason="no_api_key",
+                env="ANTHROPIC_API_KEY",
+            )
 
     @property
     def client(self):
