@@ -8,7 +8,7 @@ completed_date: 2026-04-30
 subsystem: recovery-scaffold
 tags: [module-init, test-fixtures, wave-0]
 key_files:
-  - created: cua_overlay/recovery/__init__.py
+  - created: basicctrl/recovery/__init__.py
   - created: tests/unit/recovery/conftest.py
   - created: tests/unit/recovery/__init__.py
   - created: tests/unit/recovery/test_classifier.py
@@ -29,7 +29,7 @@ metrics:
 
 ## Summary
 
-Created `cua_overlay/recovery/` module with docstring describing subsystem architecture. Established test fixture pattern at `tests/unit/recovery/conftest.py` with 5 shared fixtures for mocking Phase 1/2 dependencies. Created Wave-0 test stub files with `pytest.importorskip()` pattern so tests collect gracefully until real modules ship in Wave 1.
+Created `basicctrl/recovery/` module with docstring describing subsystem architecture. Established test fixture pattern at `tests/unit/recovery/conftest.py` with 5 shared fixtures for mocking Phase 1/2 dependencies. Created Wave-0 test stub files with `pytest.importorskip()` pattern so tests collect gracefully until real modules ship in Wave 1.
 
 Module structure ready for Wave 1 tasks:
 - `classifier.py` — 6-class FailureClass enum + dispatch table
@@ -41,7 +41,7 @@ Module structure ready for Wave 1 tasks:
 ## Tasks Completed
 
 ### Task 1: Create recovery module scaffold
-- ✓ `cua_overlay/recovery/__init__.py` with subsystem docstring
+- ✓ `basicctrl/recovery/__init__.py` with subsystem docstring
 - ✓ Module docstring describes 5 submodules and their roles
 
 ### Task 2: Create pytest fixtures for recovery unit tests
@@ -70,7 +70,7 @@ tests/unit/recovery/ --collect-only -q
 
 Fixtures importable and used by placeholder tests:
 ```
-python -c "import cua_overlay.recovery; from tests.unit.recovery.conftest import failure_ctx_factory"
+python -c "import basicctrl.recovery; from tests.unit.recovery.conftest import failure_ctx_factory"
   → succeeds
 ```
 

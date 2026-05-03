@@ -14,7 +14,7 @@ verified_by: orchestrator-inline (Calculator + Postgres available locally)
 ## Tests
 
 ### 1. Calculator click <50ms via L0 push (SC-1)
-expected: `uv run python -m cua_overlay.demo.calculator_click` exits 0 with VERIFIED, latency_ms<50, L2=None, L3=None
+expected: `uv run python -m basicctrl.demo.calculator_click` exits 0 with VERIFIED, latency_ms<50, L2=None, L3=None
 result: **PASS** — `verified=True confidence=0.667 latency_ms=32.30 L0=0.0 L1=0.667 L2=None L3=None composite_key=axid:com.apple.calculator:Five`
 
 Note: L0 push timed out within 30ms (documented macOS 26 quirk). L1 cheap-diff carried via present-signal renormalization (single non-zero signal → confidence 0.667 ≥ 0.50 → VERIFIED). Pragmatic SC-1 satisfied; strict-L0-only path remains a Phase-2 deferral.
@@ -41,7 +41,7 @@ result: **PASS** — writer subprocess wrote checkpoint to Postgres, `kill -9 64
 
 ### 6. MCP proxy + healing tool with real cua-driver (SC-6)
 expected: After `swift build` of cua-driver, list_tools returns proxied + healing tools; `click_with_healing` writes action_log + checkpoint
-result: **PASS** — built cua-driver via `swift build -c release`, symlinked to ~/.local/bin, spawned `python -m cua_overlay.mcp_server`, listed 31 tools including `click`, `click_with_healing`, `screenshot`. `click_with_healing(...)` returned `verified=True confidence=0.667 phase=1` via the verifier ladder (WR-02 fix confirmed live — see commit `a5656a1`).
+result: **PASS** — built cua-driver via `swift build -c release`, symlinked to ~/.local/bin, spawned `python -m basicctrl.mcp_server`, listed 31 tools including `click`, `click_with_healing`, `screenshot`. `click_with_healing(...)` returned `verified=True confidence=0.667 phase=1` via the verifier ladder (WR-02 fix confirmed live — see commit `a5656a1`).
 
 ## Summary
 

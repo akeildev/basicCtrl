@@ -14,7 +14,7 @@ Phase 1 builds the **foundation that every downstream phase depends on**. No tra
 2. **Write** a typed state graph (`UIElement` Pydantic v2) keyed by stable composite identity (`role_path + label + bbox_centroid`) — never the raw `AXUIElement` ref.
 3. **Verify** a click in **<50ms** via L0 push-event subscription (AXObserver on a Mach port) that was registered **before** the action fires, with L1 cheap-diff (CGWindowList + NSPasteboard.changeCount + dHash) as backup.
 
-The critical insight from the canonical blueprint (`~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` L5): **subscribe before fire**. AXObserverAddNotification fires <1ms via Mach IPC — deterministic, free, and the entire L0+L1+L2+L3 ladder collapses if you skip it.
+The critical insight from the canonical blueprint (`~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` L5): **subscribe before fire**. AXObserverAddNotification fires <1ms via Mach IPC — deterministic, free, and the entire L0+L1+L2+L3 ladder collapses if you skip it.
 
 **Primary recommendation:** Build the AXObserver bridge FIRST (it's the highest-risk integration), then state graph, then AppProfile classifier, then the L1 cheap-diff layer. The Calculator click demo exercises the full stack.
 
@@ -50,7 +50,7 @@ Including but not limited to:
 - Exact Pydantic field names (within constraints of architecture doc L2 schema).
 - AppProfile probe heuristics (which signals to check, in what order, with what timeouts).
 - Test framework (likely pytest given STACK.md's pytest 8.x + pytest-asyncio).
-- Postgres connection string default (`postgresql://localhost:5432/cua_maximalist` per STACK.md).
+- Postgres connection string default (`postgresql://localhost:5432/basicctrl` per STACK.md).
 - Whether to ship the L3 LLM contract as a no-op stub or fully omit it from Phase 1.
 
 ### Deferred Ideas (OUT OF SCOPE for Phase 1)
@@ -76,7 +76,7 @@ Per ROADMAP.md and REQUIREMENTS.md traceability table:
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| **CORE-01** | Fork trycua/cua to ~/dev/cua-maximalist with Python overlay scaffold above libs/cua-driver/ | §"Repository Topology" + §"uv + Postgres setup" |
+| **CORE-01** | Fork trycua/cua to ~/dev/basicCtrl with Python overlay scaffold above libs/cua-driver/ | §"Repository Topology" + §"uv + Postgres setup" |
 | **CORE-02** | Hook into ToolRegistry.swift:55-97 post-action callback to emit structured events to Python overlay | §"ToolRegistry hook strategy" — verified file:line, NO Swift edit needed (proxy pattern) |
 | **CORE-03** | Initialize app classifier — bundleID → AppProfile with capability probe (AX-rich? .sdef? CDP-port? Tauri/Wails?), cached per-bundle per-session | §"AppProfile capability probe" — full probe sequence with timeouts + cache schema |
 | **STATE-01** | Typed-graph state model: UIElement{...all fields...} | §"State graph: UIElement schema" — Pydantic v2 model + composite key |
@@ -164,7 +164,7 @@ uv pip install -D pytest pytest-asyncio mypy ruff
 # Local infra (one-time)
 brew install postgresql@16
 brew services start postgresql@16
-createdb cua_maximalist
+createdb basicctrl
 ```
 
 **Version verification:** All versions listed are LIVE-VERIFIED in STACK.md as of 2026-04-29. Re-verify if Phase 1 starts >30 days later. [CITED: .planning/research/STACK.md "Sources / Verified live (2026-04-29)"]
@@ -176,7 +176,7 @@ createdb cua_maximalist
 Per ARCHITECTURE.md L1-L18 and the locked component map:
 
 ```
-~/dev/cua-maximalist/
+~/dev/basicCtrl/
 ├── libs/                              # UNTOUCHED — vendored from trycua/cua
 │   └── cua-driver/                    # Swift driver, NEVER edit
 │       └── Sources/CuaDriverServer/
@@ -249,7 +249,7 @@ Per ARCHITECTURE.md L1-L18 and the locked component map:
 
 **Why flat under `overlay/` not deep package:** matches browser-harness's flat layout (which Akeil uses daily) per ARCHITECTURE.md L631 reference. Skyvern's deep `forge/sdk` is over-engineered for ~2000-LOC scope. [CITED: ARCHITECTURE.md L631]
 
-**Module naming (Claude's discretion):** I recommend `overlay/` (not `cua_overlay/`) because:
+**Module naming (Claude's discretion):** I recommend `overlay/` (not `basicctrl/`) because:
 - Matches the architecture doc's component map verbatim (ARCHITECTURE.md L31).
 - Short import path (`from overlay.state.graph import UIElement`).
 - Avoids namespace collision with hypothetical future `cua` package from trycua.
@@ -288,7 +288,7 @@ Per ARCHITECTURE.md L1-L18 and the locked component map:
 from mcp.server.fastmcp import FastMCP
 from mcp.client.stdio import stdio_client  # spawns trycua's MCP as subprocess
 
-server = FastMCP(name="cua-maximalist")
+server = FastMCP(name="basicCtrl")
 
 # 1. Spawn trycua's MCP server as a subprocess via stdio
 trycua_client = await stdio_client(command="python", args=["-m", "mcp_server"])
@@ -1147,7 +1147,7 @@ Per STACK.md decision and PROJECT.md key decision: "LangGraph PostgresSaver wrap
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 import psycopg
 
-CONN_STRING = "postgresql://localhost:5432/cua_maximalist"
+CONN_STRING = "postgresql://localhost:5432/basicctrl"
 
 class DurableExecutor:
     def __init__(self):
@@ -1206,7 +1206,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
-PROXY = FastMCP(name="cua-maximalist")
+PROXY = FastMCP(name="basicCtrl")
 
 # Spawned at startup (Phase 1 may also support attaching to running cua-driver)
 trycua_params = StdioServerParameters(command="cua-driver", args=["--mcp"])
@@ -1613,7 +1613,7 @@ All planning-blocking questions resolved during /gsd-plan-phase. Items marked **
 
 ### A7: 5ms guard for stale notifications
 
-**RESOLVED:** Plan 04 Task 1 sets `_GUARD_NS = 5_000_000` (5ms) in `cua_overlay/verifier/axobserver.py`. Test `test_filter_drops_pre_subscription_events` exercises the boundary with 2ms (drops) and 6ms (keeps) deltas.
+**RESOLVED:** Plan 04 Task 1 sets `_GUARD_NS = 5_000_000` (5ms) in `basicctrl/verifier/axobserver.py`. Test `test_filter_drops_pre_subscription_events` exercises the boundary with 2ms (drops) and 6ms (keeps) deltas.
 
 ### A8: Proxy approach (A2 over A1)
 
@@ -1709,7 +1709,7 @@ All planning-blocking questions resolved during /gsd-plan-phase. Items marked **
 ## Sources
 
 ### Primary (HIGH confidence)
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE blueprint, 9-layer locked architecture, code-level steals
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — THE blueprint, 9-layer locked architecture, code-level steals
 - `.planning/PROJECT.md` — locked vision + key decisions
 - `.planning/REQUIREMENTS.md` — 79 requirements, 18 mapped to Phase 1
 - `.planning/ROADMAP.md` — Phase 1 success criteria + dependencies

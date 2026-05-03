@@ -8,16 +8,16 @@ dependency_graph:
   provides: [SPI-01, SPI-02, SPI-03, SPI-04, SPI-05, SPI-06, SPI-07, SPI-08]
   affects: [Phase-6-Wave-1-SPI-channels, AppProfile-caching]
 tech_stack:
-  added: [cua_overlay/spi/probe.py, cua_overlay/spi/__init__.py, SPICapabilities dataclass]
+  added: [basicctrl/spi/probe.py, basicctrl/spi/__init__.py, SPICapabilities dataclass]
   patterns: [capability-probe, graceful-degradation, dlsym, try-catch, IOKit enumeration]
 key_files:
   created:
-    - cua_overlay/spi/__init__.py (module entry point + pytest.importorskip gate)
-    - cua_overlay/spi/probe.py (8 SPI capability probes + SPICapabilities dataclass)
+    - basicctrl/spi/__init__.py (module entry point + pytest.importorskip gate)
+    - basicctrl/spi/probe.py (8 SPI capability probes + SPICapabilities dataclass)
     - tests/test_spi_probes.py (10 unit tests for all 8 SPIs)
     - tests/test_profile_spi.py (3 unit tests for AppProfile SPI fields)
   modified:
-    - cua_overlay/profile/classifier.py (added 8 spi_*_available fields, probe_spi_capabilities() call)
+    - basicctrl/profile/classifier.py (added 8 spi_*_available fields, probe_spi_capabilities() call)
     - .planning/phases/06-private-spis-durability-hardening/06-VALIDATION.md (populated with Wave 0 test plan)
 decisions:
   - "All 8 SPIs have graceful fallback to False (unavailable) — no hard gates"
@@ -47,8 +47,8 @@ completion_status: success
 Wave 0 establishes the foundation for Phase 6 SPI integration:
 
 1. **SPI Module Skeleton** (Task 1)
-   - `cua_overlay/spi/__init__.py` with macOS-only pytest.importorskip gate
-   - `cua_overlay/spi/probe.py` with 8 capability probe functions
+   - `basicctrl/spi/__init__.py` with macOS-only pytest.importorskip gate
+   - `basicctrl/spi/probe.py` with 8 capability probe functions
    - `SPICapabilities` immutable dataclass with all 8 bool fields
    - `probe_spi_capabilities()` async function runs all probes in parallel
    - All probes log results to structlog at INFO level
@@ -71,8 +71,8 @@ Wave 0 establishes the foundation for Phase 6 SPI integration:
 **Status:** ✅ COMPLETE
 
 **Files created:**
-- `cua_overlay/spi/__init__.py` (15 LOC)
-- `cua_overlay/spi/probe.py` (220 LOC)
+- `basicctrl/spi/__init__.py` (15 LOC)
+- `basicctrl/spi/probe.py` (220 LOC)
 - `tests/test_spi_probes.py` (110 LOC)
 
 **Probes implemented:**
@@ -102,7 +102,7 @@ Wave 0 establishes the foundation for Phase 6 SPI integration:
 **Status:** ✅ COMPLETE
 
 **Files modified:**
-- `cua_overlay/profile/classifier.py` (added 8 fields, updated classify())
+- `basicctrl/profile/classifier.py` (added 8 fields, updated classify())
 - Created `tests/test_profile_spi.py` (60 LOC, 3 unit tests)
 
 **Changes:**
@@ -117,7 +117,7 @@ Wave 0 establishes the foundation for Phase 6 SPI integration:
 
 **Grep verification:**
 ```bash
-$ grep -c "spi_.*_available" cua_overlay/profile/classifier.py
+$ grep -c "spi_.*_available" basicctrl/profile/classifier.py
 16  # (>= 8 required ✓)
 ```
 
@@ -144,7 +144,7 @@ $ grep -c "spi_.*_available" cua_overlay/profile/classifier.py
 - **Found during:** Task 1 test execution
 - **Issue:** `subprocess` imported inside try block but referenced in except clause
 - **Fix:** Moved `import subprocess` to module level (line 16)
-- **Files modified:** cua_overlay/spi/probe.py
+- **Files modified:** basicctrl/spi/probe.py
 - **Applied to:** probe_endpoint_security, probe_dtrace, probe_imu
 
 ## Validation Results
@@ -153,8 +153,8 @@ $ grep -c "spi_.*_available" cua_overlay/profile/classifier.py
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| cua_overlay/spi/__init__.py created + importable | ✅ | File exists, imports cleanly |
-| cua_overlay/spi/probe.py created + 8 probes | ✅ | 220 LOC, 8 probe functions + async wrapper |
+| basicctrl/spi/__init__.py created + importable | ✅ | File exists, imports cleanly |
+| basicctrl/spi/probe.py created + 8 probes | ✅ | 220 LOC, 8 probe functions + async wrapper |
 | SPICapabilities dataclass with 8 bool fields | ✅ | @dataclass with 8 immutable fields |
 | AppProfile.spi_*_available fields (8 total) | ✅ | grep -c => 16 (field definition + usage) |
 | classify() calls probe_spi_capabilities() | ✅ | Line ~311 in classifier.py |

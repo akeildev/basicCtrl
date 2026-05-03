@@ -18,7 +18,7 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | (a) `cdp-use` direct dep | Take cdp-use==1.4.5 as a project dependency | ✓ |
-| (b) Vendor browser-harness CDP code | Copy browser-harness CDP path into cua_overlay/translators/t2_cdp/ | |
+| (b) Vendor browser-harness CDP code | Copy browser-harness CDP path into basicctrl/translators/t2_cdp/ | |
 | (c) Runtime-import browser-harness | `import harness` as a sibling package | |
 
 **Decision:** (a) — D-02
@@ -162,7 +162,7 @@ Total ~10 MCP tools after Phase 2 (5 new healing + 1 destructive + 4 inherited f
 
 ## Claude's Discretion (areas captured but no user opinion gathered)
 
-- Internal module structure under `cua_overlay/translators/` and `cua_overlay/actions/` (follow Phase 1 pattern)
+- Internal module structure under `basicctrl/translators/` and `basicctrl/actions/` (follow Phase 1 pattern)
 - Race orchestrator's exact cancellation propagation order (anyio details)
 - pytest fixture composition for Slack/Pages/Chess test apps
 - Telemetry counter names for race wins

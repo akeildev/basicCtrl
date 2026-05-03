@@ -8,11 +8,11 @@ dependency_graph:
   provides: [SPI-08-IMU]
   affects: [IMU-based-retry-backoff, motion-aware-features]
 tech_stack:
-  added: [cua_overlay/spi/imu.py, IMUBridge, IMUData, get_imu_bridge]
+  added: [basicctrl/spi/imu.py, IMUBridge, IMUData, get_imu_bridge]
   patterns: [capability-aware-init, graceful-skip-on-unavailable, ioreg-enumeration]
 key_files:
   created:
-    - cua_overlay/spi/imu.py (108 LOC)
+    - basicctrl/spi/imu.py (108 LOC)
     - tests/test_spi_imu.py (116 LOC)
   modified: []
 decisions:
@@ -59,7 +59,7 @@ Plan 05 completes the IMU sensor integration, enabling optional motion-aware fea
 
 **Status:** ✅ COMPLETE
 
-**File created:** `cua_overlay/spi/imu.py` (108 LOC)
+**File created:** `basicctrl/spi/imu.py` (108 LOC)
 
 **Implementation details:**
 
@@ -135,8 +135,8 @@ None. IOKit enumeration via public ioreg(1) utility poses no new threat surface.
 ## Self-Check
 
 **Files created verification:**
-- `/Users/akeilsmith/dev/cua-maximalist/cua_overlay/spi/imu.py` — ✅ EXISTS (108 LOC)
-- `/Users/akeilsmith/dev/cua-maximalist/tests/test_spi_imu.py` — ✅ EXISTS (116 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/basicctrl/spi/imu.py` — ✅ EXISTS (108 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/tests/test_spi_imu.py` — ✅ EXISTS (116 LOC)
 
 **Commit verification:**
 - Commit hash: `32a2bec` ✅ EXISTS

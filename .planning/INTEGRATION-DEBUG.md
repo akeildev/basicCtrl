@@ -14,11 +14,11 @@ Live debug session, started 2026-05-01 in Ralph loop. Each finding is hypothesis
 
 **Hypothesis 2:** Calculator's "5" button fires AXValueChanged on press.
 
-**Evidence against:** Reproduced standalone — subscribed to AXValueChanged on Calculator's "5" button via AXObserverManager, fired C2 kAXPress (status=fired), waited 1s. **Zero events received.** macOS 26 Calculator only fires AXValueChanged on the *display* element (an AXScrollArea or AXStaticText higher in the tree), not on the keypad button itself. The demo source (`cua_overlay/demo/calculator_click.py:550-554`) even acknowledges this in comments.
+**Evidence against:** Reproduced standalone — subscribed to AXValueChanged on Calculator's "5" button via AXObserverManager, fired C2 kAXPress (status=fired), waited 1s. **Zero events received.** macOS 26 Calculator only fires AXValueChanged on the *display* element (an AXScrollArea or AXStaticText higher in the tree), not on the keypad button itself. The demo source (`basicctrl/demo/calculator_click.py:550-554`) even acknowledges this in comments.
 
 **Hypothesis 3:** L1 cheap-diff (CGWindowList + pasteboard + dHash) catches the change.
 
-**Evidence against:** L1 ROI is hardcoded to 100×100 pixels around `target.bbox.centroid` (`cua_overlay/verifier/ensemble/l1_cheap.py:222-256`). For the "5" button at (642, 885, 48, 48), the ROI captures the button + neighbors, **not** the display (which is at the *top* of the window, ~250px above). Pasteboard doesn't change. CGWindowList window count doesn't change. → All three L1 signals = 0.0.
+**Evidence against:** L1 ROI is hardcoded to 100×100 pixels around `target.bbox.centroid` (`basicctrl/verifier/ensemble/l1_cheap.py:222-256`). For the "5" button at (642, 885, 48, 48), the ROI captures the button + neighbors, **not** the display (which is at the *top* of the window, ~250px above). Pasteboard doesn't change. CGWindowList window count doesn't change. → All three L1 signals = 0.0.
 
 **Root cause:** L1 verifier looks at the wrong region for "click → display updates" actions. The architecture conflates `target.bbox` with "where to verify the change", but for Calculator they're different.
 
@@ -78,7 +78,7 @@ action hasn't fired. Then L0Push.collect re-subscribes post-fire (50ms more).
 On Calculator buttons (F1) AXValueChanged never fires either way → confidence=0.0
 → verifier escalates to L3 → L3 unavailable in Phase 1.
 
-**Evidence:** `cua_overlay/actions/race_orchestrator.py:204-239` calls
+**Evidence:** `basicctrl/actions/race_orchestrator.py:204-239` calls
 `await self._axmgr.expect(target=target.element, ax_element=target.ax_element,
 notifs=["AXValueChanged","AXFocusedUIElementChanged"], timeout_ms=100)` BEFORE
 the channel coros are even built. `expect()` (axobserver.py:86-130)
@@ -129,7 +129,7 @@ expensive (5-branch parallel recovery at Opus pricing) and incorrect.
    AXValueChanged fires with action #1's action_id → drops the waiter.
    **Fix:** Call `AXObserverRemoveNotification(observer, element, notif)`
    before each AddNotification so each action gets fresh refcon.
-   See `cua_overlay/ax/observer.py:228..308`.
+   See `basicctrl/ax/observer.py:228..308`.
 
 **Verification:** `CUA_RUN_E2E_RACE=1 ./scripts/smoke.sh` reports
 verified=True, L0=1.0, confidence=1.00 on each digit/operator click.
@@ -142,13 +142,13 @@ register on the target app's run loop).
 
 ## F10: RecoveryOrchestrator is orphaned — never wired into the action path
 
-**Affected:** `cua_overlay/mcp_server/healing_tools.py` (all 6 healing tools),
-`cua_overlay/cache/replay.py` (cassette replay).
+**Affected:** `basicctrl/mcp_server/healing_tools.py` (all 6 healing tools),
+`basicctrl/cache/replay.py` (cassette replay).
 
 **Hypothesis:** When `race_orch.execute()` returns `verified=False`,
 something kicks in to retry via recovery branches.
 
-**Evidence against:** `grep -rn 'RecoveryOrchestrator' cua_overlay/` shows
+**Evidence against:** `grep -rn 'RecoveryOrchestrator' basicctrl/` shows
 zero call sites for `RecoveryOrchestrator()` (the constructor) outside of
 `__init__.py` re-exports and `tests/unit/recovery/`. The branches list
 B1-B5 are never even instantiated in production. `click_with_healing` and
@@ -236,18 +236,18 @@ this stuck state.
 
 **Discovered:** 2026-05-02 during ULTRAPLAN Phase A3 (MCP boot proof).
 
-**Affected:** Anything that uses the cua-maximalist MCP server over the
+**Affected:** Anything that uses the basicCtrl MCP server over the
 official MCP stdio transport (Claude Code MCP host, MCP Inspector,
 strict third-party MCP clients).
 
-**Evidence:** Booted `uv run python -m cua_overlay.mcp_server` as a
+**Evidence:** Booted `uv run python -m basicctrl.mcp_server` as a
 subprocess with JSON-RPC over stdin/stdout. Sent `initialize`. Got
 **44 structlog NDJSON events on STDOUT** (session.created, durable.setup_complete,
 upstream.connected, …) **before** the JSON-RPC `initialize` response.
 The MCP protocol spec reserves stdout for JSON-RPC frames only; logs
 must go to stderr.
 
-**Root cause:** `cua_overlay/log.py:configure()` calls `structlog.configure(processors=...)`
+**Root cause:** `basicctrl/log.py:configure()` calls `structlog.configure(processors=...)`
 without specifying `logger_factory`. structlog's default
 `PrintLoggerFactory(file=sys.stdout)` is then used, which writes every
 event to stdout. Smoke + integration tests never caught this because

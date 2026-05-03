@@ -9,7 +9,7 @@ tags:
   - NSPanel + NSView rendering
 dependency_graph:
   requires:
-    - cua_overlay.visualizer.models (IPC schemas from Wave 0)
+    - basicctrl.visualizer.models (IPC schemas from Wave 0)
     - libs/cua-driver/App/LearningRecorder.swift (DispatchSourceRead socket pattern)
   provides:
     - libs/cua-driver/App/Visualizer.swift (NSPanel host + socket listener)
@@ -210,7 +210,7 @@ VIS-01 requires ghost cursor visible BEFORE action fires — this plan delivers 
 | From | To | Via | Pattern |
 |------|----|----|---------|
 | `Visualizer.swift` | `/tmp/cua-visualizer.sock` | DispatchSourceRead listener | Unix socket NDJSON reader (LearningRecorder precedent) |
-| `cua_overlay.visualizer.models` | `Visualizer.swift` | JSON dispatch | GhostCursorCommand/HighlightBoxCommand → handleCommand() → view methods |
+| `basicctrl.visualizer.models` | `Visualizer.swift` | JSON dispatch | GhostCursorCommand/HighlightBoxCommand → handleCommand() → view methods |
 | `GhostCursorView.swift` | `UI-SPEC.md` (L59-73) | Animation implementation | 16px circle, 150-350ms lerp, ripple 400ms fade |
 | `HighlightOverlayView.swift` | `UI-SPEC.md` (L85-95) | Element box styling | 8px radius, 2px border, 10% fill, label truncation |
 | `hideAllLayers() / showAllLayers()` | Phase 5 Wave 3 (ScreenRecorder) | Verifier integration | Called before/after screenshot capture (P3/P5 isolation) |

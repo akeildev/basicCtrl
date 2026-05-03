@@ -129,7 +129,7 @@ def fake_idempotency_store() -> IdempotencyStore:
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
 | Slack must be relaunched with `--remote-debugging-port=9222` for D-25 / SC #1 | TRANS-02 | P8 — Electron CDP is launch-only; cannot programmatically inject without Phase 6 DYLD; user must confirm restart of running app | `pkill -9 Slack; sleep 1; open -a "Slack" --args --remote-debugging-port=9222`. Wait 5s. Run integration test. |
-| TCC Accessibility grant for cua-maximalist Python interpreter | All TRANS/ACT | macOS TCC is per-binary user-grant — cannot be automated | System Settings → Privacy & Security → Accessibility → toggle on the Python.app or terminal binary running pytest |
+| TCC Accessibility grant for basicCtrl Python interpreter | All TRANS/ACT | macOS TCC is per-binary user-grant — cannot be automated | System Settings → Privacy & Security → Accessibility → toggle on the Python.app or terminal binary running pytest |
 
 ---
 

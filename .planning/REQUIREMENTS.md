@@ -1,4 +1,4 @@
-# Requirements: cua-maximalist
+# Requirements: basicCtrl
 
 **Defined:** 2026-04-29
 **Core Value:** Autonomous control of any Mac surface, with deterministic self-healing and full transparency — never silently fails, never gives up, never makes the user babysit.
@@ -9,7 +9,7 @@ All 79 active requirements are v1. Phased across 6 milestones per ARCHITECTURE.m
 
 ### Foundation
 
-- [ ] **CORE-01**: Fork `trycua/cua` to `~/dev/cua-maximalist/` with Python overlay scaffold above `libs/cua-driver/`
+- [ ] **CORE-01**: Fork `trycua/cua` to `~/dev/basicCtrl/` with Python overlay scaffold above `libs/cua-driver/`
 - [ ] **CORE-02**: Hook into `ToolRegistry.swift:55-97` post-action callback to emit structured events to Python overlay
 - [ ] **CORE-03**: Initialize app classifier — `bundleID → AppProfile` with capability probe (AX-rich? .sdef? CDP-port? Tauri/Wails?), cached per-bundle per-session
 

@@ -8,9 +8,9 @@ completed_date: 2026-04-30
 subsystem: recovery-classifier-heal-event
 tags: [classifier, heal-event, wave-1, pydantic-models]
 key_files:
-  - created: cua_overlay/recovery/classifier.py
-  - created: cua_overlay/recovery/heal_event.py
-  - modified: cua_overlay/recovery/__init__.py
+  - created: basicctrl/recovery/classifier.py
+  - created: basicctrl/recovery/heal_event.py
+  - modified: basicctrl/recovery/__init__.py
   - modified: tests/unit/recovery/test_classifier.py
   - modified: tests/unit/recovery/test_heal_event.py
 decisions:
@@ -84,7 +84,7 @@ All 20 unit tests passing: 8 classifier route tests + 1 dispatch table test + 1 
 - ✓ test_serialize_for_ndjson
 - ✓ test_heal_event_ts_auto_now
 
-### Task 5: Update cua_overlay/recovery/__init__.py with re-exports
+### Task 5: Update basicctrl/recovery/__init__.py with re-exports
 - ✓ Re-export FailureClass, FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES, HealEvent
 - ✓ __all__ list updated
 

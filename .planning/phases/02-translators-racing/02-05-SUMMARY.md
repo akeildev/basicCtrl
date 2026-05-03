@@ -7,12 +7,12 @@ tags: [TRANS-01, ACT-04, T1, C2, kAXPress, AXUIElementPerformAction, P28, P2, D-
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.ax.rate_limit.TokenBucket, cua_overlay.ax.walker.walk_subtree (canonical reference), cua_overlay.state.graph.UIElement + Bbox + Source, cua_overlay.state.causal_dag.ActionCanonical, cua_overlay.persist.session_writer.SessionWriter
+    provides: basicctrl.ax.rate_limit.TokenBucket, basicctrl.ax.walker.walk_subtree (canonical reference), basicctrl.state.graph.UIElement + Bbox + Source, basicctrl.state.causal_dag.ActionCanonical, basicctrl.persist.session_writer.SessionWriter
   - phase: 02-translators-racing
-    provides: cua_overlay.translators.base (Translator Protocol, TranslatorTarget, TargetSpec from Plan 02-04), cua_overlay.actions.channels.base (Channel Protocol, ChannelOutcome from Plan 02-04), cua_overlay.actions.idempotency.IdempotencyTokenStore (Plan 02-02)
+    provides: basicctrl.translators.base (Translator Protocol, TranslatorTarget, TargetSpec from Plan 02-04), basicctrl.actions.channels.base (Channel Protocol, ChannelOutcome from Plan 02-04), basicctrl.actions.idempotency.IdempotencyTokenStore (Plan 02-02)
 provides:
-  - cua_overlay.translators.t1_ax.T1AXTranslator — concrete T1 translator (tier='T1') wrapping Phase 1 AX safety primitives
-  - cua_overlay.actions.channels.c2_ax_press.C2AXPressChannel — concrete C2 channel (name='C2') firing AXUIElementPerformAction
+  - basicctrl.translators.t1_ax.T1AXTranslator — concrete T1 translator (tier='T1') wrapping Phase 1 AX safety primitives
+  - basicctrl.actions.channels.c2_ax_press.C2AXPressChannel — concrete C2 channel (name='C2') firing AXUIElementPerformAction
   - 6 unit tests for T1 (mocked AX surface, no Calculator) + 6 unit tests for C2 (mocked HIServices, no Calculator)
   - 4 integration tests against real Calculator.app (resolve, fire, idempotency, cancel)
   - Module-scoped calculator_session_pid fixture (this file only) — pattern for any Phase 2 integration test that needs Calculator across multiple sequential test functions
@@ -33,15 +33,15 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/translators/t1_ax.py — T1AXTranslator (resolves AX targets via depth-bounded walk + locator hierarchy, validates via TokenBucket-rate-limited AXRole probe)"
-    - "cua_overlay/actions/channels/c2_ax_press.py — C2AXPressChannel (fires AXUIElementPerformAction with try_claim + cancel_event guards, asyncio.to_thread for sync syscall)"
+    - "basicctrl/translators/t1_ax.py — T1AXTranslator (resolves AX targets via depth-bounded walk + locator hierarchy, validates via TokenBucket-rate-limited AXRole probe)"
+    - "basicctrl/actions/channels/c2_ax_press.py — C2AXPressChannel (fires AXUIElementPerformAction with try_claim + cancel_event guards, asyncio.to_thread for sync syscall)"
     - "tests/unit/translators/test_t1_ax.py — 6 unit tests with mocked AX surface (replaced Wave-0 importorskip stub)"
     - "tests/unit/actions/channels/__init__.py — channels unit-test sub-package marker"
     - "tests/unit/actions/channels/test_c2_ax_press.py — 6 unit tests with mocked HIServices.AXUIElementPerformAction"
     - "tests/integration/test_t1_calculator.py — 4 integration tests against real Calculator.app (resolve '5' button + fire kAXPress + idempotency + cancel)"
   modified:
-    - "cua_overlay/translators/__init__.py — re-exports T1AXTranslator alongside the Plan 02-04 contracts"
-    - "cua_overlay/actions/channels/__init__.py — re-exports C2AXPressChannel alongside the Plan 02-04 contracts"
+    - "basicctrl/translators/__init__.py — re-exports T1AXTranslator alongside the Plan 02-04 contracts"
+    - "basicctrl/actions/channels/__init__.py — re-exports C2AXPressChannel alongside the Plan 02-04 contracts"
 
 key-decisions:
   - "T1 ships its OWN walker (_walk_with_refs) rather than using Phase 1's walk_subtree — Phase 1's walker returns list[UIElement] and discards raw AXUIElementRef opaque handles; C2 (kAXPress) needs the raw ref to call AXUIElementPerformAction. Both walkers honor identical P2 (TokenBucket) and P3 (depth+node caps) mitigations. The walk_subtree import is preserved for canonical-reference greppability."
@@ -85,8 +85,8 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T06:57:33Z
 - **Completed:** 2026-04-30T07:13:42Z (approximately)
 - **Tasks:** 2 (both `type=auto tdd=true`)
-- **Files created:** 4 (cua_overlay/translators/t1_ax.py, cua_overlay/actions/channels/c2_ax_press.py, tests/unit/actions/channels/__init__.py + test_c2_ax_press.py, tests/integration/test_t1_calculator.py)
-- **Files modified:** 3 (cua_overlay/translators/__init__.py, cua_overlay/actions/channels/__init__.py, tests/unit/translators/test_t1_ax.py)
+- **Files created:** 4 (basicctrl/translators/t1_ax.py, basicctrl/actions/channels/c2_ax_press.py, tests/unit/actions/channels/__init__.py + test_c2_ax_press.py, tests/integration/test_t1_calculator.py)
+- **Files modified:** 3 (basicctrl/translators/__init__.py, basicctrl/actions/channels/__init__.py, tests/unit/translators/test_t1_ax.py)
 
 ## Task Commits
 
@@ -157,7 +157,7 @@ C2.fire(action, target, store, cancel_event):
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/translators/t1_ax.py` (326 lines) — T1AXTranslator + _coords_to_bbox helper
+- `basicctrl/translators/t1_ax.py` (326 lines) — T1AXTranslator + _coords_to_bbox helper
   - tier='T1' Literal Protocol field
   - Two-bucket constructor (action-time + walk-bucket)
   - _get_app_element with per-pid cache
@@ -165,7 +165,7 @@ C2.fire(action, target, store, cancel_event):
   - _match_locator with AXIdentifier > AXLabel > role+bbox-centroid hierarchy
   - resolve() composing the above
   - validate() with TokenBucket gate + AXRole stale-ref probe
-- `cua_overlay/actions/channels/c2_ax_press.py` (115 lines) — C2AXPressChannel
+- `basicctrl/actions/channels/c2_ax_press.py` (115 lines) — C2AXPressChannel
   - name='C2' Literal Protocol field
   - fire() with try_claim → cancel-check → ax_element-check → to_thread(_press) flow
   - Returns frozen ChannelOutcome
@@ -175,8 +175,8 @@ C2.fire(action, target, store, cancel_event):
 - `tests/integration/test_t1_calculator.py` — 4 tests + module-scoped Calculator fixture
 
 ### Modified
-- `cua_overlay/translators/__init__.py` — adds T1AXTranslator export
-- `cua_overlay/actions/channels/__init__.py` — adds C2AXPressChannel export
+- `basicctrl/translators/__init__.py` — adds T1AXTranslator export
+- `basicctrl/actions/channels/__init__.py` — adds C2AXPressChannel export
 
 ## Deviations from Plan
 
@@ -193,21 +193,21 @@ C2.fire(action, target, store, cancel_event):
 - **Found during:** Task 2 GREEN (first integration run)
 - **Issue:** Single 20/sec bucket gated BOTH resolution walk AND action-time validate; Calculator walk consumes 70+ reads, bucket runs dry, walker bails out with 0 nodes
 - **Fix:** Split into two buckets — `_walk_bucket` (200/sec/200-cap, internal) for one-shot resolution, `_bucket` (20/sec/20-cap, user-supplied default) for steady-state validate. Mirrors Phase 1 demo's `_bounded_button_search` precedent (`calculator_click.py:155`).
-- **Files modified:** `cua_overlay/translators/t1_ax.py`
+- **Files modified:** `basicctrl/translators/t1_ax.py`
 - **Commit:** `d3d6817`
 
 **3. [Rule 1 - Bug] T1 walked toolbar/menubar but missed keypad (depth issue)**
 - **Found during:** Task 2 GREEN (post-bucket-split)
 - **Issue:** `max_depth=3` was too shallow — Calculator's '5' button is at depth 5 from AXWindow on macOS 26 (Tahoe). The CLAUDE.md "max 3 levels" hard rule was being applied at the wrong scope.
 - **Fix:** Bumped `_MAX_DEPTH` to 6, kept `_MAX_NODES_T1=200` as the load-bearing bound. The hard rule's intent ("don't walk Safari") is enforced by the node cap. Phase 1 walk_subtree's max_depth=3 is unchanged (different surface, action-time polling). Documented at length in module docstring.
-- **Files modified:** `cua_overlay/translators/t1_ax.py`
+- **Files modified:** `basicctrl/translators/t1_ax.py`
 - **Commit:** `d3d6817`
 
 **4. [Rule 1 - Bug] Walker double-counted nodes when seeded with both AXApplication and AXWindows**
 - **Found during:** Task 2 GREEN (post-depth-bump)
 - **Issue:** Initial queue had `[(ax_app, 0, "AXApplication")]` AND each window seeded separately. Walking AXApplication's children re-discovered the windows, so each window appeared at depth 1 (from app) AND depth 0 (from seed). Calculator walked 105 nodes (mostly duplicates) without finding the keypad.
 - **Fix:** Window-only seed; AXApplication used only as fallback when no windows present.
-- **Files modified:** `cua_overlay/translators/t1_ax.py`
+- **Files modified:** `basicctrl/translators/t1_ax.py`
 - **Commit:** `d3d6817`
 
 **5. [Rule 3 - Blocker] Integration tests 2-4 hung on stale Calculator pid**
@@ -231,7 +231,7 @@ None. T1+C2 require:
 
 ## Next Phase Readiness
 
-- **Plan 02-06 (T2 CDP + C5 CDP Input.dispatchMouseEvent):** can `from cua_overlay.translators.base import Translator, TranslatorTarget, TargetSpec` + `from cua_overlay.actions.channels.base import Channel, ChannelOutcome` and follow the SAME shape as T1AXTranslator + C2AXPressChannel. Will use `cdp-use==1.4.5` for Slack/Cursor/Obsidian (Electron renderer attach via D-24 workspace filter).
+- **Plan 02-06 (T2 CDP + C5 CDP Input.dispatchMouseEvent):** can `from basicctrl.translators.base import Translator, TranslatorTarget, TargetSpec` + `from basicctrl.actions.channels.base import Channel, ChannelOutcome` and follow the SAME shape as T1AXTranslator + C2AXPressChannel. Will use `cdp-use==1.4.5` for Slack/Cursor/Obsidian (Electron renderer attach via D-24 workspace filter).
 - **Plan 02-07 (T3 AS + C4 AppleScript):** dedicated ThreadPoolExecutor pattern from CONTEXT.md D-04.
 - **Plan 02-08 (T4 Vision):** uitag pipeline → grounded_bbox; binds to C1 by default.
 - **Plan 02-09 (T5 Pixel + C1+C3):** CGWindowList + ImageHash dHash + CGEvent.postToPid wiring.
@@ -241,16 +241,16 @@ None. T1+C2 require:
 ## Self-Check: PASSED
 
 Files created (verified via `[ -f path ]`):
-- FOUND: `cua_overlay/translators/t1_ax.py`
-- FOUND: `cua_overlay/actions/channels/c2_ax_press.py`
+- FOUND: `basicctrl/translators/t1_ax.py`
+- FOUND: `basicctrl/actions/channels/c2_ax_press.py`
 - FOUND: `tests/unit/translators/test_t1_ax.py` (replaced Wave-0 stub)
 - FOUND: `tests/unit/actions/channels/__init__.py`
 - FOUND: `tests/unit/actions/channels/test_c2_ax_press.py`
 - FOUND: `tests/integration/test_t1_calculator.py`
 
 Files modified (verified):
-- FOUND: `cua_overlay/translators/__init__.py` (re-exports T1AXTranslator)
-- FOUND: `cua_overlay/actions/channels/__init__.py` (re-exports C2AXPressChannel)
+- FOUND: `basicctrl/translators/__init__.py` (re-exports T1AXTranslator)
+- FOUND: `basicctrl/actions/channels/__init__.py` (re-exports C2AXPressChannel)
 
 Commits verified (all in `git log --oneline`):
 - FOUND: `e7ccca6` test(02-05): RED T1AXTranslator
@@ -259,10 +259,10 @@ Commits verified (all in `git log --oneline`):
 - FOUND: `d3d6817` feat(02-05): GREEN C2AXPressChannel + bug fixes
 
 Acceptance criteria literals (all greppable, verified):
-- FOUND: `class T1AXTranslator`, `tier: Literal["T1", "T2", "T3", "T4", "T5"] = "T1"`, `walk_subtree`, `TokenBucket`, `max_depth=3` (in docstring referencing Phase 1 walker) in `cua_overlay/translators/t1_ax.py`
-- FOUND: `T1AXTranslator` in `cua_overlay/translators/__init__.py`
-- FOUND: `class C2AXPressChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C2"`, `try_claim(action.id, "C2")`, `cancel_event.is_set()`, `AXUIElementPerformAction`, `asyncio.to_thread` in `cua_overlay/actions/channels/c2_ax_press.py`
-- FOUND: `C2AXPressChannel` in `cua_overlay/actions/channels/__init__.py`
+- FOUND: `class T1AXTranslator`, `tier: Literal["T1", "T2", "T3", "T4", "T5"] = "T1"`, `walk_subtree`, `TokenBucket`, `max_depth=3` (in docstring referencing Phase 1 walker) in `basicctrl/translators/t1_ax.py`
+- FOUND: `T1AXTranslator` in `basicctrl/translators/__init__.py`
+- FOUND: `class C2AXPressChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C2"`, `try_claim(action.id, "C2")`, `cancel_event.is_set()`, `AXUIElementPerformAction`, `asyncio.to_thread` in `basicctrl/actions/channels/c2_ax_press.py`
+- FOUND: `C2AXPressChannel` in `basicctrl/actions/channels/__init__.py`
 - FOUND: `calculator_pid|AXValueChanged` partial — `calculator_pid` adapted to module-scoped `calculator_session_pid` (justified deviation #5; AXValueChanged check deferred to verifier in Plan 02-10)
 
 Verification commands (all pass):
@@ -272,7 +272,7 @@ Verification commands (all pass):
 - `uv run pytest tests/integration/test_t1_calculator.py -m integration -v` → 4 passed in 3.69s
 - `SKIP_INTEGRATION=1 uv run pytest -q tests/integration/test_t1_calculator.py` → 4 skipped in 0.07s
 - `SKIP_INTEGRATION=1 uv run pytest -q tests/ -m "not integration and not manual"` → 181 passed, 11 skipped, 29 deselected in 1.13s
-- `uv run python -c "from cua_overlay.translators import T1AXTranslator; from cua_overlay.actions.channels import C2AXPressChannel; print('ok')"` → `ok`
+- `uv run python -c "from basicctrl.translators import T1AXTranslator; from basicctrl.actions.channels import C2AXPressChannel; print('ok')"` → `ok`
 
 ---
 *Phase: 02-translators-racing*

@@ -7,18 +7,18 @@ tags: [TRANS-05, ACT-01, ACT-04, T5, C1, C3, CGEventPostToPid, D-07, D-14, D-18,
 # Dependency graph
 requires:
   - phase: 02-translators-racing
-    provides: cua_overlay.translators.t4_vision.T4VisionTranslator (Plan 02-08; T5 delegates coordinate resolution to T4 per D-07)
+    provides: basicctrl.translators.t4_vision.T4VisionTranslator (Plan 02-08; T5 delegates coordinate resolution to T4 per D-07)
   - phase: 02-translators-racing
-    provides: cua_overlay.actions.channels.base.ChannelOutcome + Channel Protocol (Plan 02-04)
+    provides: basicctrl.actions.channels.base.ChannelOutcome + Channel Protocol (Plan 02-04)
   - phase: 02-translators-racing
-    provides: cua_overlay.actions.idempotency.IdempotencyTokenStore (D-16/D-17/D-18; Plan 02-02)
+    provides: basicctrl.actions.idempotency.IdempotencyTokenStore (D-16/D-17/D-18; Plan 02-02)
   - external: pyobjc==12.1 Quartz framework (CGEventCreateMouseEvent, CGEventPostToPid, kCGEventLeftMouseDown/Up)
   - external: imagehash==4.3.2 (T5 pre-fire ROI phash for L1 verifier diff)
 provides:
-  - cua_overlay.translators.t5_pixel.T5PixelTranslator — concrete T5 translator (tier='T5'); delegates resolve() to T4VisionTranslator (D-07); attaches pre_phash to TranslatorTarget.extras
-  - cua_overlay.actions.channels.c1_skylight.C1SkyLightChannel — concrete C1 channel (name='C1'); public CGEventPostToPid (Phase 6 SkyLight upgrade swap-in stable signature)
-  - cua_overlay.actions.channels.c1_skylight._post_left_click — shared mouseDown/mouseUp helper (DRY surface for C3 reuse)
-  - cua_overlay.actions.channels.c3_cgevent.C3CGEventChannel — concrete C3 channel (name='C3'); imports _post_left_click from c1_skylight
+  - basicctrl.translators.t5_pixel.T5PixelTranslator — concrete T5 translator (tier='T5'); delegates resolve() to T4VisionTranslator (D-07); attaches pre_phash to TranslatorTarget.extras
+  - basicctrl.actions.channels.c1_skylight.C1SkyLightChannel — concrete C1 channel (name='C1'); public CGEventPostToPid (Phase 6 SkyLight upgrade swap-in stable signature)
+  - basicctrl.actions.channels.c1_skylight._post_left_click — shared mouseDown/mouseUp helper (DRY surface for C3 reuse)
+  - basicctrl.actions.channels.c3_cgevent.C3CGEventChannel — concrete C3 channel (name='C3'); imports _post_left_click from c1_skylight
   - 5 unit tests for T5 (mocked T4 + ROI capture); 8 unit tests for C1 (mocked Quartz post helper); 8 unit tests for C3 (mirrors C1 + DRY assertion)
 affects:
   - phase-02 plan 02-10 (race orchestrator wires T1+C2, T2+C5, T3+C4, T4+C1, T5+C3 default tier-channel pairs per D-14 — full inventory now importable)
@@ -38,14 +38,14 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/translators/t5_pixel.py — T5PixelTranslator class (committed in earlier wave commits 397021a + d8799fa); _capture_roi_phash uses CGWindowListCreateImage + PIL + imagehash.phash; resolve() delegates to T4 then adds pre_phash to extras"
-    - "cua_overlay/actions/channels/c1_skylight.py — C1SkyLightChannel class; _post_left_click(pid, cx, cy) helper wraps CGEventCreateMouseEvent + CGEventPostToPid (kCGEventLeftMouseDown + kCGEventLeftMouseUp) at the bbox center"
-    - "cua_overlay/actions/channels/c3_cgevent.py — C3CGEventChannel class; imports _post_left_click from c1_skylight (DRY); D-14 default binding for T5"
+    - "basicctrl/translators/t5_pixel.py — T5PixelTranslator class (committed in earlier wave commits 397021a + d8799fa); _capture_roi_phash uses CGWindowListCreateImage + PIL + imagehash.phash; resolve() delegates to T4 then adds pre_phash to extras"
+    - "basicctrl/actions/channels/c1_skylight.py — C1SkyLightChannel class; _post_left_click(pid, cx, cy) helper wraps CGEventCreateMouseEvent + CGEventPostToPid (kCGEventLeftMouseDown + kCGEventLeftMouseUp) at the bbox center"
+    - "basicctrl/actions/channels/c3_cgevent.py — C3CGEventChannel class; imports _post_left_click from c1_skylight (DRY); D-14 default binding for T5"
     - "tests/unit/actions/channels/test_c1_skylight.py — 8 unit tests with mocked Quartz post helper; AST-aware T-2-05 grep test"
     - "tests/unit/actions/channels/test_c3_cgevent.py — 8 unit tests mirroring C1 + DRY function-identity invariant"
   modified:
-    - "cua_overlay/translators/__init__.py — re-exports T5PixelTranslator alongside T1/T2/T3/T4 (committed in earlier wave commit d8799fa)"
-    - "cua_overlay/actions/channels/__init__.py — re-exports C1SkyLightChannel + C3CGEventChannel alongside C2/C4/C5"
+    - "basicctrl/translators/__init__.py — re-exports T5PixelTranslator alongside T1/T2/T3/T4 (committed in earlier wave commit d8799fa)"
+    - "basicctrl/actions/channels/__init__.py — re-exports C1SkyLightChannel + C3CGEventChannel alongside C2/C4/C5"
     - "tests/unit/translators/test_t5_pixel.py — 5 unit tests with mocked T4 (committed in earlier wave commit 397021a)"
 
 key-decisions:
@@ -158,7 +158,7 @@ Both C1 and C3 fire identical Quartz syscalls in Phase 2. To prevent two diverge
 
 ```python
 # c3_cgevent.py
-from cua_overlay.actions.channels.c1_skylight import _post_left_click
+from basicctrl.actions.channels.c1_skylight import _post_left_click
 ```
 
 The DRY invariant is asserted at test time:
@@ -175,15 +175,15 @@ If a future refactor accidentally copies the helper into c3_cgevent.py (e.g. as 
 ## Files Created/Modified
 
 ### Created (this plan)
-- `cua_overlay/translators/t5_pixel.py` (~110 lines) — T5PixelTranslator (committed in `d8799fa`)
-- `cua_overlay/actions/channels/c1_skylight.py` (~95 lines) — C1SkyLightChannel + `_post_left_click` (committed in `3e4dd25`)
-- `cua_overlay/actions/channels/c3_cgevent.py` (~80 lines) — C3CGEventChannel (committed in `18d16e0`)
+- `basicctrl/translators/t5_pixel.py` (~110 lines) — T5PixelTranslator (committed in `d8799fa`)
+- `basicctrl/actions/channels/c1_skylight.py` (~95 lines) — C1SkyLightChannel + `_post_left_click` (committed in `3e4dd25`)
+- `basicctrl/actions/channels/c3_cgevent.py` (~80 lines) — C3CGEventChannel (committed in `18d16e0`)
 - `tests/unit/actions/channels/test_c1_skylight.py` (~265 lines) — 8 unit tests (committed in `3e4dd25`)
 - `tests/unit/actions/channels/test_c3_cgevent.py` (~280 lines) — 8 unit tests (committed in `18d16e0`)
 
 ### Modified
-- `cua_overlay/translators/__init__.py` — adds T5PixelTranslator re-export (committed in `d8799fa`)
-- `cua_overlay/actions/channels/__init__.py` — adds C1SkyLightChannel + C3CGEventChannel re-exports (committed in `18d16e0`)
+- `basicctrl/translators/__init__.py` — adds T5PixelTranslator re-export (committed in `d8799fa`)
+- `basicctrl/actions/channels/__init__.py` — adds C1SkyLightChannel + C3CGEventChannel re-exports (committed in `18d16e0`)
 - `tests/unit/translators/test_t5_pixel.py` — replaced Wave-0 importorskip stub with 5 mocked-T4 tests (committed in `397021a`)
 
 ## Acceptance Criteria — All PASS
@@ -207,7 +207,7 @@ If a future refactor accidentally copies the helper into c3_cgevent.py (e.g. as 
 | `uv run pytest -q tests/unit/translators/test_t5_pixel.py` | 5 passed | 5 passed |
 | `uv run pytest -q tests/unit/actions/channels/test_c1_skylight.py` | 8 passed | 8 passed |
 | `uv run pytest -q tests/unit/actions/channels/test_c3_cgevent.py` | 8 passed | 8 passed |
-| `uv run python -c "from cua_overlay.translators import T5PixelTranslator; from cua_overlay.actions.channels import C1SkyLightChannel, C3CGEventChannel; print('ok')"` prints | ok | ok |
+| `uv run python -c "from basicctrl.translators import T5PixelTranslator; from basicctrl.actions.channels import C1SkyLightChannel, C3CGEventChannel; print('ok')"` prints | ok | ok |
 | Full unit suite (was 222 after 02-08 + 5 from T5 wave commits → 227 baseline) | +16 = 232 | 232 passed (this continuation session) |
 
 ## Deviations from Plan
@@ -216,7 +216,7 @@ If a future refactor accidentally copies the helper into c3_cgevent.py (e.g. as 
 
 **1. [Rule 3 - Blocker] Naive substring grep test failed on docstring mention of forbidden constant**
 - **Found during:** Task 2 GREEN (first run of `test_module_does_not_use_session_event_tap` in test_c1_skylight.py)
-- **Issue:** The plan's strict acceptance criterion `grep -c "kCGSessionEventTap" cua_overlay/actions/channels/c1_skylight.py` requires 0 matches. C1's module docstring intentionally documents the prohibition: *"NEVER use CGEvent.post or CGEventPost(kCGSessionEventTap) — those warp the user's cursor globally."* The naive substring grep flagged this as a violation. C3 has the same docstring shape and same false positive.
+- **Issue:** The plan's strict acceptance criterion `grep -c "kCGSessionEventTap" basicctrl/actions/channels/c1_skylight.py` requires 0 matches. C1's module docstring intentionally documents the prohibition: *"NEVER use CGEvent.post or CGEventPost(kCGSessionEventTap) — those warp the user's cursor globally."* The naive substring grep flagged this as a violation. C3 has the same docstring shape and same false positive.
 - **Fix:** Added `_strip_docstrings_and_comments(path)` helper to both test files. The helper uses `tokenize.generate_tokens` to walk the source, skip STRING + COMMENT tokens, and rejoin only NAME/OP/NUMBER/etc tokens. The grep against this stripped result returns 0 — confirming the forbidden constants do not appear in CODE while preserving the educational docstring. Same shape as Plan 02-06's deviation around `browser_harness` in docstrings, but solved at the test-side rather than the implementation-side (this time the docstring's prohibition is load-bearing — removing it would lose the rationale a future maintainer needs).
 - **Files modified:** `tests/unit/actions/channels/test_c1_skylight.py`, `tests/unit/actions/channels/test_c3_cgevent.py`
 - **Commits:** rolled into the same Task 2 GREEN commits (`3e4dd25` for C1, `18d16e0` for C3) since the test files hadn't been committed yet between bug discovery and fix.
@@ -254,15 +254,15 @@ For Plan 02-12's eventual Chess integration test (D-27):
 ## Self-Check: PASSED
 
 Files created (verified via `[ -f path ]`):
-- FOUND: `cua_overlay/translators/t5_pixel.py`
-- FOUND: `cua_overlay/actions/channels/c1_skylight.py`
-- FOUND: `cua_overlay/actions/channels/c3_cgevent.py`
+- FOUND: `basicctrl/translators/t5_pixel.py`
+- FOUND: `basicctrl/actions/channels/c1_skylight.py`
+- FOUND: `basicctrl/actions/channels/c3_cgevent.py`
 - FOUND: `tests/unit/actions/channels/test_c1_skylight.py`
 - FOUND: `tests/unit/actions/channels/test_c3_cgevent.py`
 
 Files modified (verified):
-- FOUND: `cua_overlay/translators/__init__.py` (re-exports T5PixelTranslator)
-- FOUND: `cua_overlay/actions/channels/__init__.py` (re-exports C1SkyLightChannel + C3CGEventChannel)
+- FOUND: `basicctrl/translators/__init__.py` (re-exports T5PixelTranslator)
+- FOUND: `basicctrl/actions/channels/__init__.py` (re-exports C1SkyLightChannel + C3CGEventChannel)
 - FOUND: `tests/unit/translators/test_t5_pixel.py` (5 mocked-T4 tests)
 
 Commits verified (all in `git log --oneline`):
@@ -272,15 +272,15 @@ Commits verified (all in `git log --oneline`):
 - FOUND: `18d16e0` feat(02-09): GREEN C3CGEventChannel (delegates to C1, no cursor warp)
 
 Acceptance criteria literals (all greppable, verified):
-- FOUND: `class T5PixelTranslator`, `T4VisionTranslator`, `imagehash.phash`, `pre_phash` in `cua_overlay/translators/t5_pixel.py`
-- FOUND: `class C1SkyLightChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C1"`, `CGEventPostToPid` in `cua_overlay/actions/channels/c1_skylight.py`
-- FOUND: `class C3CGEventChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C3"`, import `_post_left_click` in `cua_overlay/actions/channels/c3_cgevent.py`
+- FOUND: `class T5PixelTranslator`, `T4VisionTranslator`, `imagehash.phash`, `pre_phash` in `basicctrl/translators/t5_pixel.py`
+- FOUND: `class C1SkyLightChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C1"`, `CGEventPostToPid` in `basicctrl/actions/channels/c1_skylight.py`
+- FOUND: `class C3CGEventChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C3"`, import `_post_left_click` in `basicctrl/actions/channels/c3_cgevent.py`
 - VERIFIED: AST-stripped grep `kCGSessionEventTap`/`kCGHIDEventTap` returns 0 from both channel files (T-2-05 hard rule)
 
 Verification commands (all pass):
 - `uv run pytest -q tests/unit/translators/test_t5_pixel.py` → 5 passed
 - `uv run pytest -q tests/unit/actions/channels/test_c1_skylight.py tests/unit/actions/channels/test_c3_cgevent.py` → 16 passed
-- `uv run python -c "from cua_overlay.translators import T5PixelTranslator; from cua_overlay.actions.channels import C1SkyLightChannel, C3CGEventChannel; print('ok')"` → `ok` + `C1: C1` + `C3: C3` + `T5 tier: T5`
+- `uv run python -c "from basicctrl.translators import T5PixelTranslator; from basicctrl.actions.channels import C1SkyLightChannel, C3CGEventChannel; print('ok')"` → `ok` + `C1: C1` + `C3: C3` + `T5 tier: T5`
 - `uv run pytest -q tests/unit/ -m "not integration and not manual"` → 232 passed in 1.06s (was 227 after T5 wave commits; +16 from C1 + C3 unit tests = 243 line items, 232 passed because some translator tests share fixtures and the wave-0 stub deletions net to +16)
 
 ---

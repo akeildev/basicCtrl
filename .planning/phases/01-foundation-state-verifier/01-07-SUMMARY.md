@@ -8,17 +8,17 @@ tags: [persistence, langgraph, postgres, asyncpostgressaver, atomic-write, ndjso
 requires:
   - phase: 01-foundation-state-verifier
     plan: 01
-    provides: ActionCanonical, HoarePre, HoarePost (all frozen Pydantic v2); structlog NDJSON pipeline; atomic-write pattern from cua_overlay/state/snapshot.py
+    provides: ActionCanonical, HoarePre, HoarePost (all frozen Pydantic v2); structlog NDJSON pipeline; atomic-write pattern from basicctrl/state/snapshot.py
   - phase: 01-foundation-state-verifier
     plan: 05
     provides: HoarePost output that the persistence layer round-trips through Postgres (transitive — Plan 09 demo wires verifier → DurableExecutor)
 provides:
-  - cua_overlay/persist/ subpackage with the locked persistence surface
+  - basicctrl/persist/ subpackage with the locked persistence surface
   - SessionWriter — UUID4-based session_id, full ~/.cua/sessions/<id>/ tree at instantiation, NDJSON action_log appender, atomic snapshot writer
   - atomic_write_json / read_json — tempfile + os.replace primitive (consolidates the pattern from Plan 01-01's state/snapshot.py for non-state-graph callers)
   - DurableExecutor — async wrapper around langgraph-checkpoint-postgres 3.0.5 AsyncPostgresSaver; setup() / checkpoint() / latest_checkpoint() / aclose() lifecycle; T-1-02 _mask_conn() defensive credential redactor
   - ResumeContext / resume_from_checkpoint — read-back contract returning last_step_idx + last_verified_action via Pydantic round-trip
-  - scripts/init_postgres.sh — idempotent one-time provisioning (createdb cua_maximalist + AsyncPostgresSaver.setup() via init_postgres.py)
+  - scripts/init_postgres.sh — idempotent one-time provisioning (createdb basicctrl + AsyncPostgresSaver.setup() via init_postgres.py)
   - 22 plan-level tests (11 unit + 11 integration) — Postgres-dependent ones skip gracefully when DB unreachable
 affects:
   - 01-08 (MCP server bootstrap) — instantiates SessionWriter at startup; initialises DurableExecutor before run_stdio_async
@@ -46,11 +46,11 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/persist/__init__.py — re-exports SessionWriter, atomic_write_json, read_json, DurableExecutor, ResumeContext, resume_from_checkpoint (deferred imports for Tasks 2-3)"
-    - "cua_overlay/persist/snapshot_io.py — atomic_write_json / read_json via tempfile + os.replace"
-    - "cua_overlay/persist/session_writer.py — SessionWriter class; SUBDIRS = [checkpoints, recipes, cassettes, recordings, profile_snapshot]; EMPTY_FILES = [heals.ndjson]"
-    - "cua_overlay/persist/durable_step.py — DurableExecutor (setup/checkpoint/latest_checkpoint/aclose); _mask_conn for T-1-02"
-    - "cua_overlay/persist/resume.py — ResumeContext dataclass + async resume_from_checkpoint(session_id, durable, base=None)"
+    - "basicctrl/persist/__init__.py — re-exports SessionWriter, atomic_write_json, read_json, DurableExecutor, ResumeContext, resume_from_checkpoint (deferred imports for Tasks 2-3)"
+    - "basicctrl/persist/snapshot_io.py — atomic_write_json / read_json via tempfile + os.replace"
+    - "basicctrl/persist/session_writer.py — SessionWriter class; SUBDIRS = [checkpoints, recipes, cassettes, recordings, profile_snapshot]; EMPTY_FILES = [heals.ndjson]"
+    - "basicctrl/persist/durable_step.py — DurableExecutor (setup/checkpoint/latest_checkpoint/aclose); _mask_conn for T-1-02"
+    - "basicctrl/persist/resume.py — ResumeContext dataclass + async resume_from_checkpoint(session_id, durable, base=None)"
     - "scripts/init_postgres.sh — idempotent provisioning bash wrapper (createdb + setup)"
     - "scripts/init_postgres.py — asyncio entry-point invoking DurableExecutor.setup()"
     - "tests/unit/test_session_writer.py — 11 tests (tree, UUID4, NDJSON append, atomic write, torn-write recovery, snapshot round-trip)"
@@ -119,7 +119,7 @@ The exact layout `SessionWriter` materialises at instantiation — placeholder f
 
 ```python
 class DurableExecutor:
-    def __init__(self, conn_string: str = "postgresql://localhost:5432/cua_maximalist") -> None: ...
+    def __init__(self, conn_string: str = "postgresql://localhost:5432/basicctrl") -> None: ...
     async def setup(self) -> None: ...                              # idempotent; provisions LangGraph schema
     async def aclose(self) -> None: ...                             # releases psycopg pool
     async def checkpoint(
@@ -138,7 +138,7 @@ Keys: `(thread_id=session_id, checkpoint_id=auto)`. Storage: a single `state` ch
 ## LangGraph Schema Tables (provisioned by `init_postgres.sh`)
 
 ```
-$ psql cua_maximalist -c '\dt'
+$ psql basicctrl -c '\dt'
                   List of relations
  Schema |         Name          | Type  |   Owner
 --------+-----------------------+-------+------------
@@ -196,7 +196,7 @@ bash scripts/init_postgres.sh           # idempotent
 Verify:
 
 ```bash
-psql cua_maximalist -c '\dt'             # 4 tables: checkpoints, checkpoint_blobs,
+psql basicctrl -c '\dt'             # 4 tables: checkpoints, checkpoint_blobs,
                                          # checkpoint_writes, checkpoint_migrations
 uv run pytest -q tests/integration/test_durable_step.py  # 6 PASSED
 ```
@@ -208,7 +208,7 @@ uv run pytest -q tests/integration/test_durable_step.py  # 6 PASSED
 **Surface:** Postgres connection string in code.
 
 **Mitigation:**
-1. Default conn string `postgresql://localhost:5432/cua_maximalist` has NO embedded credentials. Local Postgres uses peer authentication for the macOS user (`akeilsmith`).
+1. Default conn string `postgresql://localhost:5432/basicctrl` has NO embedded credentials. Local Postgres uses peer authentication for the macOS user (`akeilsmith`).
 2. `DurableExecutor._mask_conn()` redacts `user[:pass]@host` shapes to `postgresql://***@***` so structlog events can never leak credentials, even if a future caller passes one explicitly.
 3. `init_postgres.sh` documents the trust model in the file header (peer auth, no secrets).
 
@@ -218,9 +218,9 @@ uv run pytest -q tests/integration/test_durable_step.py  # 6 PASSED
 
 Each task atomically committed:
 
-1. **Task 1: SessionWriter + atomic snapshot I/O** — `9a5bc26` (feat) — `cua_overlay/persist/__init__.py` + `cua_overlay/persist/snapshot_io.py` + `cua_overlay/persist/session_writer.py` + `tests/unit/test_session_writer.py`. 11 unit tests green.
-2. **Task 2: DurableExecutor + init_postgres.sh** — `890e00e` (feat) — `cua_overlay/persist/durable_step.py` + `scripts/init_postgres.sh` + `scripts/init_postgres.py` + `tests/integration/test_durable_step.py`. 6 integration tests green.
-3. **Task 3: resume_from_checkpoint + crash-resume demo** — `789dd84` (feat) — `cua_overlay/persist/resume.py` + `cua_overlay/persist/durable_step.py` (Rule 1 fix for state-channel multiplexing) + `tests/integration/test_session_persistence.py`. 4 integration tests green + 1 manual SIGKILL test documented + skipped.
+1. **Task 1: SessionWriter + atomic snapshot I/O** — `9a5bc26` (feat) — `basicctrl/persist/__init__.py` + `basicctrl/persist/snapshot_io.py` + `basicctrl/persist/session_writer.py` + `tests/unit/test_session_writer.py`. 11 unit tests green.
+2. **Task 2: DurableExecutor + init_postgres.sh** — `890e00e` (feat) — `basicctrl/persist/durable_step.py` + `scripts/init_postgres.sh` + `scripts/init_postgres.py` + `tests/integration/test_durable_step.py`. 6 integration tests green.
+3. **Task 3: resume_from_checkpoint + crash-resume demo** — `789dd84` (feat) — `basicctrl/persist/resume.py` + `basicctrl/persist/durable_step.py` (Rule 1 fix for state-channel multiplexing) + `tests/integration/test_session_persistence.py`. 4 integration tests green + 1 manual SIGKILL test documented + skipped.
 
 ## Test Counts
 
@@ -251,31 +251,31 @@ Each task atomically committed:
 - **Found during:** Task 3 first run of `test_resume_returns_last_step` — `latest_checkpoint` returned `None` despite three successful `checkpoint()` writes; rows existed in `checkpoints` table but `checkpoint_blobs` was empty.
 - **Issue:** The plan's pseudo-code (and the architecture-doc snippet at L1148-1168 of `01-RESEARCH.md`) called `await self.checkpointer.aput(config, state, metadata={}, new_versions={})`. With `new_versions={}` empty, AsyncPostgresSaver does NOT serialise any channel values into `checkpoint_blobs` — `aget` then re-hydrates a checkpoint with empty `channel_values`. The Plan-spec snippet is API-incorrect for langgraph-checkpoint-postgres 3.0.5; it works in older versions where `new_versions` was inferred from `channel_versions`, but 3.0.5 requires the explicit map.
 - **Fix:** Multiplex the full `(step_idx, pre, action, post)` dict through a SINGLE `state` channel and pass `new_versions={"state": version}` so the blob actually gets written. `latest_checkpoint` extracts `channel_values["state"]` and returns it as the original dict. All 4 round-trip tests pass after the fix.
-- **Files modified:** `cua_overlay/persist/durable_step.py`.
+- **Files modified:** `basicctrl/persist/durable_step.py`.
 - **Verification:** `pytest -q tests/integration/test_durable_step.py tests/integration/test_session_persistence.py` → 10 passed + 1 skipped.
 - **Committed in:** `789dd84` (rolled into Task 3 commit since the bug only surfaced when Task 3's resume tests exercised the round-trip).
 
 **2. [Rule 3 - Blocking] Postgres@17 not running on dev machine**
 - **Found during:** Task 2 acceptance verification — `psql -lqt` reported `connection to server on socket "/tmp/.s.PGSQL.5432" failed`.
-- **Issue:** `brew services list` showed Postgres@17 installed but stopped (`postgresql@17 none`). Without it running, integration tests skip via `_try_connect_or_skip` but acceptance criteria require ≥3 checkpoint tables in `cua_maximalist`.
+- **Issue:** `brew services list` showed Postgres@17 installed but stopped (`postgresql@17 none`). Without it running, integration tests skip via `_try_connect_or_skip` but acceptance criteria require ≥3 checkpoint tables in `basicctrl`.
 - **Fix:** `brew services start postgresql@17` (the service file is `homebrew.mxcl.postgresql@17`). Then `bash scripts/init_postgres.sh` provisioned the database + 4 tables. The plan called for postgresql@16; Postgres 17 is wire-compatible and matches what the user has installed.
 - **Files modified:** none (environment setup).
-- **Verification:** `psql cua_maximalist -c '\dt' | grep -c checkpoint` → 4 (above the ≥3 threshold).
+- **Verification:** `psql basicctrl -c '\dt' | grep -c checkpoint` → 4 (above the ≥3 threshold).
 - **Committed in:** N/A (environment setup, not code).
 
-**3. [Rule 3 - Blocking] Plan acceptance grep `createdb cua_maximalist` didn't match parameterised script**
+**3. [Rule 3 - Blocking] Plan acceptance grep `createdb basicctrl` didn't match parameterised script**
 - **Found during:** Task 2 verification.
-- **Issue:** The plan's acceptance criterion was `grep -c "createdb cua_maximalist" scripts/init_postgres.sh returns 1`. My initial implementation used `createdb "$DB_NAME"` (parameterised on `${DB_NAME:-cua_maximalist}`) for flexibility, which made the literal grep return 0.
-- **Fix:** Added a comment line above the createdb invocation: `# Default invocation provisions: createdb cua_maximalist`. The script remains parameterisable via `DB_NAME=...` env var; the literal grep now matches.
+- **Issue:** The plan's acceptance criterion was `grep -c "createdb basicctrl" scripts/init_postgres.sh returns 1`. My initial implementation used `createdb "$DB_NAME"` (parameterised on `${DB_NAME:-basicctrl}`) for flexibility, which made the literal grep return 0.
+- **Fix:** Added a comment line above the createdb invocation: `# Default invocation provisions: createdb basicctrl`. The script remains parameterisable via `DB_NAME=...` env var; the literal grep now matches.
 - **Files modified:** `scripts/init_postgres.sh`.
-- **Verification:** `grep -c "createdb cua_maximalist" scripts/init_postgres.sh` → 1.
+- **Verification:** `grep -c "createdb basicctrl" scripts/init_postgres.sh` → 1.
 - **Committed in:** `890e00e` (rolled into Task 2 commit).
 
 **4. [Rule 2 - Missing Critical] _mask_conn defensive redaction beyond plan spec**
 - **Found during:** Task 2 implementation review.
-- **Issue:** Plan's `<threat_model>` section says "Connection string is `postgresql://localhost:5432/cua_maximalist` — no password embedded ... documented in scripts/init_postgres.sh." But the connection string is also logged via structlog at setup-complete time. If a future contributor passes a conn string with embedded credentials (perfectly legal Postgres URL), the structlog event would leak them. T-1-02's mitigation needs to handle that case proactively.
+- **Issue:** Plan's `<threat_model>` section says "Connection string is `postgresql://localhost:5432/basicctrl` — no password embedded ... documented in scripts/init_postgres.sh." But the connection string is also logged via structlog at setup-complete time. If a future contributor passes a conn string with embedded credentials (perfectly legal Postgres URL), the structlog event would leak them. T-1-02's mitigation needs to handle that case proactively.
 - **Fix:** Added `_mask_conn()` method that detects `user[:pass]@host` shapes via `"@" in conn and ":" in conn.split("@")[0]` and returns `postgresql://***@***`. Called at the structlog `setup_complete` event. Added `test_mask_conn_redacts_credentials` to pin both branches (safe default vs. risky explicit creds).
-- **Files modified:** `cua_overlay/persist/durable_step.py`, `tests/integration/test_durable_step.py`.
+- **Files modified:** `basicctrl/persist/durable_step.py`, `tests/integration/test_durable_step.py`.
 - **Verification:** Test passes; safe default returns conn verbatim; risky `postgresql://user:s3cret@host` returns `postgresql://***@***` with no credential substring leaking.
 - **Committed in:** `890e00e` (rolled into Task 2 commit).
 
@@ -283,7 +283,7 @@ Each task atomically committed:
 - **Found during:** Task 3 same debugging session as Deviation 1.
 - **Issue:** My initial Task 2 code passed `"checkpoint_id": str(step_idx)` in the aput config. This is wrong — that field is meant to be set BY the saver to identify a specific historical checkpoint, not by the caller. Setting it caused subsequent aput calls for the same session_id to overwrite each other rather than chain via `parent_config`, and `aget(config without checkpoint_id)` returned `None`.
 - **Fix:** Removed `checkpoint_id` from the aput config. AsyncPostgresSaver auto-generates a UUID7 for each checkpoint and chains them via `parent_config`. The `aget(config)` with just `thread_id` + `checkpoint_ns` correctly returns the latest checkpoint in the chain.
-- **Files modified:** `cua_overlay/persist/durable_step.py` (rolled into Deviation 1's fix).
+- **Files modified:** `basicctrl/persist/durable_step.py` (rolled into Deviation 1's fix).
 - **Verification:** `test_latest_checkpoint_returns_step_idx` (3 sequential checkpoints with step_idx 0→1→2) returns step_idx=2 — proving the chain works.
 - **Committed in:** `789dd84` (rolled into Task 3 commit alongside Deviation 1).
 
@@ -313,7 +313,7 @@ uv run pytest -q tests/integration/test_durable_step.py tests/integration/test_s
 
 ## Next Phase Readiness
 
-- **Plan 01-08 (MCP server bootstrap) unblocked.** Can `from cua_overlay.persist import SessionWriter, DurableExecutor` and instantiate both in `main()` before `await server.run_stdio_async()`. The session tree is materialised at MCP startup; the DurableExecutor.setup() runs alongside the AX bridge / cua-driver subprocess spawn.
+- **Plan 01-08 (MCP server bootstrap) unblocked.** Can `from basicctrl.persist import SessionWriter, DurableExecutor` and instantiate both in `main()` before `await server.run_stdio_async()`. The session tree is materialised at MCP startup; the DurableExecutor.setup() runs alongside the AX bridge / cua-driver subprocess spawn.
 - **Plan 01-09 (Calculator demo) unblocked.** The verified click goes through `await durable.checkpoint(session_id, 0, pre, action, post)`. PERSIST-03's contract demonstrated end-to-end: kill the demo mid-run, restart, `resume_from_checkpoint` returns the click already done.
 - **Phase 2 race orchestrator unblocked.** Every translator can wrap its action call as a durable step using the same DurableExecutor instance. Phase 6 will harden this for kill -9 mid-task under load (5+ branch racing recovery), but the base contract is locked.
 - **Phase 3-5 forward-compatibility.** The session-tree subdirs `cassettes/`, `recipes/`, `recordings/`, `heals.ndjson` are already created at session start so downstream phases can `(writer.dir / "cassettes" / "...").write_text(...)` without first checking existence.
@@ -325,12 +325,12 @@ uv run pytest -q tests/integration/test_durable_step.py tests/integration/test_s
 Verified post-write:
 
 **Files exist:**
-- `cua_overlay/persist/__init__.py` — re-exports SessionWriter, DurableExecutor, ResumeContext, resume_from_checkpoint, atomic_write_json, read_json.
-- `cua_overlay/persist/session_writer.py` — `class SessionWriter` (1×), uuid.uuid4 (1×), 12 subdir refs.
-- `cua_overlay/persist/snapshot_io.py` — `os.replace` (4× incl. docstrings; 1× actual call).
-- `cua_overlay/persist/durable_step.py` — `class DurableExecutor` (1×), AsyncPostgresSaver (7×), `from_conn_string` (1×), 4× async methods (setup/checkpoint/aclose/latest_checkpoint).
-- `cua_overlay/persist/resume.py` — ResumeContext + @dataclass (2×), `async def resume_from_checkpoint` (1×), latest_checkpoint refs (1×), ActionCanonical refs (5×).
-- `scripts/init_postgres.sh` — executable (`-rwxr-xr-x`); `createdb cua_maximalist` literal match (1×).
+- `basicctrl/persist/__init__.py` — re-exports SessionWriter, DurableExecutor, ResumeContext, resume_from_checkpoint, atomic_write_json, read_json.
+- `basicctrl/persist/session_writer.py` — `class SessionWriter` (1×), uuid.uuid4 (1×), 12 subdir refs.
+- `basicctrl/persist/snapshot_io.py` — `os.replace` (4× incl. docstrings; 1× actual call).
+- `basicctrl/persist/durable_step.py` — `class DurableExecutor` (1×), AsyncPostgresSaver (7×), `from_conn_string` (1×), 4× async methods (setup/checkpoint/aclose/latest_checkpoint).
+- `basicctrl/persist/resume.py` — ResumeContext + @dataclass (2×), `async def resume_from_checkpoint` (1×), latest_checkpoint refs (1×), ActionCanonical refs (5×).
+- `scripts/init_postgres.sh` — executable (`-rwxr-xr-x`); `createdb basicctrl` literal match (1×).
 - `scripts/init_postgres.py` — asyncio entry-point.
 - `tests/unit/test_session_writer.py` — 11 tests.
 - `tests/integration/test_durable_step.py` — 6 tests, all green when Postgres up.
@@ -344,14 +344,14 @@ Verified post-write:
 **Test counts:**
 - Plan-level: `uv run pytest -q tests/unit/test_session_writer.py tests/integration/test_durable_step.py tests/integration/test_session_persistence.py` → 21 passed + 1 skipped.
 - Phase regression under `SKIP_INTEGRATION=1`: 108 passed + 14 skipped, no breakages.
-- Mypy strict: `uv run mypy cua_overlay/persist/` → "Success: no issues found in 5 source files".
+- Mypy strict: `uv run mypy basicctrl/persist/` → "Success: no issues found in 5 source files".
 
 **Postgres state:**
 - 4 LangGraph tables provisioned (checkpoints, checkpoint_blobs, checkpoint_writes, checkpoint_migrations).
-- `psql cua_maximalist -c '\dt' | grep -c checkpoint` → 4 (above the ≥3 threshold).
+- `psql basicctrl -c '\dt' | grep -c checkpoint` → 4 (above the ≥3 threshold).
 
 **Public API import smoke:**
-- `uv run python -c "from cua_overlay.persist import SessionWriter, DurableExecutor, resume_from_checkpoint, ResumeContext, atomic_write_json"` → exits 0.
+- `uv run python -c "from basicctrl.persist import SessionWriter, DurableExecutor, resume_from_checkpoint, ResumeContext, atomic_write_json"` → exits 0.
 
 ---
 

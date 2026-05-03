@@ -7,14 +7,14 @@ tags: [TRANS-03, ACT-01, ACT-04, T3, C4, py-applescript, NSAppleScript, OSAKit, 
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.state.graph.UIElement + Bbox + Source.APPLESCRIPT, cua_overlay.state.causal_dag.ActionCanonical, cua_overlay.persist.session_writer.SessionWriter
+    provides: basicctrl.state.graph.UIElement + Bbox + Source.APPLESCRIPT, basicctrl.state.causal_dag.ActionCanonical, basicctrl.persist.session_writer.SessionWriter
   - phase: 02-translators-racing
-    provides: cua_overlay.translators.base (Translator Protocol, TranslatorTarget with as_target_spec field, TargetSpec.as_verb from Plan 02-04), cua_overlay.actions.channels.base (Channel Protocol, ChannelOutcome from Plan 02-04), cua_overlay.actions.idempotency.IdempotencyTokenStore (Plan 02-02)
+    provides: basicctrl.translators.base (Translator Protocol, TranslatorTarget with as_target_spec field, TargetSpec.as_verb from Plan 02-04), basicctrl.actions.channels.base (Channel Protocol, ChannelOutcome from Plan 02-04), basicctrl.actions.idempotency.IdempotencyTokenStore (Plan 02-02)
   - external: py-applescript==1.0.3 (D-04; verified PyPI 2022-01-23 / API frozen; pulls pyobjc-framework-OSAKit transitively)
 provides:
-  - cua_overlay.translators.t3_applescript.T3AppleScriptTranslator — concrete T3 translator (tier='T3') wrapping py-applescript 1.0.3 NSAppleScript on a dedicated ThreadPoolExecutor(max_workers=2, thread_name_prefix='cua-as')
-  - cua_overlay.translators.t3_applescript._compiled_cache — module-level dict[source_string, applescript.AppleScript] (Pitfall E mitigation)
-  - cua_overlay.actions.channels.c4_applescript.C4AppleScriptChannel — concrete C4 channel (name='C4') that delegates to T3.execute (NOT a new ThreadPoolExecutor — reuses T3's pool)
+  - basicctrl.translators.t3_applescript.T3AppleScriptTranslator — concrete T3 translator (tier='T3') wrapping py-applescript 1.0.3 NSAppleScript on a dedicated ThreadPoolExecutor(max_workers=2, thread_name_prefix='cua-as')
+  - basicctrl.translators.t3_applescript._compiled_cache — module-level dict[source_string, applescript.AppleScript] (Pitfall E mitigation)
+  - basicctrl.actions.channels.c4_applescript.C4AppleScriptChannel — concrete C4 channel (name='C4') that delegates to T3.execute (NOT a new ThreadPoolExecutor — reuses T3's pool)
   - 7 unit tests for T3 (mocked applescript module via patch.dict + thread isolation assertion)
   - 8 unit tests for C4 (fake T3 test double + idempotency + cancel + missing-spec + raise-containment)
 affects:
@@ -35,12 +35,12 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/translators/t3_applescript.py — T3AppleScriptTranslator + module-level _compiled_cache dict + threading.Lock + _APP_NAMES bundle→AS-name table"
-    - "cua_overlay/actions/channels/c4_applescript.py — C4AppleScriptChannel (try_claim → cancel-check → spec-validate → translator.execute on shared cua-as pool)"
+    - "basicctrl/translators/t3_applescript.py — T3AppleScriptTranslator + module-level _compiled_cache dict + threading.Lock + _APP_NAMES bundle→AS-name table"
+    - "basicctrl/actions/channels/c4_applescript.py — C4AppleScriptChannel (try_claim → cancel-check → spec-validate → translator.execute on shared cua-as pool)"
     - "tests/unit/actions/channels/test_c4_applescript.py — 8 unit tests with _FakeT3 test double"
   modified:
-    - "cua_overlay/translators/__init__.py — re-exports T3AppleScriptTranslator alongside T1/T2"
-    - "cua_overlay/actions/channels/__init__.py — re-exports C4AppleScriptChannel alongside C2/C5"
+    - "basicctrl/translators/__init__.py — re-exports T3AppleScriptTranslator alongside T1/T2"
+    - "basicctrl/actions/channels/__init__.py — re-exports C4AppleScriptChannel alongside C2/C5"
     - "tests/unit/translators/test_t3_applescript.py — replaced Wave-0 importorskip stub with 7 mocked-applescript tests"
 
 key-decisions:
@@ -69,7 +69,7 @@ threats_mitigated:
   - "T-2-08 race-cancel correctness — C4.fire checks cancel_event.is_set() AFTER try_claim and BEFORE the AS call. When set, returns ChannelOutcome(status='cancelled') without invoking T3.execute (verified via fake_t3.calls == []). The claim is HELD (action_id stays burned) so the orchestrator's race winner stays canonical. The AppleEvent itself is uncancellable mid-flight; D-15 stagger 500ms (Plan 02-10) is the larger mitigation that pushes execution past most race windows so this pre-call check usually wins. Verified by tests/unit/actions/channels/test_c4_applescript.py::test_fire_cancelled_when_cancel_event_set."
   - "Pitfall E (compile-cost amortization) — module-level _compiled_cache dict caches applescript.AppleScript instances per source string. Verified by tests/unit/translators/test_t3_applescript.py::test_execute_caches_compiled_script (asserts _FakeScript.__init__ called exactly once across two execute() calls with the same source)."
   - "Pitfall P5 (AS call cost) — validate() returns True iff as_target_spec is non-empty (no pre-probe). The 50-200ms AS baseline is incurred only at execute time, never on the validate path. Plan 02-10 race orchestrator's D-15 500ms stagger gives faster channels first crack; T3+C4 typically lose to T1+C2 / T2+C5 except where AS is the only tier that addresses the target (D-26 Pages paragraph styles)."
-  - "D-04 hard rule (no fork+exec CLI tool) — both t3_applescript.py and c4_applescript.py contain ZERO occurrences of the literal `osascript` substring AND zero `subprocess.` calls. Grep-enforced as success criterion: `grep -c 'osascript' cua_overlay/translators/t3_applescript.py cua_overlay/actions/channels/c4_applescript.py` returns 0 + 0."
+  - "D-04 hard rule (no fork+exec CLI tool) — both t3_applescript.py and c4_applescript.py contain ZERO occurrences of the literal `osascript` substring AND zero `subprocess.` calls. Grep-enforced as success criterion: `grep -c 'osascript' basicctrl/translators/t3_applescript.py basicctrl/actions/channels/c4_applescript.py` returns 0 + 0."
 
 # Metrics
 duration: 4min
@@ -86,8 +86,8 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T07:28:27Z
 - **Completed:** 2026-04-30T07:32:54Z
 - **Tasks:** 2 (both `type=auto tdd=true`)
-- **Files created:** 3 (cua_overlay/translators/t3_applescript.py, cua_overlay/actions/channels/c4_applescript.py, tests/unit/actions/channels/test_c4_applescript.py)
-- **Files modified:** 3 (cua_overlay/translators/__init__.py, cua_overlay/actions/channels/__init__.py, tests/unit/translators/test_t3_applescript.py — replaced Wave-0 stub)
+- **Files created:** 3 (basicctrl/translators/t3_applescript.py, basicctrl/actions/channels/c4_applescript.py, tests/unit/actions/channels/test_c4_applescript.py)
+- **Files modified:** 3 (basicctrl/translators/__init__.py, basicctrl/actions/channels/__init__.py, tests/unit/translators/test_t3_applescript.py — replaced Wave-0 stub)
 
 ## Task Commits
 
@@ -185,7 +185,7 @@ C4.fire(action, target, store, cancel_event):
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/translators/t3_applescript.py` (~190 lines) — T3AppleScriptTranslator
+- `basicctrl/translators/t3_applescript.py` (~190 lines) — T3AppleScriptTranslator
   - tier='T3' Literal Protocol field
   - Module-level `_compiled_cache: dict[str, Any]` + `_compiled_lock: threading.Lock` (Pitfall E)
   - `_APP_NAMES` table (10 bundles: iWork x3, Mail, Calendar, Notes, Reminders, Safari, Terminal, Music)
@@ -196,7 +196,7 @@ C4.fire(action, target, store, cancel_event):
   - `resolve(bundle_id, pid, target_spec)` — synthetic TranslatorTarget with as_target_spec
   - `validate(target)` — non-empty as_target_spec check
   - `execute(source, args)` — submits to dedicated cua-as pool via `loop.run_in_executor(self._exec, ...)`
-- `cua_overlay/actions/channels/c4_applescript.py` (~140 lines) — C4AppleScriptChannel
+- `basicctrl/actions/channels/c4_applescript.py` (~140 lines) — C4AppleScriptChannel
   - name='C4' Literal Protocol field
   - `_T3Like` Protocol (structural duck-typing for the translator dependency)
   - `__init__(translator=None)` — defaults to local T3 (test-friendly); production passes shared registry instance
@@ -204,8 +204,8 @@ C4.fire(action, target, store, cancel_event):
 - `tests/unit/actions/channels/test_c4_applescript.py` (~240 lines) — 8 unit tests with _FakeT3
 
 ### Modified
-- `cua_overlay/translators/__init__.py` — adds `T3AppleScriptTranslator` export
-- `cua_overlay/actions/channels/__init__.py` — adds `C4AppleScriptChannel` export
+- `basicctrl/translators/__init__.py` — adds `T3AppleScriptTranslator` export
+- `basicctrl/actions/channels/__init__.py` — adds `C4AppleScriptChannel` export
 - `tests/unit/translators/test_t3_applescript.py` — replaced Wave-0 importorskip stub with 7 mocked-applescript tests
 
 ## D-15 500ms Stagger Note (deferred to Plan 02-10)
@@ -225,14 +225,14 @@ This split (stagger at orchestrator, kill-switch in channel) is the **canonical 
 
 **1. [Rule 1 - Bug] D-04 grep-enforced 'osascript' literal in module docstring**
 - **Found during:** Task 1 GREEN (acceptance criteria check)
-- **Issue:** Module docstring contained the literal `osascript` substring in prose ("NEVER `osascript` subprocess") which the strict acceptance criterion `grep -c 'osascript' cua_overlay/translators/t3_applescript.py` correctly flagged as 1 (must be 0). Same pattern as Plan 02-06's D-03 grep deviation.
+- **Issue:** Module docstring contained the literal `osascript` substring in prose ("NEVER `osascript` subprocess") which the strict acceptance criterion `grep -c 'osascript' basicctrl/translators/t3_applescript.py` correctly flagged as 1 (must be 0). Same pattern as Plan 02-06's D-03 grep deviation.
 - **Fix:** Rephrased docstring to "NEVER the fork+exec CLI tool path"; preserved the D-04 reference for human readers.
-- **Files modified:** `cua_overlay/translators/t3_applescript.py` (docstring only)
+- **Files modified:** `basicctrl/translators/t3_applescript.py` (docstring only)
 - **Commit:** `e7ab2e1` (rolled into Task 1 GREEN since the file hadn't been committed yet between bug discovery and fix)
 
 **2. [Rule 2 - Missing critical functionality] Added 8 unit tests for C4 (plan specified only a 1-liner smoke test)**
 - **Found during:** Task 2 planning
-- **Issue:** Plan's `<verify>` was just `python -c "from cua_overlay.actions.channels import C4AppleScriptChannel; ch = C4AppleScriptChannel(); assert ch.name == 'C4'; print('ok')"`. CI without macOS apps would have zero coverage for C4's fire-path contract — the same gap C2 had in Plan 02-05 and C5 had in Plan 02-06 (both also added unit tests as a Rule 2 deviation; this is now an established pattern).
+- **Issue:** Plan's `<verify>` was just `python -c "from basicctrl.actions.channels import C4AppleScriptChannel; ch = C4AppleScriptChannel(); assert ch.name == 'C4'; print('ok')"`. CI without macOS apps would have zero coverage for C4's fire-path contract — the same gap C2 had in Plan 02-05 and C5 had in Plan 02-06 (both also added unit tests as a Rule 2 deviation; this is now an established pattern).
 - **Fix:** 8 unit tests with `_FakeT3` test double covering: name='C4', fired-on-success, skipped-on-idempotency-lost (asserts `fake_t3.calls == []` — translator NOT invoked when claim lost), cancelled-on-cancel-event (asserts `fake_t3.calls == []` — translator NOT invoked when cancelled), errored-on-missing-as_target_spec, errored-on-translator-runtime-error, errored-on-translator-unexpected-raise (channel boundary contract — never raises across), default-translator-construction.
 - **Files modified:** `tests/unit/actions/channels/test_c4_applescript.py`
 - **Commit:** `5a3392e` (RED) + `637c96a` (GREEN — no impl change needed for unit tests beyond what's already specified)
@@ -253,7 +253,7 @@ For Plan 02-12's eventual Pages integration test (D-26):
 
 ## Next Plan Readiness
 
-- **Plan 02-08 (T4 Vision via uitag + ocrmac):** can `from cua_overlay.translators.base import Translator, TranslatorTarget, TargetSpec` + `from cua_overlay.actions.channels.base import Channel, ChannelOutcome` and follow the same TDD RED→GREEN shape as 02-05 / 02-06 / 02-07. Will use `uitag==0.6.0` + `ocrmac==1.0.1` per CONTEXT.md D-05; binds to C1 by default per D-14. Per RESEARCH Pitfall C uitag is sync — use `await asyncio.to_thread(run_pipeline, ...)` (note: this CAN use the default executor since uitag is CPU-bound MLX inference, not AppleEvent dispatch).
+- **Plan 02-08 (T4 Vision via uitag + ocrmac):** can `from basicctrl.translators.base import Translator, TranslatorTarget, TargetSpec` + `from basicctrl.actions.channels.base import Channel, ChannelOutcome` and follow the same TDD RED→GREEN shape as 02-05 / 02-06 / 02-07. Will use `uitag==0.6.0` + `ocrmac==1.0.1` per CONTEXT.md D-05; binds to C1 by default per D-14. Per RESEARCH Pitfall C uitag is sync — use `await asyncio.to_thread(run_pipeline, ...)` (note: this CAN use the default executor since uitag is CPU-bound MLX inference, not AppleEvent dispatch).
 - **Plan 02-09 (T5 Pixel + C1 + C3):** CGWindowList screen reads + ImageHash dHash + CGEvent.postToPid wiring. C3 may follow C4's "reuse-translator-pool" pattern if CGEvent post needs thread affinity (likely not — postToPid is synchronous and short).
 - **Plan 02-10 (race orchestrator):** wires `TranslatorRegistry.select_for_priority(profile.translator_priority)` against `ChannelRegistry.select(priority, race_policy)` with `IdempotencyTokenStore` + `cancel_event`. Three default-binding pairs are now ready to race: T1+C2, T2+C5, T3+C4. D-15 500ms stagger applied here, NOT inside C4.
 - **Plan 02-12 (Pages T3-wins integration test, D-26):** real AS verb against running Pages.app; depends on Plan 02-10 (race orchestrator) and the user's Pages installation + Automation TCC grant.
@@ -262,13 +262,13 @@ For Plan 02-12's eventual Pages integration test (D-26):
 ## Self-Check: PASSED
 
 Files created (verified via `[ -f path ]`):
-- FOUND: `cua_overlay/translators/t3_applescript.py`
-- FOUND: `cua_overlay/actions/channels/c4_applescript.py`
+- FOUND: `basicctrl/translators/t3_applescript.py`
+- FOUND: `basicctrl/actions/channels/c4_applescript.py`
 - FOUND: `tests/unit/actions/channels/test_c4_applescript.py`
 
 Files modified (verified):
-- FOUND: `cua_overlay/translators/__init__.py` (re-exports T3AppleScriptTranslator)
-- FOUND: `cua_overlay/actions/channels/__init__.py` (re-exports C4AppleScriptChannel)
+- FOUND: `basicctrl/translators/__init__.py` (re-exports T3AppleScriptTranslator)
+- FOUND: `basicctrl/actions/channels/__init__.py` (re-exports C4AppleScriptChannel)
 - FOUND: `tests/unit/translators/test_t3_applescript.py` (replaced Wave-0 stub with 7 mocked tests)
 
 Commits verified (all in `git log --oneline`):
@@ -278,21 +278,21 @@ Commits verified (all in `git log --oneline`):
 - FOUND: `637c96a` feat(02-07): GREEN C4AppleScriptChannel
 
 Acceptance criteria literals (all greppable, verified):
-- FOUND: `class T3AppleScriptTranslator`, `concurrent.futures.ThreadPoolExecutor`, `max_workers=2`, `thread_name_prefix="cua-as"`, `_compiled_cache` in `cua_overlay/translators/t3_applescript.py`
-- VERIFIED: `grep -c 'osascript' cua_overlay/translators/t3_applescript.py` returns 0 (D-04 hard rule)
-- VERIFIED: `grep -c 'subprocess\.' cua_overlay/translators/t3_applescript.py` returns 0 (D-04 hard rule)
-- FOUND: `T3AppleScriptTranslator` in `cua_overlay/translators/__init__.py`
-- FOUND: `class C4AppleScriptChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C4"`, `try_claim(action.id, "C4")`, `self._t3.execute` in `cua_overlay/actions/channels/c4_applescript.py`
-- VERIFIED: `grep -c 'osascript' cua_overlay/actions/channels/c4_applescript.py` returns 0
-- VERIFIED: `grep -c 'subprocess\.' cua_overlay/actions/channels/c4_applescript.py` returns 0
-- FOUND: `C4AppleScriptChannel` in `cua_overlay/actions/channels/__init__.py`
+- FOUND: `class T3AppleScriptTranslator`, `concurrent.futures.ThreadPoolExecutor`, `max_workers=2`, `thread_name_prefix="cua-as"`, `_compiled_cache` in `basicctrl/translators/t3_applescript.py`
+- VERIFIED: `grep -c 'osascript' basicctrl/translators/t3_applescript.py` returns 0 (D-04 hard rule)
+- VERIFIED: `grep -c 'subprocess\.' basicctrl/translators/t3_applescript.py` returns 0 (D-04 hard rule)
+- FOUND: `T3AppleScriptTranslator` in `basicctrl/translators/__init__.py`
+- FOUND: `class C4AppleScriptChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C4"`, `try_claim(action.id, "C4")`, `self._t3.execute` in `basicctrl/actions/channels/c4_applescript.py`
+- VERIFIED: `grep -c 'osascript' basicctrl/actions/channels/c4_applescript.py` returns 0
+- VERIFIED: `grep -c 'subprocess\.' basicctrl/actions/channels/c4_applescript.py` returns 0
+- FOUND: `C4AppleScriptChannel` in `basicctrl/actions/channels/__init__.py`
 
 Verification commands (all pass):
 - `uv run pytest -q tests/unit/translators/test_t3_applescript.py` → 7 passed in 0.07s
 - `uv run pytest -q tests/unit/actions/channels/test_c4_applescript.py` → 8 passed in 0.08s
 - `uv run pytest -q tests/unit/translators/test_t3_applescript.py tests/unit/actions/channels/test_c4_applescript.py` → 15 passed in 0.08s
-- `grep -c "osascript" cua_overlay/translators/t3_applescript.py cua_overlay/actions/channels/c4_applescript.py` → 0 + 0
-- `uv run python -c "from cua_overlay.translators import T3AppleScriptTranslator; from cua_overlay.actions.channels import C4AppleScriptChannel; print('ok')"` → `ok`
+- `grep -c "osascript" basicctrl/translators/t3_applescript.py basicctrl/actions/channels/c4_applescript.py` → 0 + 0
+- `uv run python -c "from basicctrl.translators import T3AppleScriptTranslator; from basicctrl.actions.channels import C4AppleScriptChannel; print('ok')"` → `ok`
 - `SKIP_INTEGRATION=1 uv run pytest -q tests/ -m "not integration and not manual"` → 214 passed, 9 skipped, 29 deselected in 1.08s (was 199 after 02-06; +15 from this plan's 7 T3 + 8 C4 unit tests)
 
 ---

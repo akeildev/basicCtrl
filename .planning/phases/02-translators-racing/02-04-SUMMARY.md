@@ -7,13 +7,13 @@ tags: [protocol, registry, pydantic-frozen, D-14, T-2-06, ACT-01, TRANS-01, TRAN
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.state.graph.UIElement + Bbox, cua_overlay.state.causal_dag.ActionCanonical
+    provides: basicctrl.state.graph.UIElement + Bbox, basicctrl.state.causal_dag.ActionCanonical
   - phase: 02-translators-racing
-    provides: cua_overlay.actions.idempotency.IdempotencyTokenStore (Plan 02-02), cua_overlay.actions.race_policy.RacePolicy (Plan 02-02), Wave-0 stub tests (Plan 02-01)
+    provides: basicctrl.actions.idempotency.IdempotencyTokenStore (Plan 02-02), basicctrl.actions.race_policy.RacePolicy (Plan 02-02), Wave-0 stub tests (Plan 02-01)
 provides:
-  - cua_overlay.translators package — interface contracts (Translator Protocol, TranslatorTarget, TargetSpec, TranslatorRegistry)
-  - cua_overlay.actions.channels package — interface contracts (Channel Protocol, ChannelOutcome frozen Pydantic)
-  - cua_overlay.actions.channel_registry module — ChannelRegistry with register/get/select/tier_for_channel
+  - basicctrl.translators package — interface contracts (Translator Protocol, TranslatorTarget, TargetSpec, TranslatorRegistry)
+  - basicctrl.actions.channels package — interface contracts (Channel Protocol, ChannelOutcome frozen Pydantic)
+  - basicctrl.actions.channel_registry module — ChannelRegistry with register/get/select/tier_for_channel
   - TIER_TO_CHANNEL_DEFAULT module constant — D-14 verbatim mapping (T1→C2, T2→C5, T3→C4, T4→C1, T5→C3)
   - CHANNEL_TO_TIER_DEFAULT module constant — inverted lookup, computed at module load
   - ChannelRegistry.tier_for_channel(name) — O(1) reverse lookup for race orchestrator (Plan 02-10) to fill ActionCanonical.tier from winning ChannelOutcome.channel
@@ -34,12 +34,12 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/translators/__init__.py — package init re-exporting TargetSpec, Translator, TranslatorTarget, TranslatorRegistry"
-    - "cua_overlay/translators/base.py — Translator Protocol + TranslatorTarget + TargetSpec Pydantic schemas"
-    - "cua_overlay/translators/registry.py — TranslatorRegistry with register/get/select_for_priority"
-    - "cua_overlay/actions/channels/__init__.py — channels sub-package init re-exporting Channel, ChannelOutcome"
-    - "cua_overlay/actions/channels/base.py — Channel Protocol + ChannelOutcome frozen Pydantic model"
-    - "cua_overlay/actions/channel_registry.py — ChannelRegistry + TIER_TO_CHANNEL_DEFAULT + CHANNEL_TO_TIER_DEFAULT + tier_for_channel"
+    - "basicctrl/translators/__init__.py — package init re-exporting TargetSpec, Translator, TranslatorTarget, TranslatorRegistry"
+    - "basicctrl/translators/base.py — Translator Protocol + TranslatorTarget + TargetSpec Pydantic schemas"
+    - "basicctrl/translators/registry.py — TranslatorRegistry with register/get/select_for_priority"
+    - "basicctrl/actions/channels/__init__.py — channels sub-package init re-exporting Channel, ChannelOutcome"
+    - "basicctrl/actions/channels/base.py — Channel Protocol + ChannelOutcome frozen Pydantic model"
+    - "basicctrl/actions/channel_registry.py — ChannelRegistry + TIER_TO_CHANNEL_DEFAULT + CHANNEL_TO_TIER_DEFAULT + tier_for_channel"
   modified:
     - "tests/unit/translators/test_translators_registry.py — replaced importorskip stub with 5 real tests"
     - "tests/unit/actions/test_channel_registry.py — replaced importorskip stub with 11 real tests"
@@ -54,7 +54,7 @@ key-decisions:
   - "Wave-0 importorskip stubs replaced with active tests — Phase 2 Wave 2+ plans now have a concrete contract surface. Tests catch protocol shape regressions immediately."
 
 patterns-established:
-  - "Per-feature sub-package mirror — cua_overlay/translators/ + cua_overlay/actions/channels/ both follow the per-feature shape established in Phase 1 (state/, ax/, profile/, verifier/)"
+  - "Per-feature sub-package mirror — basicctrl/translators/ + basicctrl/actions/channels/ both follow the per-feature shape established in Phase 1 (state/, ax/, profile/, verifier/)"
   - "Module-level constant + inverted-once pattern — TIER_TO_CHANNEL_DEFAULT + CHANNEL_TO_TIER_DEFAULT (auto-inverted dict comprehension at module load) is the canonical shape for any future bidirectional lookup table"
   - "Protocol + runtime_checkable + duck-typed test fakes — Translator/Channel Protocols accept any object with .tier/.name + .resolve()/.fire() async methods; tests use plain classes (no subclassing required)"
   - "Wave-0 stub → Wave-1 real test transition: replace `pytest.importorskip(MODULE)` with the actual import; replace placeholder assertion with comprehensive test suite. Plans 02-02 (idempotency, race_policy, duplicate_receipt) and 02-03 (known_apps) followed the same pattern. Phase 2 Wave 2 plans (02-05..02-09) will continue."
@@ -87,7 +87,7 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T06:49:33Z
 - **Completed:** 2026-04-30T06:52:53Z
 - **Tasks:** 2 (both `type=auto`, both green on first run)
-- **Files modified:** 8 (6 created in cua_overlay/, 2 stub tests rewritten with real assertions)
+- **Files modified:** 8 (6 created in basicctrl/, 2 stub tests rewritten with real assertions)
 
 ## Accomplishments
 
@@ -128,12 +128,12 @@ Verified by `test_select_race_returns_all_channels_for_priority` and `test_d14_d
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/translators/__init__.py` — package init; re-exports TargetSpec, Translator, TranslatorTarget, TranslatorRegistry
-- `cua_overlay/translators/base.py` — Translator Protocol (tier Literal T1-T5, async resolve/validate) + TranslatorTarget (element + per-tier optional handles + extras dict) + TargetSpec frozen Pydantic
-- `cua_overlay/translators/registry.py` — TranslatorRegistry with register/get/select_for_priority; structlog events `translator.replaced`, `translator.registered`, `translator.tier_not_registered`
-- `cua_overlay/actions/channels/__init__.py` — channels sub-package init; re-exports Channel, ChannelOutcome
-- `cua_overlay/actions/channels/base.py` — Channel Protocol (name Literal C1-C5, async fire) + ChannelOutcome frozen Pydantic
-- `cua_overlay/actions/channel_registry.py` — ChannelRegistry + TIER_TO_CHANNEL_DEFAULT (D-14 verbatim) + CHANNEL_TO_TIER_DEFAULT (auto-inverted) + tier_for_channel reverse lookup; structlog events `channel.replaced`, `channel.registered`, `channel.not_registered`
+- `basicctrl/translators/__init__.py` — package init; re-exports TargetSpec, Translator, TranslatorTarget, TranslatorRegistry
+- `basicctrl/translators/base.py` — Translator Protocol (tier Literal T1-T5, async resolve/validate) + TranslatorTarget (element + per-tier optional handles + extras dict) + TargetSpec frozen Pydantic
+- `basicctrl/translators/registry.py` — TranslatorRegistry with register/get/select_for_priority; structlog events `translator.replaced`, `translator.registered`, `translator.tier_not_registered`
+- `basicctrl/actions/channels/__init__.py` — channels sub-package init; re-exports Channel, ChannelOutcome
+- `basicctrl/actions/channels/base.py` — Channel Protocol (name Literal C1-C5, async fire) + ChannelOutcome frozen Pydantic
+- `basicctrl/actions/channel_registry.py` — ChannelRegistry + TIER_TO_CHANNEL_DEFAULT (D-14 verbatim) + CHANNEL_TO_TIER_DEFAULT (auto-inverted) + tier_for_channel reverse lookup; structlog events `channel.replaced`, `channel.registered`, `channel.not_registered`
 
 ### Modified
 - `tests/unit/translators/test_translators_registry.py` — Wave-0 importorskip stub → 5 real tests (register/get, select_for_priority order, skip-unregistered, replace-idempotent, TranslatorTarget optional handles)
@@ -162,23 +162,23 @@ None. Pure stdlib + already-installed deps (anyio, pydantic v2, structlog).
 
 ## Next Phase Readiness
 
-- **Plan 02-05 (T1 AX translator + C2 kAXPress channel):** can `from cua_overlay.translators.base import Translator, TranslatorTarget, TargetSpec` + `from cua_overlay.actions.channels.base import Channel, ChannelOutcome` immediately. T1AXTranslator subclasses (duck-types) Translator with `tier='T1'`; C2AXChannel implements Channel with `name='C2'`.
+- **Plan 02-05 (T1 AX translator + C2 kAXPress channel):** can `from basicctrl.translators.base import Translator, TranslatorTarget, TargetSpec` + `from basicctrl.actions.channels.base import Channel, ChannelOutcome` immediately. T1AXTranslator subclasses (duck-types) Translator with `tier='T1'`; C2AXChannel implements Channel with `name='C2'`.
 - **Plan 02-06 (T2 CDP translator + C5 CDP Input.dispatchMouseEvent channel):** same import path; reads `AppProfile.cdp_available_after_relaunch` from Plan 02-03; calls `cdp-use` for DOM.querySelector + Input.dispatchMouseEvent.
 - **Plan 02-07 (T3 AppleScript translator + C4 AppleScript channel):** dedicated ThreadPoolExecutor per Plan 02-03 D-04.
 - **Plan 02-08 (T4 Vision translator):** uitag pipeline → TranslatorTarget; binds to C1 by default per D-14.
 - **Plan 02-09 (T5 Pixel translator + C1 + C3 channels):** CGWindowList screen reads + ImageHash dHash + CGEvent.postToPid wiring.
-- **Plan 02-10 (race orchestrator):** can `from cua_overlay.translators import TranslatorRegistry; from cua_overlay.actions.channel_registry import ChannelRegistry; ChannelRegistry().tier_for_channel(C5)` returns `'T2'` for filling ActionCanonical.tier on winning outcomes.
+- **Plan 02-10 (race orchestrator):** can `from basicctrl.translators import TranslatorRegistry; from basicctrl.actions.channel_registry import ChannelRegistry; ChannelRegistry().tier_for_channel(C5)` returns `'T2'` for filling ActionCanonical.tier on winning outcomes.
 - **No blockers.** All 16 new tests pass; full unit suite (169 tests, 1.13s) clean; no regressions.
 
 ## Self-Check: PASSED
 
 Files created (6 verified):
-- FOUND: cua_overlay/translators/__init__.py
-- FOUND: cua_overlay/translators/base.py
-- FOUND: cua_overlay/translators/registry.py
-- FOUND: cua_overlay/actions/channels/__init__.py
-- FOUND: cua_overlay/actions/channels/base.py
-- FOUND: cua_overlay/actions/channel_registry.py
+- FOUND: basicctrl/translators/__init__.py
+- FOUND: basicctrl/translators/base.py
+- FOUND: basicctrl/translators/registry.py
+- FOUND: basicctrl/actions/channels/__init__.py
+- FOUND: basicctrl/actions/channels/base.py
+- FOUND: basicctrl/actions/channel_registry.py
 
 Files modified (2 verified):
 - FOUND: tests/unit/translators/test_translators_registry.py (replaced Wave-0 stub)
@@ -189,18 +189,18 @@ Commits verified (both in git log):
 - FOUND: 21e9583 (Task 2: feat 02-04 channel base + registry + D-14)
 
 Acceptance criteria literals (all greppable):
-- FOUND: `class Translator(Protocol)`, `class TranslatorTarget`, `class TargetSpec`, `Literal["T1", "T2", "T3", "T4", "T5"]` in cua_overlay/translators/base.py
-- FOUND: `class TranslatorRegistry`, `select_for_priority` (×2) in cua_overlay/translators/registry.py
-- FOUND: Translator|TranslatorTarget re-exported from cua_overlay/translators/__init__.py
-- FOUND: `class Channel(Protocol)`, `class ChannelOutcome`, `Literal["C1", "C2", "C3", "C4", "C5"]` (×2), `frozen=True` in cua_overlay/actions/channels/base.py
-- FOUND: `class ChannelRegistry`, `TIER_TO_CHANNEL_DEFAULT` (×5), `"T1": "C2"`, `CHANNEL_TO_TIER_DEFAULT` (×2), `def tier_for_channel` in cua_overlay/actions/channel_registry.py
+- FOUND: `class Translator(Protocol)`, `class TranslatorTarget`, `class TargetSpec`, `Literal["T1", "T2", "T3", "T4", "T5"]` in basicctrl/translators/base.py
+- FOUND: `class TranslatorRegistry`, `select_for_priority` (×2) in basicctrl/translators/registry.py
+- FOUND: Translator|TranslatorTarget re-exported from basicctrl/translators/__init__.py
+- FOUND: `class Channel(Protocol)`, `class ChannelOutcome`, `Literal["C1", "C2", "C3", "C4", "C5"]` (×2), `frozen=True` in basicctrl/actions/channels/base.py
+- FOUND: `class ChannelRegistry`, `TIER_TO_CHANNEL_DEFAULT` (×5), `"T1": "C2"`, `CHANNEL_TO_TIER_DEFAULT` (×2), `def tier_for_channel` in basicctrl/actions/channel_registry.py
 
 Verification commands (all pass):
 - `uv run pytest -q tests/unit/translators/test_translators_registry.py` → 5 passed in 0.03s
 - `uv run pytest -q tests/unit/actions/test_channel_registry.py` → 11 passed in 0.04s
 - `uv run pytest -q tests/unit/translators/test_translators_registry.py tests/unit/actions/test_channel_registry.py` → 16 passed in 0.03s
 - `uv run pytest -q tests/ -m "not integration and not manual"` → 169 passed, 10 skipped, 36 deselected in 1.13s
-- `python -c "from cua_overlay.translators import Translator, TranslatorTarget, TargetSpec, TranslatorRegistry; from cua_overlay.actions.channels.base import Channel, ChannelOutcome; from cua_overlay.actions.channel_registry import ChannelRegistry, TIER_TO_CHANNEL_DEFAULT; print('ok')"` → `ok`
+- `python -c "from basicctrl.translators import Translator, TranslatorTarget, TargetSpec, TranslatorRegistry; from basicctrl.actions.channels.base import Channel, ChannelOutcome; from basicctrl.actions.channel_registry import ChannelRegistry, TIER_TO_CHANNEL_DEFAULT; print('ok')"` → `ok`
 
 ---
 *Phase: 02-translators-racing*

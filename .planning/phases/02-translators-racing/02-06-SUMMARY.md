@@ -7,13 +7,13 @@ tags: [TRANS-02, ACT-01, T2, C5, cdp-use, Input.dispatchMouseEvent, D-02, D-03, 
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.state.graph.UIElement + Bbox + Source.CDP, cua_overlay.state.causal_dag.ActionCanonical, cua_overlay.persist.session_writer.SessionWriter
+    provides: basicctrl.state.graph.UIElement + Bbox + Source.CDP, basicctrl.state.causal_dag.ActionCanonical, basicctrl.persist.session_writer.SessionWriter
   - phase: 02-translators-racing
-    provides: cua_overlay.translators.base (Translator Protocol, TranslatorTarget with cdp_node_id/cdp_session_id/extras fields, TargetSpec.css from Plan 02-04), cua_overlay.actions.channels.base (Channel Protocol, ChannelOutcome from Plan 02-04), cua_overlay.actions.idempotency.IdempotencyTokenStore (Plan 02-02), cua_overlay.profile.known_apps.KNOWN_APPS (D-21 cdp_after_relaunch=True for Slack/Cursor/Obsidian, Plan 02-03)
+    provides: basicctrl.translators.base (Translator Protocol, TranslatorTarget with cdp_node_id/cdp_session_id/extras fields, TargetSpec.css from Plan 02-04), basicctrl.actions.channels.base (Channel Protocol, ChannelOutcome from Plan 02-04), basicctrl.actions.idempotency.IdempotencyTokenStore (Plan 02-02), basicctrl.profile.known_apps.KNOWN_APPS (D-21 cdp_after_relaunch=True for Slack/Cursor/Obsidian, Plan 02-03)
   - external: cdp-use==1.4.5 (D-02; verified PyPI 2026-02-22; vendored alongside browser-harness via shared upstream — D-03 forbids cross-tool import)
 provides:
-  - cua_overlay.translators.t2_cdp.T2CDPTranslator — concrete T2 translator (tier='T2') wrapping cdp-use 1.4.5 with D-24 workspace filter
-  - cua_overlay.actions.channels.c5_cdp_input.C5CDPInputChannel — concrete C5 channel (name='C5') firing CDP Input.dispatchMouseEvent
+  - basicctrl.translators.t2_cdp.T2CDPTranslator — concrete T2 translator (tier='T2') wrapping cdp-use 1.4.5 with D-24 workspace filter
+  - basicctrl.actions.channels.c5_cdp_input.C5CDPInputChannel — concrete C5 channel (name='C5') firing CDP Input.dispatchMouseEvent
   - 9 unit tests for T2 (mocked httpx + workspace filter scenarios) replacing the Wave-0 importorskip stub
   - 9 unit tests for C5 (fake CDPClient factory + idempotency + cancel + bbox center)
   - extras={"ws_url": ws_url} convention on TranslatorTarget for cross-fire CDP re-attach
@@ -36,12 +36,12 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/translators/t2_cdp.py — T2CDPTranslator (cdp-use 1.4.5; localhost:9222..9225 probe; D-24 workspace filter; flatten=True attach; DOM.querySelector + DOM.getBoxModel → bbox-center; extras['ws_url'] convention)"
-    - "cua_overlay/actions/channels/c5_cdp_input.py — C5CDPInputChannel (try_claim → cancel-check → ws_url-from-extras → CDPClient → mousePressed+mouseReleased PAIR at bbox center)"
+    - "basicctrl/translators/t2_cdp.py — T2CDPTranslator (cdp-use 1.4.5; localhost:9222..9225 probe; D-24 workspace filter; flatten=True attach; DOM.querySelector + DOM.getBoxModel → bbox-center; extras['ws_url'] convention)"
+    - "basicctrl/actions/channels/c5_cdp_input.py — C5CDPInputChannel (try_claim → cancel-check → ws_url-from-extras → CDPClient → mousePressed+mouseReleased PAIR at bbox center)"
     - "tests/unit/actions/channels/test_c5_cdp_input.py — 9 unit tests with fake CDPClient factory"
   modified:
-    - "cua_overlay/translators/__init__.py — re-exports T2CDPTranslator alongside T1AXTranslator"
-    - "cua_overlay/actions/channels/__init__.py — re-exports C5CDPInputChannel alongside C2AXPressChannel"
+    - "basicctrl/translators/__init__.py — re-exports T2CDPTranslator alongside T1AXTranslator"
+    - "basicctrl/actions/channels/__init__.py — re-exports C5CDPInputChannel alongside C2AXPressChannel"
     - "tests/unit/translators/test_t2_cdp.py — replaced Wave-0 importorskip stub with 9 mocked-CDP unit tests"
 
 key-decisions:
@@ -67,8 +67,8 @@ threats_mitigated:
   - "T-2-02 Slack workspace filter — T2._pick_workspace_target enforces strict `type='page' AND url contains '.slack.com'` filter (Pitfall D). GPU/utility helpers are skipped. When no workspace target matches, resolve() returns None (P8 mitigation surfaces — orchestrator falls through to T1/T4/T5). Verified by 5 _pick_workspace_target unit tests covering Slack/Cursor/Obsidian + default + miss paths."
   - "T-2-08 race-cancel correctness — C5.fire checks cancel_event.is_set() BEFORE constructing the CDPClient. When set, returns ChannelOutcome(status='cancelled') with NO socket open and NO Input.dispatchMouseEvent dispatched. The claim is held (action_id stays burned) so the orchestrator's race winner stays canonical. async with CDPClient(...) propagates cancellation to socket close on the way out. Verified by test_fire_cancelled_when_cancel_event_set (asserts last_instance is None when cancelled)."
   - "P8 mitigation (Electron CDP launch-only) — T2._discover_ws_url returns None when localhost:9222..9225 are all unreachable; T2._pick_workspace_target returns None when no workspace target matches the bundle filter. Both null paths cause T2.resolve() to return None, and the orchestrator falls through to T1/T4/T5. Plan 02-11's MCP healing tool reads AppProfile.cdp_available_after_relaunch (set by Plan 02-03 KNOWN_APPS) to prompt the user before this falls-through state. Verified by test_discover_ws_url_returns_none_on_all_ports_unreachable + test_pick_slack_returns_none_when_no_workspace."
-  - "Pitfall B (cdp-use flatten=True mandatory) — T2.resolve passes `params={'targetId': ..., 'flatten': True}` to Target.attachToTarget. Without flatten, DOM calls hang silently waiting for a separate session-event pump. Verified by grep: `grep -c '\"flatten\": True' cua_overlay/translators/t2_cdp.py` returns 1."
-  - "D-03 hard rule (no sibling-tool import) — t2_cdp.py contains zero occurrences of the literal `browser_harness` substring. The unit test test_no_browser_harness_import grep-enforces this on every CI run. Required because cua-maximalist coexists with the user's other CDP tooling on the same machine and neither owns the other."
+  - "Pitfall B (cdp-use flatten=True mandatory) — T2.resolve passes `params={'targetId': ..., 'flatten': True}` to Target.attachToTarget. Without flatten, DOM calls hang silently waiting for a separate session-event pump. Verified by grep: `grep -c '\"flatten\": True' basicctrl/translators/t2_cdp.py` returns 1."
+  - "D-03 hard rule (no sibling-tool import) — t2_cdp.py contains zero occurrences of the literal `browser_harness` substring. The unit test test_no_browser_harness_import grep-enforces this on every CI run. Required because basicCtrl coexists with the user's other CDP tooling on the same machine and neither owns the other."
 
 # Metrics
 duration: ~6min
@@ -85,8 +85,8 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T07:18:33Z
 - **Completed:** 2026-04-30T07:24:00Z
 - **Tasks:** 2 (both `type=auto tdd=true`)
-- **Files created:** 3 (cua_overlay/translators/t2_cdp.py, cua_overlay/actions/channels/c5_cdp_input.py, tests/unit/actions/channels/test_c5_cdp_input.py)
-- **Files modified:** 3 (cua_overlay/translators/__init__.py, cua_overlay/actions/channels/__init__.py, tests/unit/translators/test_t2_cdp.py — replaced Wave-0 stub)
+- **Files created:** 3 (basicctrl/translators/t2_cdp.py, basicctrl/actions/channels/c5_cdp_input.py, tests/unit/actions/channels/test_c5_cdp_input.py)
+- **Files modified:** 3 (basicctrl/translators/__init__.py, basicctrl/actions/channels/__init__.py, tests/unit/translators/test_t2_cdp.py — replaced Wave-0 stub)
 
 ## Task Commits
 
@@ -178,22 +178,22 @@ C5.fire(action, target, store, cancel_event):
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/translators/t2_cdp.py` (~245 lines) — T2CDPTranslator
+- `basicctrl/translators/t2_cdp.py` (~245 lines) — T2CDPTranslator
   - tier='T2' Literal Protocol field
   - CDP_PROBE_PORTS = (9222, 9223, 9224, 9225)
   - `_discover_ws_url(pid)` — httpx 0.5s/port async probe
   - `_pick_workspace_target(target_infos, bundle_id)` — D-24 strict filter
   - `resolve(bundle_id, pid, target_spec)` — full attach + DOM.querySelector + getBoxModel flow with `flatten=True` (Pitfall B); returns TranslatorTarget with `extras={'ws_url': ws_url}` for C5
   - `validate(target)` — cheap struct check (no DOM round-trip)
-- `cua_overlay/actions/channels/c5_cdp_input.py` (~165 lines) — C5CDPInputChannel
+- `basicctrl/actions/channels/c5_cdp_input.py` (~165 lines) — C5CDPInputChannel
   - name='C5' Literal Protocol field
   - `__init__(cdp_client_factory=None)` — lazy-imports `cdp_use.client.CDPClient`; tests inject fake factory
   - `fire(action, target, store, cancel_event)` — try_claim → cancel-check → handle-validate → CDPClient open → mousePressed + mouseReleased pair at bbox center
 - `tests/unit/actions/channels/test_c5_cdp_input.py` (~205 lines) — 9 unit tests with fake CDPClient
 
 ### Modified
-- `cua_overlay/translators/__init__.py` — adds `T2CDPTranslator` export
-- `cua_overlay/actions/channels/__init__.py` — adds `C5CDPInputChannel` export
+- `basicctrl/translators/__init__.py` — adds `T2CDPTranslator` export
+- `basicctrl/actions/channels/__init__.py` — adds `C5CDPInputChannel` export
 - `tests/unit/translators/test_t2_cdp.py` — replaced Wave-0 importorskip stub with 9 mocked-CDP tests
 
 ## Deviations from Plan
@@ -204,7 +204,7 @@ C5.fire(action, target, store, cancel_event):
 - **Found during:** Task 1 GREEN (first test run after implementation)
 - **Issue:** Module docstring AND inline comments contained the literal substring `browser_harness` in prose contexts ("Do not import the browser_harness module") which the strict D-03 grep test correctly forbids — the test enforces ZERO occurrences of that substring anywhere in source, not just in import statements
 - **Fix:** Rephrased docstring to refer to "the user's other CDP tooling" / "sibling-tool"; removed the literal `browser_harness` string from all comments. The test is preserved as-is (it's the spec).
-- **Files modified:** `cua_overlay/translators/t2_cdp.py`
+- **Files modified:** `basicctrl/translators/t2_cdp.py`
 - **Commit:** `27d5756` (rolled into the GREEN commit since the file hadn't been committed yet between the bug discovery and the fix)
 
 **2. [Rule 1 - Bug] Test fixture used wrong SessionWriter kwarg `session_dir` (constructor takes `base`)**
@@ -241,7 +241,7 @@ For Plan 02-12's eventual Slack integration test, the user will need to manually
 
 ## Next Plan Readiness
 
-- **Plan 02-07 (T3 AppleScript + C4 AppleScript channel):** can `from cua_overlay.translators.base import Translator, TranslatorTarget, TargetSpec` + `from cua_overlay.actions.channels.base import Channel, ChannelOutcome` and follow the same TDD RED→GREEN shape as 02-05 (T1+C2) and 02-06 (T2+C5). Will use `py-applescript==1.0.3` on a dedicated `concurrent.futures.ThreadPoolExecutor(max_workers=2)` per CONTEXT.md D-04. Pages.app is the integration target (D-26).
+- **Plan 02-07 (T3 AppleScript + C4 AppleScript channel):** can `from basicctrl.translators.base import Translator, TranslatorTarget, TargetSpec` + `from basicctrl.actions.channels.base import Channel, ChannelOutcome` and follow the same TDD RED→GREEN shape as 02-05 (T1+C2) and 02-06 (T2+C5). Will use `py-applescript==1.0.3` on a dedicated `concurrent.futures.ThreadPoolExecutor(max_workers=2)` per CONTEXT.md D-04. Pages.app is the integration target (D-26).
 - **Plan 02-08 (T4 Vision):** uitag pipeline → grounded_bbox; binds to C1 by default. Will need `await asyncio.to_thread(run_pipeline, ...)` per RESEARCH Pitfall C (uitag is sync — blocks event loop).
 - **Plan 02-09 (T5 Pixel + C1 + C3):** CGWindowList screen reads + ImageHash dHash + CGEvent.postToPid wiring.
 - **Plan 02-10 (race orchestrator):** wires `TranslatorRegistry.select_for_priority(profile.translator_priority)` against `ChannelRegistry.select(priority, race_policy)` with `IdempotencyTokenStore` + `cancel_event` per the contract this plan exercises end-to-end alongside 02-05. T1+C2 AND T2+C5 are the first two real pairs the orchestrator can race.
@@ -251,13 +251,13 @@ For Plan 02-12's eventual Slack integration test, the user will need to manually
 ## Self-Check: PASSED
 
 Files created (verified via `[ -f path ]`):
-- FOUND: `cua_overlay/translators/t2_cdp.py`
-- FOUND: `cua_overlay/actions/channels/c5_cdp_input.py`
+- FOUND: `basicctrl/translators/t2_cdp.py`
+- FOUND: `basicctrl/actions/channels/c5_cdp_input.py`
 - FOUND: `tests/unit/actions/channels/test_c5_cdp_input.py`
 
 Files modified (verified):
-- FOUND: `cua_overlay/translators/__init__.py` (re-exports T2CDPTranslator)
-- FOUND: `cua_overlay/actions/channels/__init__.py` (re-exports C5CDPInputChannel)
+- FOUND: `basicctrl/translators/__init__.py` (re-exports T2CDPTranslator)
+- FOUND: `basicctrl/actions/channels/__init__.py` (re-exports C5CDPInputChannel)
 - FOUND: `tests/unit/translators/test_t2_cdp.py` (replaced Wave-0 stub)
 
 Commits verified (all in `git log --oneline`):
@@ -267,18 +267,18 @@ Commits verified (all in `git log --oneline`):
 - FOUND: `ac180d3` feat(02-06): GREEN C5CDPInputChannel
 
 Acceptance criteria literals (all greppable, verified):
-- FOUND: `class T2CDPTranslator`, `from cdp_use.client import CDPClient`, `"flatten": True`, `.slack.com`, `vscode-`, `obsidian` in `cua_overlay/translators/t2_cdp.py`
-- VERIFIED: `grep -c 'browser_harness' cua_overlay/translators/t2_cdp.py` returns 0 (D-03 hard rule)
-- FOUND: `T2CDPTranslator` in `cua_overlay/translators/__init__.py`
-- FOUND: `class C5CDPInputChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C5"`, `try_claim(action.id, "C5")`, `cancel_event.is_set()`, `mousePressed`, `mouseReleased`, `Input.dispatchMouseEvent` in `cua_overlay/actions/channels/c5_cdp_input.py`
-- FOUND: `extras={"ws_url": ws_url}` in `cua_overlay/translators/t2_cdp.py`
-- FOUND: `C5CDPInputChannel` in `cua_overlay/actions/channels/__init__.py`
+- FOUND: `class T2CDPTranslator`, `from cdp_use.client import CDPClient`, `"flatten": True`, `.slack.com`, `vscode-`, `obsidian` in `basicctrl/translators/t2_cdp.py`
+- VERIFIED: `grep -c 'browser_harness' basicctrl/translators/t2_cdp.py` returns 0 (D-03 hard rule)
+- FOUND: `T2CDPTranslator` in `basicctrl/translators/__init__.py`
+- FOUND: `class C5CDPInputChannel`, `name: Literal["C1", "C2", "C3", "C4", "C5"] = "C5"`, `try_claim(action.id, "C5")`, `cancel_event.is_set()`, `mousePressed`, `mouseReleased`, `Input.dispatchMouseEvent` in `basicctrl/actions/channels/c5_cdp_input.py`
+- FOUND: `extras={"ws_url": ws_url}` in `basicctrl/translators/t2_cdp.py`
+- FOUND: `C5CDPInputChannel` in `basicctrl/actions/channels/__init__.py`
 
 Verification commands (all pass):
 - `uv run pytest -q tests/unit/translators/test_t2_cdp.py` → 9 passed in 0.07s
 - `uv run pytest -q tests/unit/actions/channels/test_c5_cdp_input.py` → 9 passed in 0.09s
-- `grep -c "browser_harness" cua_overlay/translators/t2_cdp.py` → 0
-- `uv run python -c "from cua_overlay.translators import T2CDPTranslator; from cua_overlay.actions.channels import C5CDPInputChannel; print('ok')"` → `ok`
+- `grep -c "browser_harness" basicctrl/translators/t2_cdp.py` → 0
+- `uv run python -c "from basicctrl.translators import T2CDPTranslator; from basicctrl.actions.channels import C5CDPInputChannel; print('ok')"` → `ok`
 - `SKIP_INTEGRATION=1 uv run pytest -q tests/ -m "not integration and not manual"` → 199 passed, 10 skipped, 29 deselected in 1.06s (was 181 after 02-05; +18 from this plan's 9 T2 + 9 C5 unit tests)
 
 ---

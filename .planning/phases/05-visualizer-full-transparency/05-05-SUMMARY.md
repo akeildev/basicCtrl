@@ -9,12 +9,12 @@ tags:
   - Race orchestrator wiring
 dependency_graph:
   requires:
-    - cua_overlay.visualizer.models (IPC schemas from Wave 0)
-    - cua_overlay.visualizer.hud_driver (HUD command assembly from Wave 2)
-    - cua_overlay.actions.race_orchestrator (Phase 2 race orchestrator)
+    - basicctrl.visualizer.models (IPC schemas from Wave 0)
+    - basicctrl.visualizer.hud_driver (HUD command assembly from Wave 2)
+    - basicctrl.actions.race_orchestrator (Phase 2 race orchestrator)
   provides:
-    - cua_overlay.visualizer.driver (VisualizerBus socket client)
-    - cua_overlay.actions.race_orchestrator (post-action visualizer hooks)
+    - basicctrl.visualizer.driver (VisualizerBus socket client)
+    - basicctrl.actions.race_orchestrator (post-action visualizer hooks)
   affects:
     - Phase 5 Wave 3+ plans (visualizer now integrated with action orchestrator)
 tech_stack:
@@ -28,9 +28,9 @@ tech_stack:
     - HUD driver instantiation and state management
 key_files:
   created:
-    - cua_overlay/visualizer/driver.py (128 lines)
+    - basicctrl/visualizer/driver.py (128 lines)
   modified:
-    - cua_overlay/actions/race_orchestrator.py (+37 lines: ghost cursor + highlight + HUD)
+    - basicctrl/actions/race_orchestrator.py (+37 lines: ghost cursor + highlight + HUD)
   total_lines_added: 165
 decisions:
   - Ghost cursor sent BEFORE action fires (step 6b) to visualize target
@@ -61,7 +61,7 @@ metrics:
 ## Overview
 
 Plan 05-05 completes the Phase 2 → Phase 5 integration by:
-1. Creating `cua_overlay/visualizer/driver.py` as a Pydantic-aware async socket client
+1. Creating `basicctrl/visualizer/driver.py` as a Pydantic-aware async socket client
 2. Adding two-phase visualization to `RaceOrchestrator.execute()`: ghost cursor pre-fire, highlight + HUD post-verification
 
 The race orchestrator now calls VisualizerBus methods at precise moments to satisfy SC#1 ("ghost cursor visibly BEFORE action fires") and the HUD requirement ("action appended after verification").
@@ -81,7 +81,7 @@ The race orchestrator is now fully visualization-aware, with no impact on existi
 **Status:** ✅ Complete
 
 **Deliverables:**
-- `cua_overlay/visualizer/driver.py` (128 lines)
+- `basicctrl/visualizer/driver.py` (128 lines)
 
 **Implementation:**
 
@@ -104,7 +104,7 @@ The race orchestrator is now fully visualization-aware, with no impact on existi
 - Other exceptions: Caught generically → DEBUG log with exception string
 
 **Verification:**
-- ✅ `from cua_overlay.visualizer.driver import VisualizerBus` — imports cleanly
+- ✅ `from basicctrl.visualizer.driver import VisualizerBus` — imports cleanly
 - ✅ Pydantic model.model_dump() serialization works
 - ✅ All three methods accept correct types (float, str, etc.)
 
@@ -115,7 +115,7 @@ The race orchestrator is now fully visualization-aware, with no impact on existi
 **Status:** ✅ Complete
 
 **Deliverables:**
-- Modified `cua_overlay/actions/race_orchestrator.py` (+37 lines)
+- Modified `basicctrl/actions/race_orchestrator.py` (+37 lines)
 - Two integration points: step 6b (pre-fire) and step 10b (post-verify)
 
 **Step 6b Integration (BEFORE fire):**
@@ -171,7 +171,7 @@ if target.element.label:
 **No contract changes:** RaceOrchestrator.execute() signature unchanged; all new code is additive and non-blocking.
 
 **Verification:**
-- ✅ `from cua_overlay.actions.race_orchestrator import RaceOrchestrator` — imports cleanly
+- ✅ `from basicctrl.actions.race_orchestrator import RaceOrchestrator` — imports cleanly
 - ✅ Syntax: No type errors; Pydantic models accept all arguments
 - ✅ Ghost cursor called with float coordinates and int duration_ms
 - ✅ Highlight called with bbox dimensions, label, tier, channel
@@ -187,8 +187,8 @@ if target.element.label:
 Both new imports added to race_orchestrator.py:
 
 ```python
-from cua_overlay.visualizer.driver import VisualizerBus
-from cua_overlay.visualizer.hud_driver import HUDDriver
+from basicctrl.visualizer.driver import VisualizerBus
+from basicctrl.visualizer.hud_driver import HUDDriver
 ```
 
 Both are already implemented (Waves 0-2), so no import cycles.
@@ -248,8 +248,8 @@ Both completed with expected integration points.
 
 **Python syntax & imports:**
 ```
-✓ from cua_overlay.visualizer.driver import VisualizerBus
-✓ from cua_overlay.actions.race_orchestrator import RaceOrchestrator
+✓ from basicctrl.visualizer.driver import VisualizerBus
+✓ from basicctrl.actions.race_orchestrator import RaceOrchestrator
 ✓ Both modules load without errors
 ```
 
@@ -285,7 +285,7 @@ Both completed with expected integration points.
 | `RaceOrchestrator.execute()` step 6b | `VisualizerBus.send_ghost_cursor()` | Direct call | Target bbox centroid → IPC |
 | `RaceOrchestrator.execute()` step 10b | `VisualizerBus.send_highlight()` | Direct call | Target bbox + label → IPC |
 | `RaceOrchestrator.execute()` step 10b | `HUDDriver.append_action()` | Direct call | Action result → HUD entry |
-| `cua_overlay.visualizer.models` | `VisualizerBus.send_*()` | Pydantic serialization | Schema validation → NDJSON |
+| `basicctrl.visualizer.models` | `VisualizerBus.send_*()` | Pydantic serialization | Schema validation → NDJSON |
 | Phase 2 race orchestrator | Phase 5 visualizer | One-way dependency | Orchestrator calls visualizer; visualizer never calls back |
 
 ---
@@ -308,10 +308,10 @@ Both completed with expected integration points.
 ## Self-Check
 
 ✅ **All created files exist and are valid Python:**
-- `cua_overlay/visualizer/driver.py` — 128 lines, imports cleanly
+- `basicctrl/visualizer/driver.py` — 128 lines, imports cleanly
 
 ✅ **All modified files load without errors:**
-- `cua_overlay/actions/race_orchestrator.py` — +37 lines, imports cleanly
+- `basicctrl/actions/race_orchestrator.py` — +37 lines, imports cleanly
 
 ✅ **All commits created and verified:**
 - 30dd5ca: VisualizerBus socket client

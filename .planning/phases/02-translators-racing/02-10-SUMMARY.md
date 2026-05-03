@@ -29,9 +29,9 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/actions/race_orchestrator.py - RaceOrchestrator + race_first_complete + NoTargetResolvable"
+    - "basicctrl/actions/race_orchestrator.py - RaceOrchestrator + race_first_complete + NoTargetResolvable"
   modified:
-    - "cua_overlay/actions/__init__.py - re-exports RaceOrchestrator, race_first_complete, NoTargetResolvable, AS_STAGGER_MS_DEFAULT"
+    - "basicctrl/actions/__init__.py - re-exports RaceOrchestrator, race_first_complete, NoTargetResolvable, AS_STAGGER_MS_DEFAULT"
     - "tests/integration/test_race_orchestrator.py - replaced Wave-0 stub with 11 integration tests"
 
 key-decisions:
@@ -80,14 +80,14 @@ completed: 2026-04-30
 ## Task Commits
 
 1. **Task 1 (TDD): RED race orchestrator integration tests** - `8051a08` (test) — 11 failing tests for `race_first_complete` + `RaceOrchestrator.execute` covering policy gate, ordering invariants, AS stagger, race winner/loser events.
-2. **Task 1 (TDD): GREEN RaceOrchestrator + race_first_complete (ACT-02)** - `6a18eda` (feat) — `cua_overlay/actions/race_orchestrator.py` (386 lines) plus `__init__.py` re-exports.
+2. **Task 1 (TDD): GREEN RaceOrchestrator + race_first_complete (ACT-02)** - `6a18eda` (feat) — `basicctrl/actions/race_orchestrator.py` (386 lines) plus `__init__.py` re-exports.
 
 _Note: Per the plan, Task 1 (skeleton) and Task 2 (tests) are the same TDD cycle; the test file was the RED commit, the implementation was the GREEN commit._
 
 ## Files Created/Modified
 
-- `cua_overlay/actions/race_orchestrator.py` — **created** — RaceOrchestrator class, race_first_complete wrapper, NoTargetResolvable exception, AS_STAGGER_MS_DEFAULT constant, _staggered_fire helper, _log_race telemetry emitter
-- `cua_overlay/actions/__init__.py` — **modified** — added re-exports for `AS_STAGGER_MS_DEFAULT`, `NoTargetResolvable`, `RaceOrchestrator`, `race_first_complete`
+- `basicctrl/actions/race_orchestrator.py` — **created** — RaceOrchestrator class, race_first_complete wrapper, NoTargetResolvable exception, AS_STAGGER_MS_DEFAULT constant, _staggered_fire helper, _log_race telemetry emitter
+- `basicctrl/actions/__init__.py` — **modified** — added re-exports for `AS_STAGGER_MS_DEFAULT`, `NoTargetResolvable`, `RaceOrchestrator`, `race_first_complete`
 - `tests/integration/test_race_orchestrator.py` — **replaced Wave-0 stub** — 11 tests: race_first_complete winner/no-winner, RACE/AUTO/destructive policy gate, subscribe-before-fire ordering, HoarePre before fire, verify after fire, action.tier/.channel filled from winner, duplicate receipt after verify, race_winner/race_loser events, AS stagger applied
 
 ## Decisions Made
@@ -104,9 +104,9 @@ _Note: Per the plan, Task 1 (skeleton) and Task 2 (tests) are the same TDD cycle
 
 **1. [Rule 1 - Bug] Plan's interface block listed HoarePost.elapsed_ms but actual model has timestamp_ns + healed_to + target_key**
 - **Found during:** Task 1 GREEN — `_fake_post()` in tests would have crashed with `pydantic.ValidationError`
-- **Issue:** The plan's `<interfaces>` block (line 130-135) declared `HoarePost(verified, confidence, tier_signals, elapsed_ms)`. The real `cua_overlay/state/causal_dag.py:HoarePost` has `target_key, confidence, tier_signals, verified, healed_to, timestamp_ns` and a `model_validator` enforcing `verified == (confidence >= 0.5)`.
+- **Issue:** The plan's `<interfaces>` block (line 130-135) declared `HoarePost(verified, confidence, tier_signals, elapsed_ms)`. The real `basicctrl/state/causal_dag.py:HoarePost` has `target_key, confidence, tier_signals, verified, healed_to, timestamp_ns` and a `model_validator` enforcing `verified == (confidence >= 0.5)`.
 - **Fix:** Tests build `HoarePost(target_key, confidence, tier_signals, verified, healed_to, timestamp_ns)` with the actual schema. Race orchestrator removed `elapsed_ms` from the `_log_race` event payload (was not asserted by any test).
-- **Files modified:** `tests/integration/test_race_orchestrator.py`, `cua_overlay/actions/race_orchestrator.py`
+- **Files modified:** `tests/integration/test_race_orchestrator.py`, `basicctrl/actions/race_orchestrator.py`
 - **Verification:** All 11 tests pass; HoarePost validator does not raise.
 - **Committed in:** `8051a08` + `6a18eda`
 
@@ -114,7 +114,7 @@ _Note: Per the plan, Task 1 (skeleton) and Task 2 (tests) are the same TDD cycle
 - **Found during:** Task 1 GREEN — Phase 1's `AXObserverManager.expect` signature is `expect(target: UIElement, notifs, action_id, timeout_ms=500, ax_element=None)`. Plan had `expect(ax_element=target.ax_element, notifs=..., action_id=..., timeout_ms=100)` which omits the required `target` positional.
 - **Issue:** Wrong call shape would TypeError at runtime.
 - **Fix:** Orchestrator calls `self._axmgr.expect(target=target.element, notifs=notifs, action_id=action.id, timeout_ms=100, ax_element=target.ax_element)`.
-- **Files modified:** `cua_overlay/actions/race_orchestrator.py`
+- **Files modified:** `basicctrl/actions/race_orchestrator.py`
 - **Verification:** Test `test_subscribe_before_fire_ordering` calls expect successfully through the AsyncMock.
 - **Committed in:** `6a18eda`
 
@@ -122,7 +122,7 @@ _Note: Per the plan, Task 1 (skeleton) and Task 2 (tests) are the same TDD cycle
 - **Found during:** Task 1 GREEN code review
 - **Issue:** Plan didn't specify what happens when `registry.select(priority, effective)` returns `[]` (e.g., none of the priority tiers have registered channels yet during partial Wave 2 builds). Without a guard, `coros[0]` would raise IndexError.
 - **Fix:** Added `if not candidate_channels: raise NoTargetResolvable(...)` after channel selection.
-- **Files modified:** `cua_overlay/actions/race_orchestrator.py`
+- **Files modified:** `basicctrl/actions/race_orchestrator.py`
 - **Verification:** Existing `NoTargetResolvable` exception class covers this; no new test required (orchestrator integration tests use registered mocks).
 - **Committed in:** `6a18eda`
 
@@ -130,16 +130,16 @@ _Note: Per the plan, Task 1 (skeleton) and Task 2 (tests) are the same TDD cycle
 - **Found during:** Task 1 GREEN
 - **Issue:** RESEARCH Pattern 2 example wraps `_runner` body in `with CancelScope(shield=False)`, but anyio task groups create their own cancel scope by default (`shield=False`). Wrapping again is redundant and the inner `scope` variable was unused in the example.
 - **Fix:** `_runner` uses the default task-group cancel scope (no explicit `with CancelScope(...)` block). `tg.cancel_scope.cancel()` propagates because the inner await on `coro` is in the default unshielded scope.
-- **Files modified:** `cua_overlay/actions/race_orchestrator.py`
+- **Files modified:** `basicctrl/actions/race_orchestrator.py`
 - **Verification:** `test_race_first_complete_winner_idx_zero_cancels_loser` confirms slow loser is cancelled.
 - **Committed in:** `6a18eda`
 
 **5. [Rule 1 - Bug] Doc comment containing literal `shield=True` failed plan's grep -c 0 acceptance criterion**
 - **Found during:** Task 1 verification step
-- **Issue:** Plan acceptance criterion: `grep -c 'shield=True' cua_overlay/actions/race_orchestrator.py` returns 0. My initial docstring said "Wrapping channel bodies in shield=True breaks race-cancel correctness" — that one literal substring tripped the grep.
+- **Issue:** Plan acceptance criterion: `grep -c 'shield=True' basicctrl/actions/race_orchestrator.py` returns 0. My initial docstring said "Wrapping channel bodies in shield=True breaks race-cancel correctness" — that one literal substring tripped the grep.
 - **Fix:** Rewrote the comment to "Wrapping channel bodies in a shielded scope breaks race-cancel correctness" — same meaning, no literal `shield=True`.
-- **Files modified:** `cua_overlay/actions/race_orchestrator.py`
-- **Verification:** `grep -c 'shield=True' cua_overlay/actions/race_orchestrator.py` returns 0.
+- **Files modified:** `basicctrl/actions/race_orchestrator.py`
+- **Verification:** `grep -c 'shield=True' basicctrl/actions/race_orchestrator.py` returns 0.
 - **Committed in:** `6a18eda`
 
 ---
@@ -149,7 +149,7 @@ _Note: Per the plan, Task 1 (skeleton) and Task 2 (tests) are the same TDD cycle
 
 ## Issues Encountered
 
-None — plan structure was correct, only the contract documentation in the plan's `<interfaces>` block diverged slightly from the real Phase 1 modules. Resolved by reading the actual modules (`cua_overlay/state/causal_dag.py`, `cua_overlay/verifier/axobserver.py`) and adapting the implementation to the real signatures.
+None — plan structure was correct, only the contract documentation in the plan's `<interfaces>` block diverged slightly from the real Phase 1 modules. Resolved by reading the actual modules (`basicctrl/state/causal_dag.py`, `basicctrl/verifier/axobserver.py`) and adapting the implementation to the real signatures.
 
 ## Next Phase Readiness
 
@@ -161,8 +161,8 @@ None — plan structure was correct, only the contract documentation in the plan
 ## Self-Check: PASSED
 
 Verification:
-- `cua_overlay/actions/race_orchestrator.py` exists (386 lines)
-- `cua_overlay/actions/__init__.py` re-exports `RaceOrchestrator`, `race_first_complete`, `NoTargetResolvable`, `AS_STAGGER_MS_DEFAULT`
+- `basicctrl/actions/race_orchestrator.py` exists (386 lines)
+- `basicctrl/actions/__init__.py` re-exports `RaceOrchestrator`, `race_first_complete`, `NoTargetResolvable`, `AS_STAGGER_MS_DEFAULT`
 - Commit `8051a08` (RED test) present in git log
 - Commit `6a18eda` (GREEN feat) present in git log
 - All 11 integration tests pass: `uv run pytest tests/integration/test_race_orchestrator.py -m integration -q` -> `11 passed`

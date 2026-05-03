@@ -16,12 +16,12 @@ requires:
     plan: 05
     provides: Aggregator (L0+L1 baseline), L1Cheap._cgimage_to_pil bridge, WeightedVote thresholds
 provides:
-  - cua_overlay/verifier/ensemble/l2_medium.py — L2Medium with Vision OCR ROI + depth-limited walker subtree
-  - cua_overlay/verifier/ensemble/l3_llm.py — L3Contract Protocol + L3Stub raising NotImplementedError
-  - cua_overlay/verifier/aggregator.py UPDATED — full L0→L1→L2→L3 escalation ladder
+  - basicctrl/verifier/ensemble/l2_medium.py — L2Medium with Vision OCR ROI + depth-limited walker subtree
+  - basicctrl/verifier/ensemble/l3_llm.py — L3Contract Protocol + L3Stub raising NotImplementedError
+  - basicctrl/verifier/aggregator.py UPDATED — full L0→L1→L2→L3 escalation ladder
   - VERIFY-06 and VERIFY-07 marked complete
   - L3 invariant enforced via structured 'l3.unavailable_phase1' warning event
-  - Public API surface: from cua_overlay.verifier import L2Medium, L2Snapshot, L3Contract, L3Stub
+  - Public API surface: from basicctrl.verifier import L2Medium, L2Snapshot, L3Contract, L3Stub
   - Three plan-level test modules: test_l2_medium.py (8), test_l3_stub.py (3), test_aggregator_escalation.py (5) — 16 tests, all green
 affects:
   - 01-08 (MCP proxy: L3Contract is the interface Phase 4 will implement)
@@ -47,19 +47,19 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/verifier/ensemble/l2_medium.py — L2Medium + L2Snapshot dataclass; OCR + walker in anyio task group; Plan 03 walk_subtree delegation"
-    - "cua_overlay/verifier/ensemble/l3_llm.py — L3Contract @runtime_checkable Protocol + L3Stub raising NotImplementedError with descriptive Phase 4 message"
+    - "basicctrl/verifier/ensemble/l2_medium.py — L2Medium + L2Snapshot dataclass; OCR + walker in anyio task group; Plan 03 walk_subtree delegation"
+    - "basicctrl/verifier/ensemble/l3_llm.py — L3Contract @runtime_checkable Protocol + L3Stub raising NotImplementedError with descriptive Phase 4 message"
     - "tests/unit/test_l2_medium.py — 8 tests (walk_subtree default depth / no raw recursion / parallel sub-checks / truncated signal / OCR text change / expected text match / float signals / L2Snapshot dataclass)"
     - "tests/unit/test_l3_stub.py — 3 tests (proper-args raises / catch-all raises / runtime_checkable isinstance)"
     - "tests/unit/test_aggregator_escalation.py — 5 tests (no escalation when strong / escalate to L2 in-band / escalate to L3 below threshold with graceful catch / L2 signals propagated / total latency <300ms with L2)"
   modified:
-    - "cua_overlay/verifier/ensemble/__init__.py — added L2Medium, L2Snapshot, L3Contract, L3Stub to public surface"
-    - "cua_overlay/verifier/aggregator.py — extended with l2/l3 constructor params + escalation ladder + L3 graceful catch"
-    - "cua_overlay/verifier/__init__.py — re-exports L2Medium, L2Snapshot, L3Contract, L3Stub"
+    - "basicctrl/verifier/ensemble/__init__.py — added L2Medium, L2Snapshot, L3Contract, L3Stub to public surface"
+    - "basicctrl/verifier/aggregator.py — extended with l2/l3 constructor params + escalation ladder + L3 graceful catch"
+    - "basicctrl/verifier/__init__.py — re-exports L2Medium, L2Snapshot, L3Contract, L3Stub"
     - "tests/unit/test_aggregator.py — updated 7 existing tests to construct Aggregator with new (l0, l1, l2=NoopL2, l3=L3Stub, vote) signature"
 
 key-decisions:
-  - "L2 walker delegation via walk_subtree (Plan 03 reuse) is the ONLY sanctioned AX-traversal path in cua-maximalist. Source-grep tests enforce: zero raw 'AXUIElementCopyAttributeValue' calls in L2 module, zero max_depth>=4 overrides. Pitfall P3 hard rule (15-20s on Safari) mitigated by structural delegation, not by manual discipline."
+  - "L2 walker delegation via walk_subtree (Plan 03 reuse) is the ONLY sanctioned AX-traversal path in basicCtrl. Source-grep tests enforce: zero raw 'AXUIElementCopyAttributeValue' calls in L2 module, zero max_depth>=4 overrides. Pitfall P3 hard rule (15-20s on Safari) mitigated by structural delegation, not by manual discipline."
   - "L2 OCR ROI uses CGWindowListCreateImage rect-bounded capture (deprecated but working) reusing L1Cheap._cgimage_to_pil. Avoids duplicate CGImage→PIL bridge code; matches Plan 05's choice of CGWindowListCreateImage over ScreenCaptureKit (sync API works in asyncio.to_thread, async-only ScreenCaptureKit fights the latency budget)."
   - "L3Contract is @runtime_checkable Protocol so Phase 4 can drop in real implementations (Claude Opus, GPT-5, V-Droid) without API drift. The catch-all signature (*args, **kwargs) on L3Stub guarantees ANY Phase 1 invocation raises immediately rather than silently proceeding with fabricated confidence."
   - "L3 escalation in Phase 1 is caught gracefully — aggregator's try/except NotImplementedError emits 'l3.unavailable_phase1' structured warning event and returns HoarePost(verified=False). This preserves the Phase 1 invariant ('any L3 reach = bug') while letting the system degrade gracefully rather than crash. Phase 4 swaps L3Stub for a real implementation and this branch becomes unreachable."
@@ -132,7 +132,7 @@ WeightedVote.aggregate(action_class, signals) -> confidence
 
 ## Public API Surface (additions)
 
-`from cua_overlay.verifier import ...`:
+`from basicctrl.verifier import ...`:
 
 | Name | Kind | Purpose |
 |------|------|---------|
@@ -266,9 +266,9 @@ if confidence < L3_ESCALATE_THRESHOLD:
 
 Each task committed atomically:
 
-1. **Task 1: L2Medium — Vision OCR + depth-limited walker** — `82d6e92` (feat) — `cua_overlay/verifier/ensemble/l2_medium.py` + ensemble `__init__.py` widened + `tests/unit/test_l2_medium.py`. 8 unit tests green.
-2. **Task 2: L3Contract Protocol + L3Stub** — `67ea0af` (feat) — `cua_overlay/verifier/ensemble/l3_llm.py` + ensemble `__init__.py` widened + `tests/unit/test_l3_stub.py`. 3 unit tests green.
-3. **Task 3: Aggregator escalation ladder** — `ff05abd` (feat) — `cua_overlay/verifier/aggregator.py` extended + verifier `__init__.py` widened + `tests/unit/test_aggregator.py` updated for new constructor sig + `tests/unit/test_aggregator_escalation.py`. 5 new escalation tests + 7 existing aggregator tests = 12 green.
+1. **Task 1: L2Medium — Vision OCR + depth-limited walker** — `82d6e92` (feat) — `basicctrl/verifier/ensemble/l2_medium.py` + ensemble `__init__.py` widened + `tests/unit/test_l2_medium.py`. 8 unit tests green.
+2. **Task 2: L3Contract Protocol + L3Stub** — `67ea0af` (feat) — `basicctrl/verifier/ensemble/l3_llm.py` + ensemble `__init__.py` widened + `tests/unit/test_l3_stub.py`. 3 unit tests green.
+3. **Task 3: Aggregator escalation ladder** — `ff05abd` (feat) — `basicctrl/verifier/aggregator.py` extended + verifier `__init__.py` widened + `tests/unit/test_aggregator.py` updated for new constructor sig + `tests/unit/test_aggregator_escalation.py`. 5 new escalation tests + 7 existing aggregator tests = 12 green.
 
 ## Test Counts
 
@@ -298,7 +298,7 @@ Each task committed atomically:
 - **Found during:** Task 1 first test run (`test_no_full_recursion`).
 - **Issue:** The L2 module's docstring originally listed enforcement: "...source-grep checks `L2Medium` doesn't call `AXUIElementCopyAttributeValue` directly." The literal forbidden token in the docstring caused `inspect.getsource(l2_module)` to find it and fail the test. Same docstring-pitfall Plan 05 hit.
 - **Fix:** Reworded the docstring to express the constraint without the forbidden token: "source-grep checks the L2 module never reaches into raw AX read primitives. Delegation through the Plan 03 walker is the only sanctioned path."
-- **Files modified:** `cua_overlay/verifier/ensemble/l2_medium.py` (docstring only).
+- **Files modified:** `basicctrl/verifier/ensemble/l2_medium.py` (docstring only).
 - **Verification:** All 8 L2 tests pass; the source-grep test now matches the actual code intent.
 - **Committed in:** `82d6e92` (rolled into Task 1).
 
@@ -330,7 +330,7 @@ Each task committed atomically:
 
 ## Next Phase Readiness
 
-- **Plan 01-08 (MCP proxy)** unblocked — can `from cua_overlay.verifier import L2Medium, L3Stub, L3Contract, Aggregator` and wrap escalation results into MCP tool responses.
+- **Plan 01-08 (MCP proxy)** unblocked — can `from basicctrl.verifier import L2Medium, L3Stub, L3Contract, Aggregator` and wrap escalation results into MCP tool responses.
 - **Plan 01-09 (Calculator demo)** unblocked — the demo will:
   1. Construct `Aggregator(l0, l1, l2=L2Medium(), l3=L3Stub(), vote=WeightedVote())`.
   2. Subscribe AX notifications via `axmgr.expect()`.
@@ -348,16 +348,16 @@ Each task committed atomically:
 
 Verified post-write:
 
-- File exists: `cua_overlay/verifier/ensemble/l2_medium.py` (1× class L2Medium, 6× walk_subtree refs, 0× AXUIElementCopyAttributeValue, 5× ocrmac, 3× create_task_group, 10× walker_truncated/truncated).
-- File exists: `cua_overlay/verifier/ensemble/l3_llm.py` (2× class L3Stub/L3Contract, 6× Protocol/runtime_checkable, 3× NotImplementedError, 9× Phase 4).
-- File exists: `cua_overlay/verifier/aggregator.py` (4× L2Medium/self._l2, 4× L3Contract/self._l3, 7× threshold refs, 2× escalation events, 5× NotImplementedError/l3.unavailable_phase1).
+- File exists: `basicctrl/verifier/ensemble/l2_medium.py` (1× class L2Medium, 6× walk_subtree refs, 0× AXUIElementCopyAttributeValue, 5× ocrmac, 3× create_task_group, 10× walker_truncated/truncated).
+- File exists: `basicctrl/verifier/ensemble/l3_llm.py` (2× class L3Stub/L3Contract, 6× Protocol/runtime_checkable, 3× NotImplementedError, 9× Phase 4).
+- File exists: `basicctrl/verifier/aggregator.py` (4× L2Medium/self._l2, 4× L3Contract/self._l3, 7× threshold refs, 2× escalation events, 5× NotImplementedError/l3.unavailable_phase1).
 - File exists: `tests/unit/test_l2_medium.py`, `tests/unit/test_l3_stub.py`, `tests/unit/test_aggregator_escalation.py`.
 - Commits exist (verified via `git log --oneline`): `82d6e92` (Task 1), `67ea0af` (Task 2), `ff05abd` (Task 3).
-- Public API import smoke: `python -c "from cua_overlay.verifier import Aggregator, L0Push, L1Cheap, L2Medium, L3Stub, L3Contract, WeightedVote"` exits 0.
+- Public API import smoke: `python -c "from basicctrl.verifier import Aggregator, L0Push, L1Cheap, L2Medium, L3Stub, L3Contract, WeightedVote"` exits 0.
 - Plan-level test count: 16 PASSED (`uv run pytest -q tests/unit/test_l2_medium.py tests/unit/test_l3_stub.py tests/unit/test_aggregator_escalation.py`).
 - Phase-level test count under SKIP_INTEGRATION=1: 100 PASSED, no regressions in earlier-plan modules.
 - Verification grep step 4 (no max_depth>=4 in L2): 0 matches.
-- Verification step 5 (L3 stub raises): `python -c "import asyncio; from cua_overlay.verifier import L3Stub; asyncio.run(L3Stub().verify(None, None, {}))"` exits non-zero with NotImplementedError + "Phase 4" in message.
+- Verification step 5 (L3 stub raises): `python -c "import asyncio; from basicctrl.verifier import L3Stub; asyncio.run(L3Stub().verify(None, None, {}))"` exits non-zero with NotImplementedError + "Phase 4" in message.
 
 ---
 

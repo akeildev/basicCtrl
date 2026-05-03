@@ -43,10 +43,10 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Multiple agents race in parallel (Opus + GPT-5 + Apple FM) | ✓ VERIFIED | `cua_overlay/cognition/ensemble.py:EnsembleVotingEngine.vote()` races 3 models; majority rule at line 26 |
-| 2 | Prediction happens ahead read-only (N+1, N+2 with type system gate) | ✓ VERIFIED | `cua_overlay/cognition/speculative.py:Speculator.predict_n_plus_k()` returns `SpeculativeDraft.kind=Literal["READ"]` (lines 50-62); mutation gate in schemas.py:138 |
-| 3 | Learn from observed user actions via CGEvent tap | ✓ VERIFIED | `libs/cua-driver/App/LearningRecorder.swift` (NEW file, 260 LOC) + `cua_overlay/learning/recorder.py` (380 LOC) + keystroke coalescing; auto re-enable at line 72 of Swift |
-| 4 | Episodic memory surfaces matches BEFORE any LLM call | ✓ VERIFIED | `cua_overlay/cognition/planner.py:Planner.plan_action()` calls `episodic.lookup()` at line 94 BEFORE constructing LLM prompt; test in 04-03-SUMMARY.md Test 2 confirms no LLM client invoked on hit |
+| 1 | Multiple agents race in parallel (Opus + GPT-5 + Apple FM) | ✓ VERIFIED | `basicctrl/cognition/ensemble.py:EnsembleVotingEngine.vote()` races 3 models; majority rule at line 26 |
+| 2 | Prediction happens ahead read-only (N+1, N+2 with type system gate) | ✓ VERIFIED | `basicctrl/cognition/speculative.py:Speculator.predict_n_plus_k()` returns `SpeculativeDraft.kind=Literal["READ"]` (lines 50-62); mutation gate in schemas.py:138 |
+| 3 | Learn from observed user actions via CGEvent tap | ✓ VERIFIED | `libs/cua-driver/App/LearningRecorder.swift` (NEW file, 260 LOC) + `basicctrl/learning/recorder.py` (380 LOC) + keystroke coalescing; auto re-enable at line 72 of Swift |
+| 4 | Episodic memory surfaces matches BEFORE any LLM call | ✓ VERIFIED | `basicctrl/cognition/planner.py:Planner.plan_action()` calls `episodic.lookup()` at line 94 BEFORE constructing LLM prompt; test in 04-03-SUMMARY.md Test 2 confirms no LLM client invoked on hit |
 
 ### Goal Verbatim Clause Mapping
 
@@ -62,20 +62,20 @@ human_verification:
 
 | Requirement | Phase | Delivered | Evidence |
 |---|---|---|---|
-| STATE-04 | Phase 4 | ✓ | `cua_overlay/state/episodic.py` — EpisodicMemory FAISS store + lookup + quarantine (D-18..D-21) |
-| COG-01 | Phase 4 | ✓ | `cua_overlay/cognition/planner.py:Planner` — Opus agent with bounded max_steps=20 + prompt caching (D-03) |
-| COG-02 | Phase 4 | ✓ | `cua_overlay/cognition/apple_fm.py:AppleFMClassifier` — Apple FM tier-0 text-only (D-02, P6, P7 mitigations) |
-| COG-03 | Phase 4 | ✓ | `cua_overlay/cognition/verifier_llm.py:VerifierLLM` — V-Droid prefill-only pattern, batching (D-06) |
-| COG-04 | Phase 4 | ✓ | `cua_overlay/cognition/planner.py:WorldModelPredictor` — CUWM-style pre-state prediction (D-07) |
-| COG-05 | Phase 4 | ✓ | `cua_overlay/cognition/apple_fm.py` — Apple FM text-only no-pixels API gate (D-02, P7) |
-| COG-06 | Phase 4 | ✓ | `cua_overlay/cognition/critic.py:Critic` — Pairwise oracle ranking, no self-critique (D-08, P21 mitigation) |
-| COG-07 | Phase 4 | ✓ | `cua_overlay/cognition/speculative.py:Speculator` — Read-only draft generation (D-10, P22 mitigation) |
-| COG-08 | Phase 4 | ✓ | `cua_overlay/cognition/ensemble.py:EnsembleVotingEngine` — 3-model vote, majority rule (D-09) |
+| STATE-04 | Phase 4 | ✓ | `basicctrl/state/episodic.py` — EpisodicMemory FAISS store + lookup + quarantine (D-18..D-21) |
+| COG-01 | Phase 4 | ✓ | `basicctrl/cognition/planner.py:Planner` — Opus agent with bounded max_steps=20 + prompt caching (D-03) |
+| COG-02 | Phase 4 | ✓ | `basicctrl/cognition/apple_fm.py:AppleFMClassifier` — Apple FM tier-0 text-only (D-02, P6, P7 mitigations) |
+| COG-03 | Phase 4 | ✓ | `basicctrl/cognition/verifier_llm.py:VerifierLLM` — V-Droid prefill-only pattern, batching (D-06) |
+| COG-04 | Phase 4 | ✓ | `basicctrl/cognition/planner.py:WorldModelPredictor` — CUWM-style pre-state prediction (D-07) |
+| COG-05 | Phase 4 | ✓ | `basicctrl/cognition/apple_fm.py` — Apple FM text-only no-pixels API gate (D-02, P7) |
+| COG-06 | Phase 4 | ✓ | `basicctrl/cognition/critic.py:Critic` — Pairwise oracle ranking, no self-critique (D-08, P21 mitigation) |
+| COG-07 | Phase 4 | ✓ | `basicctrl/cognition/speculative.py:Speculator` — Read-only draft generation (D-10, P22 mitigation) |
+| COG-08 | Phase 4 | ✓ | `basicctrl/cognition/ensemble.py:EnsembleVotingEngine` — 3-model vote, majority rule (D-09) |
 | LEARN-01 | Phase 4 | ✓ | `libs/cua-driver/App/LearningRecorder.swift` — CGEvent tap .listenOnly (D-11) |
-| LEARN-02 | Phase 4 | ✓ | `cua_overlay/learning/coalesce.py:KeystrokeCoalescer` — 0.5s CFRunLoopTimer window (D-14) |
+| LEARN-02 | Phase 4 | ✓ | `basicctrl/learning/coalesce.py:KeystrokeCoalescer` — 0.5s CFRunLoopTimer window (D-14) |
 | LEARN-03 | Phase 4 | ✓ | `libs/cua-driver/App/LearningRecorder.swift:72` — auto re-enable on tapDisabledByTimeout (D-13) |
-| LEARN-04 | Phase 4 | ✓ | `cua_overlay/learning/recipe_synth.py:RecipeSynthesizer` — ObservedAction → Recipe JSON (D-16, D-17) |
-| LEARN-05 | Phase 4 | ✓ | `cua_overlay/state/episodic.py` + `cua_overlay/cognition/planner.py:94` — episodic lookup before LLM (D-20) |
+| LEARN-04 | Phase 4 | ✓ | `basicctrl/learning/recipe_synth.py:RecipeSynthesizer` — ObservedAction → Recipe JSON (D-16, D-17) |
+| LEARN-05 | Phase 4 | ✓ | `basicctrl/state/episodic.py` + `basicctrl/cognition/planner.py:94` — episodic lookup before LLM (D-20) |
 
 **Coverage: 14/14 requirements mapped. Status: 13 verified in Phase 4 code, 1 requires human integration test (SC#3 CGEvent tap auto re-enable).**
 
@@ -108,7 +108,7 @@ human_verification:
 |----------|---|---|---|
 | B3 stub → real world-replan | `b3_world_replan_stub.py` (stub) | `b3_world_replan.py` (REAL, 250 LOC, May 1) | Calls WorldModelPredictor.predict() + Planner.replan(); respects Phase 3 try_claim + cancel_event contracts |
 | B4 stub → real planner-replan | `b4_planner_reqry_stub.py` (stub) | `b4_planner_replan.py` (REAL, 285 LOC, May 1) | Generates N candidates via Planner; Critic.rank_candidates() picks best; P21 mitigation verified |
-| AppProfile.cognition_capable | Not in Phase 3 | Added in Phase 4 (D-31, D-32) | `cua_overlay/profile/classifier.py:line 74` field added; probe checks apple_fm_sdk + mlx_vlm + faiss availability; graceful degradation when False |
+| AppProfile.cognition_capable | Not in Phase 3 | Added in Phase 4 (D-31, D-32) | `basicctrl/profile/classifier.py:line 74` field added; probe checks apple_fm_sdk + mlx_vlm + faiss availability; graceful degradation when False |
 
 ## CLAUDE.md Hard Rule Audit
 

@@ -10,9 +10,9 @@ tags:
   - Pitfall validation
 dependency_graph:
   requires:
-    - cua_overlay.visualizer (models + driver from 05-01..05-07)
-    - cua_overlay.replay (engine + timeline + counterfactual from 05-04..05-07)
-    - cua_overlay.replay.diff (LCS algorithm from 05-08)
+    - basicctrl.visualizer (models + driver from 05-01..05-07)
+    - basicctrl.replay (engine + timeline + counterfactual from 05-04..05-07)
+    - basicctrl.replay.diff (LCS algorithm from 05-08)
     - libs/cua-driver/App (Swift visualizer sidecar)
   provides:
     - 12 requirement test implementations (VIS-01..OBS-06)

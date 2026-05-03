@@ -9,11 +9,11 @@ tags:
   - Python driver
 dependency_graph:
   requires:
-    - cua_overlay.visualizer.models (IPC schemas from Wave 0)
+    - basicctrl.visualizer.models (IPC schemas from Wave 0)
     - libs/cua-driver/App/Visualizer.swift (socket listener from Wave 1)
   provides:
     - libs/cua-driver/App/HUDView.swift (SwiftUI HUD panel)
-    - cua_overlay/visualizer/hud_driver.py (command assembly + socket send)
+    - basicctrl/visualizer/hud_driver.py (command assembly + socket send)
   affects:
     - Phase 2 race orchestrator (post-action callbacks send HUD updates)
     - Phase 5 Wave 3+ plans (HUD complete, ready for hotkey integration)
@@ -30,7 +30,7 @@ tech_stack:
 key_files:
   created:
     - libs/cua-driver/App/HUDView.swift (260 lines)
-    - cua_overlay/visualizer/hud_driver.py (86 lines)
+    - basicctrl/visualizer/hud_driver.py (86 lines)
   modified:
     - libs/cua-driver/App/Visualizer.swift (socket listener + VisualizerPanel.updateHUDActions)
   total_lines_added: 346
@@ -130,7 +130,7 @@ VIS-02 requires HUD to display last 8 actions with tier/channel badges and statu
 **Status:** ✅ Complete
 
 **Deliverables:**
-- `cua_overlay/visualizer/hud_driver.py` (86 lines)
+- `basicctrl/visualizer/hud_driver.py` (86 lines)
 
 **Implementation:**
 
@@ -185,7 +185,7 @@ except Exception:
 ```
 
 **Verification:**
-- ✅ `from cua_overlay.visualizer.hud_driver import HUDDriver` — imports cleanly
+- ✅ `from basicctrl.visualizer.hud_driver import HUDDriver` — imports cleanly
 - ✅ `HUDDriver()` instantiation succeeds
 - ✅ `append_action()` adds entries to history
 - ✅ Ring buffer truncates to 8: `append 10 → len 8` ✓
@@ -219,8 +219,8 @@ except Exception:
 
 | From | To | Via | Pattern |
 |------|----|----|---------|
-| `cua_overlay.visualizer.models` | `HUDView.swift` | Struct/enum imports | HUDActionEntry, HUDPosition types mirror Pydantic |
-| `cua_overlay.visualizer.models` | `hud_driver.py` | Pydantic serialization | HUDCommand.model_dump_json() over socket |
+| `basicctrl.visualizer.models` | `HUDView.swift` | Struct/enum imports | HUDActionEntry, HUDPosition types mirror Pydantic |
+| `basicctrl.visualizer.models` | `hud_driver.py` | Pydantic serialization | HUDCommand.model_dump_json() over socket |
 | `Visualizer.swift` | `HUDView.swift` | IPC dispatch | hud_action case calls window.updateHUDActions() |
 | `hud_driver.py` | `/tmp/cua-visualizer.sock` | Unix socket client | Socket send from race orchestrator (Phase 2 integration) |
 | Phase 2 race orchestrator | `HUDDriver.append_action()` | Post-action callback | Called after action verification (future Wave 3 integration) |
@@ -312,7 +312,7 @@ swift build 2>&1
 
 ✅ **All created files exist and are valid:**
 - `libs/cua-driver/App/HUDView.swift` — 260 lines, imports cleanly, SwiftUI View ✓
-- `cua_overlay/visualizer/hud_driver.py` — 86 lines, Python 3.9+ syntax ✓
+- `basicctrl/visualizer/hud_driver.py` — 86 lines, Python 3.9+ syntax ✓
 
 ✅ **All commits created and verified:**
 - 2e9cf6d: HUDView.swift + Visualizer.swift extension

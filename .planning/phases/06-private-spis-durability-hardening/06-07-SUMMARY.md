@@ -171,7 +171,7 @@ None. Plan executed exactly as written. Spike decision point clearly determined:
 5. ✅ Electron renderer coverage (Slack, VS Code, Discord, Figma, Cursor)
 
 **06-08 Deliverables (in scope):**
-- Python wrapper: `cua_overlay/spi/dyld_inject.py` (full implementation, not stub)
+- Python wrapper: `basicctrl/spi/dyld_inject.py` (full implementation, not stub)
 - Swift dylib sidecar: `libs/cua-driver/App/DYLDInject.swift` with build script
 - Channel registration: New C2_DYLDRenderer channel in registry (gated by `AppProfile.spi_dyld_inject_available`)
 - Tests: `tests/test_spi_dyld.py` with unit + integration tests

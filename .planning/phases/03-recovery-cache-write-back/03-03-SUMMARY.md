@@ -8,8 +8,8 @@ completed_date: 2026-04-30
 subsystem: recovery-circuit-breaker
 tags: [circuit-breaker, state-management, wave-1, async]
 key_files:
-  - created: cua_overlay/recovery/circuit_breaker.py
-  - modified: cua_overlay/recovery/__init__.py
+  - created: basicctrl/recovery/circuit_breaker.py
+  - modified: basicctrl/recovery/__init__.py
   - modified: tests/unit/recovery/test_circuit_breaker.py
 decisions:
   - "D-12: Per-(bundle_id, target_key) failure counter with 60s window"
@@ -68,7 +68,7 @@ All 7 unit tests passing: trip condition tests, reorder logic, event emission, 6
 - ✓ test_circuit_breaker_different_targets_independent
   - Different targets don't share failure counts
 
-### Task 3: Update cua_overlay/recovery/__init__.py
+### Task 3: Update basicctrl/recovery/__init__.py
 - ✓ Re-export CircuitBreaker, BreakState
 - ✓ __all__ list updated
 

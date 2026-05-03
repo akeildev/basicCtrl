@@ -11,12 +11,12 @@ tags:
 dependency_graph:
   requires:
     - libs/cua-driver/App/Visualizer.swift (overlay window ID registry)
-    - cua_overlay.observability.session_storage.SessionWriter (metadata writer)
-    - cua_overlay.visualizer.models.ReplayFrameMetadata (schema)
+    - basicctrl.observability.session_storage.SessionWriter (metadata writer)
+    - basicctrl.visualizer.models.ReplayFrameMetadata (schema)
   provides:
     - libs/cua-driver/App/ScreenRecorder.swift (H.265 recording + metadata)
-    - cua_overlay.observability.recorder.RecorderDriver (Python async control)
-    - cua_overlay.observability.recorder.RecorderTelemetry (perf metrics)
+    - basicctrl.observability.recorder.RecorderDriver (Python async control)
+    - basicctrl.observability.recorder.RecorderTelemetry (perf metrics)
   affects:
     - Phase 5 Wave 4 (05-05..05-10) — replay engine reads recording.mov + recording_metadata.ndjson
     - Phase 5 DEMO — PHASE-5-DEMO.md shows live replay via scrubbing
@@ -34,7 +34,7 @@ tech_stack:
 key_files:
   created:
     - libs/cua-driver/App/ScreenRecorder.swift (270 lines)
-    - cua_overlay/observability/recorder.py (240 lines)
+    - basicctrl/observability/recorder.py (240 lines)
   modified:
     - libs/cua-driver/App/Visualizer.swift (+19 lines, window ID registry)
 decisions:
@@ -159,7 +159,7 @@ func updateCurrentStepID(_ stepID: Int?)
 **Status:** ✅ Complete
 
 **Deliverables:**
-- `cua_overlay/observability/recorder.py` (240 lines)
+- `basicctrl/observability/recorder.py` (240 lines)
   - `RecorderDriver` class (async start/stop/metadata)
   - `RecorderTelemetry` class (encode latency tracking)
 
@@ -223,7 +223,7 @@ class RecorderTelemetry:
 **Import Validation:**
 
 ```bash
-$ python3 -c "from cua_overlay.observability.recorder import RecorderDriver, RecorderTelemetry; print('✓')"
+$ python3 -c "from basicctrl.observability.recorder import RecorderDriver, RecorderTelemetry; print('✓')"
 ✓ RecorderDriver and RecorderTelemetry initialize correctly
 ```
 
@@ -289,7 +289,7 @@ No security-relevant changes to auth, network, or schema boundaries.
 
 **Created files verified:**
 - ✓ libs/cua-driver/App/ScreenRecorder.swift (exists, 270 lines)
-- ✓ cua_overlay/observability/recorder.py (exists, 240 lines)
+- ✓ basicctrl/observability/recorder.py (exists, 240 lines)
 
 **Commits verified:**
 - ✓ 6898060: feat(05-04): implement H.265 ScreenRecorder with VideoToolbox + SCContentFilter

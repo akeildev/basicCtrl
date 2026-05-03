@@ -7,11 +7,11 @@ tags: [idempotency, race-policy, asyncio-lock, ndjson, ring-buffer, ACT-03, ACT-
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.persist.session_writer.SessionWriter (NDJSON sink), cua_overlay.state.causal_dag.ActionCanonical (id field doubles as idempotency token)
+    provides: basicctrl.persist.session_writer.SessionWriter (NDJSON sink), basicctrl.state.causal_dag.ActionCanonical (id field doubles as idempotency token)
   - phase: 02-translators-racing
     provides: Wave-0 stub tests (Plan 02-01), pytest asyncio_mode=auto + stress marker
 provides:
-  - cua_overlay.actions package (Wave 1 atomic foundation — idempotency + race policy + duplicate receipt)
+  - basicctrl.actions package (Wave 1 atomic foundation — idempotency + race policy + duplicate receipt)
   - IdempotencyTokenStore.try_claim() — atomic asyncio.Lock-guarded claim, single winner under concurrent fan-out (D-16, D-17)
   - IdempotencyTokenStore.is_claimed() — lock-free peek for OS-level pre-syscall kill-switch (D-18)
   - ChannelClaim Pydantic model — frozen record of (action_id, claimed_at_ns, claimed_by_channel)
@@ -33,10 +33,10 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/actions/__init__.py — package init re-exporting IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt"
-    - "cua_overlay/actions/idempotency.py — IdempotencyTokenStore (asyncio.Lock + dict + NDJSON sink) + ChannelClaim Pydantic model"
-    - "cua_overlay/actions/race_policy.py — RacePolicy enum + 4 dispatch tables (RACE_ALLOWLIST, SINGLE_CHANNEL_ALLOWLIST, DESTRUCTIVE_COMBOS, SAFE_RACE_COMBOS) + resolve_race_policy()"
-    - "cua_overlay/actions/duplicate_receipt.py — DuplicateReceipt 2s sliding deque ring buffer with O(1) prune-on-record"
+    - "basicctrl/actions/__init__.py — package init re-exporting IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt"
+    - "basicctrl/actions/idempotency.py — IdempotencyTokenStore (asyncio.Lock + dict + NDJSON sink) + ChannelClaim Pydantic model"
+    - "basicctrl/actions/race_policy.py — RacePolicy enum + 4 dispatch tables (RACE_ALLOWLIST, SINGLE_CHANNEL_ALLOWLIST, DESTRUCTIVE_COMBOS, SAFE_RACE_COMBOS) + resolve_race_policy()"
+    - "basicctrl/actions/duplicate_receipt.py — DuplicateReceipt 2s sliding deque ring buffer with O(1) prune-on-record"
   modified:
     - "tests/unit/actions/test_idempotency.py — replaced importorskip stub with 5 real tests (sequential first-wins, concurrent 5-way fan-out single winner, NDJSON trace, lock-free peek without deadlock, monotonic timestamps)"
     - "tests/unit/actions/test_race_policy.py — replaced stub with 11 real tests covering D-10 RACE allowlist, D-11 SINGLE_CHANNEL allowlist, D-12 safe-race combos, T-2-09 destructive override warning capture"
@@ -51,7 +51,7 @@ key-decisions:
   - "Stub Wave-0 tests used pytest.importorskip; this plan deletes that guard line because the target module now exists. Tests are now active and gating future regressions."
 
 patterns-established:
-  - "Per-feature sub-package mirror — cua_overlay/actions/ matches tests/unit/actions/, both with __init__.py. Phase 2 Wave 2+ plans (02-04 channel base, 02-10 race orchestrator) follow the same shape."
+  - "Per-feature sub-package mirror — basicctrl/actions/ matches tests/unit/actions/, both with __init__.py. Phase 2 Wave 2+ plans (02-04 channel base, 02-10 race orchestrator) follow the same shape."
   - "Module-level frozenset dispatch tables for D-09..D-12 — RACE_ALLOWLIST / SINGLE_CHANNEL_ALLOWLIST / DESTRUCTIVE_COMBOS / SAFE_RACE_COMBOS. All-caps + frozenset enforces immutability + sub-microsecond lookup. Adding new action_types = one-line edit."
   - "Module-level structlog logger via `_log = structlog.get_logger()` — race_policy.py uses module-level logger (stateless function); idempotency.py and duplicate_receipt.py use instance-bound `self._log` (per-instance context if bound later)."
   - "Wave-0 stub → Wave-1 real test transition: replace `pytest.importorskip(MODULE)` line with the actual import. Phase 2 Wave 1+ plans repeat this pattern as their target modules ship."
@@ -75,7 +75,7 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T06:35:17Z
 - **Completed:** 2026-04-30T06:39:01Z
 - **Tasks:** 3 (all `type=auto tdd=true`, all green)
-- **Files modified:** 7 (4 created in cua_overlay/actions/, 3 stub tests rewritten with real assertions)
+- **Files modified:** 7 (4 created in basicctrl/actions/, 3 stub tests rewritten with real assertions)
 
 ## Accomplishments
 
@@ -157,10 +157,10 @@ if maybe is not None:
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/actions/__init__.py` — Phase 2 racing-action package init; re-exports IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt
-- `cua_overlay/actions/idempotency.py` — IdempotencyTokenStore (asyncio.Lock + in-memory dict + NDJSON sink) and ChannelClaim Pydantic model with `Literal["C1","C2","C3","C4","C5"]` channel validator
-- `cua_overlay/actions/race_policy.py` — RacePolicy str-enum + 4 frozenset dispatch tables + resolve_race_policy() entry-point + _classify_intrinsic() helper for key-combo lookup
-- `cua_overlay/actions/duplicate_receipt.py` — DuplicateReceipt class with `collections.deque` ring buffer + `_RING_WINDOW_NS = 2_000_000_000` constant + `_Receipt` NamedTuple
+- `basicctrl/actions/__init__.py` — Phase 2 racing-action package init; re-exports IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt
+- `basicctrl/actions/idempotency.py` — IdempotencyTokenStore (asyncio.Lock + in-memory dict + NDJSON sink) and ChannelClaim Pydantic model with `Literal["C1","C2","C3","C4","C5"]` channel validator
+- `basicctrl/actions/race_policy.py` — RacePolicy str-enum + 4 frozenset dispatch tables + resolve_race_policy() entry-point + _classify_intrinsic() helper for key-combo lookup
+- `basicctrl/actions/duplicate_receipt.py` — DuplicateReceipt class with `collections.deque` ring buffer + `_RING_WINDOW_NS = 2_000_000_000` constant + `_Receipt` NamedTuple
 
 ### Modified
 - `tests/unit/actions/test_idempotency.py` — stub→5 real tests (sequential first-wins, 5-way concurrent gather, NDJSON trace assertion, lock-free-peek-while-locked, monotonic timestamps)
@@ -180,10 +180,10 @@ See `key-decisions` in frontmatter for the full list. Brief rationale highlights
 
 **1. [Rule 3 — Blocking] Incremental `__init__.py` build-up across Tasks 1→3**
 - **Found during:** Task 1 (planning Step 1 of <action>)
-- **Issue:** Plan Step 1 of Task 1 specified the full `__init__.py` listing all three modules (`idempotency`, `race_policy`, `duplicate_receipt`), but Tasks 2 and 3 ship the latter two modules. Importing the package after Task 1 would raise `ModuleNotFoundError: cua_overlay.actions.race_policy` because the `__init__.py` would try to load a module that doesn't yet exist.
+- **Issue:** Plan Step 1 of Task 1 specified the full `__init__.py` listing all three modules (`idempotency`, `race_policy`, `duplicate_receipt`), but Tasks 2 and 3 ship the latter two modules. Importing the package after Task 1 would raise `ModuleNotFoundError: basicctrl.actions.race_policy` because the `__init__.py` would try to load a module that doesn't yet exist.
 - **Fix:** Wrote `__init__.py` incrementally — only `idempotency` re-export after Task 1, added `race_policy` after Task 2, added `duplicate_receipt` after Task 3. Final state matches the plan's exact spec verbatim.
-- **Files modified:** cua_overlay/actions/__init__.py (touched in commits afa3388, 010d148, 51caadd)
-- **Verification:** `python -c "from cua_overlay.actions import IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt; print('ok')"` prints `ok`.
+- **Files modified:** basicctrl/actions/__init__.py (touched in commits afa3388, 010d148, 51caadd)
+- **Verification:** `python -c "from basicctrl.actions import IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt; print('ok')"` prints `ok`.
 - **Committed in:** afa3388, 010d148, 51caadd (each task's GREEN commit)
 
 ---
@@ -211,10 +211,10 @@ None. Pure stdlib + already-installed deps (pydantic v2, structlog, asyncio).
 ## Self-Check: PASSED
 
 Files created (all 7 verified):
-- FOUND: cua_overlay/actions/__init__.py
-- FOUND: cua_overlay/actions/idempotency.py
-- FOUND: cua_overlay/actions/race_policy.py
-- FOUND: cua_overlay/actions/duplicate_receipt.py
+- FOUND: basicctrl/actions/__init__.py
+- FOUND: basicctrl/actions/idempotency.py
+- FOUND: basicctrl/actions/race_policy.py
+- FOUND: basicctrl/actions/duplicate_receipt.py
 - FOUND: tests/unit/actions/test_idempotency.py (replaced stub)
 - FOUND: tests/unit/actions/test_race_policy.py (replaced stub)
 - FOUND: tests/unit/actions/test_duplicate_receipt.py (replaced stub)
@@ -231,7 +231,7 @@ Acceptance criteria literals (all greppable):
 - FOUND: `class IdempotencyTokenStore`, `asyncio.Lock` (×3), `time.monotonic_ns`, `idempotency_claim`, `class ChannelClaim` in idempotency.py
 - FOUND: `class RacePolicy`, `RACE_ALLOWLIST`, `SINGLE_CHANNEL_ALLOWLIST`, `DESTRUCTIVE_COMBOS`, `SAFE_RACE_COMBOS`, `def resolve_race_policy`, `race_policy.destructive_override_blocked` (×2) in race_policy.py
 - FOUND: `class DuplicateReceipt`, `2_000_000_000`, `near_miss_duplicate` (×2) in duplicate_receipt.py
-- FOUND: All 5 names re-exported from cua_overlay.actions.__init__
+- FOUND: All 5 names re-exported from basicctrl.actions.__init__
 
 Verification commands (all pass):
 - `uv run pytest -q tests/unit/actions/test_idempotency.py` → 5 passed
@@ -239,7 +239,7 @@ Verification commands (all pass):
 - `uv run pytest -q tests/unit/actions/test_duplicate_receipt.py` → 6 passed
 - `uv run pytest -q tests/unit/actions/` → 22 passed, 1 skipped (channel_registry stub waiting for Plan 02-04)
 - `uv run pytest -q tests/ -m "not integration and not manual"` → 145 passed, 13 skipped, 0 errors
-- `uv run python -c "from cua_overlay.actions import IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt; print('ok')"` → `ok`
+- `uv run python -c "from basicctrl.actions import IdempotencyTokenStore, ChannelClaim, RacePolicy, resolve_race_policy, DuplicateReceipt; print('ok')"` → `ok`
 
 ---
 *Phase: 02-translators-racing*

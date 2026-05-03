@@ -7,7 +7,7 @@ tags: [pytest, uv, cdp-use, uitag, py-applescript, transformers, scaffolding, ny
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.persist.session_writer.SessionWriter, tests/conftest.py baseline (calculator_pid, session_dir, _configure_structlog)
+    provides: basicctrl.persist.session_writer.SessionWriter, tests/conftest.py baseline (calculator_pid, session_dir, _configure_structlog)
 provides:
   - Phase 2 dependency lockfile (cdp-use 1.4.5, uitag 0.6.0, py-applescript 1.0.3, transformers 5.7.0 + 100+ transitive)
   - 17 Wave-0 stub tests gating every Phase 2 implementation plan (Nyquist contract)
@@ -47,7 +47,7 @@ key-decisions:
   - "Stress test stub uses constant STRESS_ITERATIONS=100 (not parameterized) so the 100-fire requirement is greppable in source until Plan 02-12 adds the loop."
 
 patterns-established:
-  - "Per-feature sub-package mirror: tests/unit/<feature>/ matches cua_overlay/<feature>/ — translators/actions/mcp/profile sub-packages are now ready for Wave 1+ implementation modules"
+  - "Per-feature sub-package mirror: tests/unit/<feature>/ matches basicctrl/<feature>/ — translators/actions/mcp/profile sub-packages are now ready for Wave 1+ implementation modules"
   - "Skip-if-missing fixture pattern: probe + pytest.skip(reason='actionable instructions') — applied to slack_cdp_ws (port probe), pages_running (NSWorkspace probe), chess_launcher (NSWorkspace probe). Same pattern as Phase 1's calculator_pid."
   - "Idempotent dependency append: new deps appended to bottom of [project].dependencies list (Phase 1 list was unalphabetised; preserving that)."
 
@@ -111,7 +111,7 @@ completed: 2026-04-30
 ## Decisions Made
 
 - **Wave-0 stubs use `pytest.importorskip` at module load** (not `pytest.skip` in test bodies). Trade-off: when the target module is missing, pytest collects the file as "skipped" and does NOT enumerate the placeholder test. This means `pytest --collect-only ... | grep '<Module test_'` returns 0 instead of 5 until Wave 1+ ships. Behavior is correct per the plan spec ("skips until module lands and pass once it does"), even though the literal acceptance-criterion grep doesn't match. Verified by running `pytest --collect-only` and confirming "5 skipped, 0 errors" for integration files.
-- **Phase 1's `cua_overlay.mcp_server.healing_tools` already exists**, so `tests/unit/mcp/test_healing_tools_v2.py` actually passes today (1 passed, 11 skipped in the unit run) — exactly as designed: stub turns green the moment its module is importable.
+- **Phase 1's `basicctrl.mcp_server.healing_tools` already exists**, so `tests/unit/mcp/test_healing_tools_v2.py` actually passes today (1 passed, 11 skipped in the unit run) — exactly as designed: stub turns green the moment its module is importable.
 - **Skip-if-missing for integration fixtures** — Slack, Pages, Chess all probe-and-skip rather than fail. Slack additionally carries the `manual` marker per RALPH-HANDOFF.md gesture map.
 
 ## Deviations from Plan

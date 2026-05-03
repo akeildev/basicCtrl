@@ -13,12 +13,12 @@ requires:
     plan: 03
     provides: AXError + axerror_from_code (stubbed during Wave 2 — real impl merged from 01-03 worktree)
 provides:
-  - cua_overlay/ax/observer.py — AXEventBridge (CFRunLoop thread + asyncio Queue)
-  - cua_overlay/verifier/axobserver.py — AXObserverManager.expect() pre-subscribe pattern
-  - cua_overlay/verifier/kqueue_proc.py — KqueueProcObserver (pure asyncio EVFILT_PROC + NOTE_EXIT)
-  - cua_overlay/verifier/nsworkspace.py — NSWorkspaceObserver (frontmost-app-changed)
-  - cua_overlay/verifier/distnotif.py — DistributedNotificationEvent + observer scaffold (Phase 2)
-  - cua_overlay/verifier/__init__.py — public surface lock
+  - basicctrl/ax/observer.py — AXEventBridge (CFRunLoop thread + asyncio Queue)
+  - basicctrl/verifier/axobserver.py — AXObserverManager.expect() pre-subscribe pattern
+  - basicctrl/verifier/kqueue_proc.py — KqueueProcObserver (pure asyncio EVFILT_PROC + NOTE_EXIT)
+  - basicctrl/verifier/nsworkspace.py — NSWorkspaceObserver (frontmost-app-changed)
+  - basicctrl/verifier/distnotif.py — DistributedNotificationEvent + observer scaffold (Phase 2)
+  - basicctrl/verifier/__init__.py — public surface lock
   - tests/unit/test_axobserver_filter.py — 8 unit tests covering 3-predicate filter + dispatcher
   - tests/integration/test_axobserver.py — 4 Calculator end-to-end tests
   - tests/integration/test_kqueue_proc.py — 3 kqueue tests (NOTE_EXIT + 2x fd-leak)
@@ -49,17 +49,17 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/ax/__init__.py — empty subpackage marker (no re-exports — avoids parallel-worktree import-order races)"
-    - "cua_overlay/ax/observer.py — AXEventBridge (start/stop/subscribe), Subscription dataclass, AXEvent frozen dataclass"
-    - "cua_overlay/ax/errors.py — STUB (Plan 01-03 owns real impl)"
-    - "cua_overlay/ax/rate_limit.py — STUB (Plan 01-03 owns real impl)"
-    - "cua_overlay/ax/walker.py — STUB (Plan 01-03 owns real impl)"
-    - "cua_overlay/ax/element.py — STUB (Plan 01-03 owns real impl)"
-    - "cua_overlay/verifier/__init__.py — public re-exports: AXObserverManager, KqueueProcObserver, NSWorkspaceObserver, DistributedNotificationEvent, DistributedNotificationObserver"
-    - "cua_overlay/verifier/axobserver.py — AXObserverManager.expect() + dispatcher loop + _passes_filter (3-predicate)"
-    - "cua_overlay/verifier/kqueue_proc.py — KqueueProcObserver __aenter__/__aexit__ + watch_pid/unwatch_pid/_on_readable"
-    - "cua_overlay/verifier/nsworkspace.py — NSWorkspaceObserver.start/stop/on_frontmost_change"
-    - "cua_overlay/verifier/distnotif.py — DistributedNotificationEvent (Pydantic frozen) + DistributedNotificationObserver stub"
+    - "basicctrl/ax/__init__.py — empty subpackage marker (no re-exports — avoids parallel-worktree import-order races)"
+    - "basicctrl/ax/observer.py — AXEventBridge (start/stop/subscribe), Subscription dataclass, AXEvent frozen dataclass"
+    - "basicctrl/ax/errors.py — STUB (Plan 01-03 owns real impl)"
+    - "basicctrl/ax/rate_limit.py — STUB (Plan 01-03 owns real impl)"
+    - "basicctrl/ax/walker.py — STUB (Plan 01-03 owns real impl)"
+    - "basicctrl/ax/element.py — STUB (Plan 01-03 owns real impl)"
+    - "basicctrl/verifier/__init__.py — public re-exports: AXObserverManager, KqueueProcObserver, NSWorkspaceObserver, DistributedNotificationEvent, DistributedNotificationObserver"
+    - "basicctrl/verifier/axobserver.py — AXObserverManager.expect() + dispatcher loop + _passes_filter (3-predicate)"
+    - "basicctrl/verifier/kqueue_proc.py — KqueueProcObserver __aenter__/__aexit__ + watch_pid/unwatch_pid/_on_readable"
+    - "basicctrl/verifier/nsworkspace.py — NSWorkspaceObserver.start/stop/on_frontmost_change"
+    - "basicctrl/verifier/distnotif.py — DistributedNotificationEvent (Pydantic frozen) + DistributedNotificationObserver stub"
     - "tests/unit/test_axobserver_filter.py — 8 tests (filter × 4 predicates + expect/timeout/ts/dispatcher × 4)"
     - "tests/integration/test_axobserver.py — 4 Calculator tests (pre-subscribe / fires / <50ms / stale-drop)"
     - "tests/integration/test_kqueue_proc.py — 3 kqueue tests (NOTE_EXIT / fd leak × 2)"
@@ -74,7 +74,7 @@ key-decisions:
   - "kqueue uses pure asyncio (loop.add_reader on kq.fileno()) — NOT a dedicated thread. The CFRunLoop thread is only required when the macOS framework demands it (AXObserver does, kqueue does not). Different push sources use different bridge patterns; we accept that and document it."
   - "NSWorkspace observer uses a dedicated NSOperationQueue, not the main queue. Two reasons: (1) the asyncio loop runs on the main thread and we don't want NSWorkspace notifications fighting the loop's scheduler; (2) testing — the dedicated queue is observable and we can drain it explicitly in fixtures."
   - "DistributedNotificationCenter ships as Pydantic contract + raise-NotImplementedError stub. Phase 1 scope per 01-RESEARCH.md: 'define CDP DOM event contract as Pydantic schema (no implementation), wire kqueue EVFILT_PROC for the demo, define DistributedNotification contract'. Phase 2 wires the actual subscription manager."
-  - "Wave-2 parallel-execution stubs: cua_overlay/ax/errors.py, rate_limit.py, walker.py, element.py shipped as import-compatible stubs marked for Plan 01-03 merge override. The orchestrator's -X theirs strategy resolves the conflict in 01-03's favour. This pattern lets two worktrees develop on the same subpackage tree without serialising."
+  - "Wave-2 parallel-execution stubs: basicctrl/ax/errors.py, rate_limit.py, walker.py, element.py shipped as import-compatible stubs marked for Plan 01-03 merge override. The orchestrator's -X theirs strategy resolves the conflict in 01-03's favour. This pattern lets two worktrees develop on the same subpackage tree without serialising."
   - "Fd-leak test uses /dev/fd listing (macOS-portable). resource.RLIMIT_NOFILE is also asserted as a sanity check. 100 cycles is the standard 'enough to surface leaks' bar; under T-1-06 a real leak compounds, so 1-fd slack is the cap."
   - "AX callback closes over (loop, queue) by capture, NOT by self.* lookup. The callback fires on the CFRunLoop thread; reading self attributes from a different thread risks GIL-fight and subtle racy reads of partially-mutated dicts. Closure capture is read-only and thread-safe."
   - "subscription_ts_ns is recorded in a single statement at the very top of subscribe() — BEFORE the AXObserverCreate call. The architectural promise is that the timestamp anchors the 5ms guard correctly even if AX itself takes a millisecond to register; PyObjC reaches for it first."
@@ -144,7 +144,7 @@ A 4th implicit predicate (`event.pid == sub.pid`) is a defence-in-depth check. I
 
 ## Three-Predicate Filter Implementation
 
-`cua_overlay/verifier/axobserver.py` exposes `_passes_filter(event, sub, notifs) -> bool`:
+`basicctrl/verifier/axobserver.py` exposes `_passes_filter(event, sub, notifs) -> bool`:
 
 ```python
 _GUARD_NS = 5_000_000   # 5 ms; Pitfall P28 mitigation
@@ -207,7 +207,7 @@ The threading-bridge complexity scales with how the underlying API delivers even
 
 ## DistributedNotificationCenter Status
 
-`cua_overlay/verifier/distnotif.py` ships:
+`basicctrl/verifier/distnotif.py` ships:
 
 - `DistributedNotificationEvent` — frozen Pydantic model with `name`, `sender`, `user_info`, `received_at`. Phase-1-locked contract.
 - `DistributedNotificationObserver` — `start()` raises `NotImplementedError("Phase 2 wires NSDistributedNotificationCenter")`. `stop()` is an idempotent no-op so callers can safely use `try/finally`.
@@ -216,35 +216,35 @@ Phase 2 will wire the real subscription manager — same pattern as `NSWorkspace
 
 ## Wave-2 Parallel Execution Notes
 
-This plan ran in parallel with sibling plan 01-03 (AX safety primitives) in a separate worktree. Plan 01-04 imports from `cua_overlay.ax`:
+This plan ran in parallel with sibling plan 01-03 (AX safety primitives) in a separate worktree. Plan 01-04 imports from `basicctrl.ax`:
 
-- `cua_overlay.ax.errors.AXError`, `axerror_from_code` — used by `observer.py` raises
-- `cua_overlay.ax.rate_limit.TokenBucket` — referenced by Plan 01-03's element.py wrapper (not used at runtime in Plan 01-04)
-- `cua_overlay.ax.walker`, `cua_overlay.ax.element` — symbol parity only
+- `basicctrl.ax.errors.AXError`, `axerror_from_code` — used by `observer.py` raises
+- `basicctrl.ax.rate_limit.TokenBucket` — referenced by Plan 01-03's element.py wrapper (not used at runtime in Plan 01-04)
+- `basicctrl.ax.walker`, `basicctrl.ax.element` — symbol parity only
 
 To compile in isolation, Plan 01-04 ships `# STUB: replaced by Plan 01-03 on merge` files for these four modules. The orchestrator merges 01-03's real implementations on top via `-X theirs` strategy when our two worktrees collide. After merge, the only files unique to 01-04 are the observer + verifier modules and the corresponding tests; nothing in those files needs to change.
 
 ## Task Commits
 
-1. **Task 1: AXEventBridge + AXObserverManager + filter unit tests** — `eba977b` (feat) — `cua_overlay/ax/observer.py` + `cua_overlay/verifier/axobserver.py` + `cua_overlay/verifier/__init__.py` + 4 stubs in `cua_overlay/ax/` + `tests/unit/test_axobserver_filter.py` (8 unit tests, all green).
-2. **Task 2: NSWorkspace + kqueue + distnotif scaffolds** — `ac51427` (feat) — `cua_overlay/verifier/kqueue_proc.py` + `cua_overlay/verifier/nsworkspace.py` + `cua_overlay/verifier/distnotif.py` + `tests/integration/test_kqueue_proc.py` (3 tests; 2 fd-leak tests pass, NOTE_EXIT test skipped without Calculator) + `tests/integration/test_nsworkspace.py` (1 test, skipped).
+1. **Task 1: AXEventBridge + AXObserverManager + filter unit tests** — `eba977b` (feat) — `basicctrl/ax/observer.py` + `basicctrl/verifier/axobserver.py` + `basicctrl/verifier/__init__.py` + 4 stubs in `basicctrl/ax/` + `tests/unit/test_axobserver_filter.py` (8 unit tests, all green).
+2. **Task 2: NSWorkspace + kqueue + distnotif scaffolds** — `ac51427` (feat) — `basicctrl/verifier/kqueue_proc.py` + `basicctrl/verifier/nsworkspace.py` + `basicctrl/verifier/distnotif.py` + `tests/integration/test_kqueue_proc.py` (3 tests; 2 fd-leak tests pass, NOTE_EXIT test skipped without Calculator) + `tests/integration/test_nsworkspace.py` (1 test, skipped).
 3. **Task 3: AXObserver Calculator end-to-end integration tests** — `bdd1e98` (test) — `tests/integration/test_axobserver.py` with 4 tests (skipped without Calculator + Accessibility TCC).
 
 ## Files Created
 
 ### Source modules
 
-- `cua_overlay/ax/__init__.py` — empty subpackage marker.
-- `cua_overlay/ax/observer.py` — AXEventBridge + AXEvent + Subscription. The CFRunLoop thread + asyncio Queue bridge; subscribe() records subscription_ts_ns BEFORE any AX call.
-- `cua_overlay/ax/errors.py` — STUB (Plan 01-03 owns canonical impl).
-- `cua_overlay/ax/rate_limit.py` — STUB.
-- `cua_overlay/ax/walker.py` — STUB.
-- `cua_overlay/ax/element.py` — STUB.
-- `cua_overlay/verifier/__init__.py` — public re-exports.
-- `cua_overlay/verifier/axobserver.py` — AXObserverManager (expect / start / stop / _dispatch_loop) + standalone _passes_filter helper.
-- `cua_overlay/verifier/kqueue_proc.py` — KqueueProcObserver (async-context-manager + watch/unwatch).
-- `cua_overlay/verifier/nsworkspace.py` — NSWorkspaceObserver (frontmost-app activation).
-- `cua_overlay/verifier/distnotif.py` — DistributedNotificationEvent + Phase-2 stub.
+- `basicctrl/ax/__init__.py` — empty subpackage marker.
+- `basicctrl/ax/observer.py` — AXEventBridge + AXEvent + Subscription. The CFRunLoop thread + asyncio Queue bridge; subscribe() records subscription_ts_ns BEFORE any AX call.
+- `basicctrl/ax/errors.py` — STUB (Plan 01-03 owns canonical impl).
+- `basicctrl/ax/rate_limit.py` — STUB.
+- `basicctrl/ax/walker.py` — STUB.
+- `basicctrl/ax/element.py` — STUB.
+- `basicctrl/verifier/__init__.py` — public re-exports.
+- `basicctrl/verifier/axobserver.py` — AXObserverManager (expect / start / stop / _dispatch_loop) + standalone _passes_filter helper.
+- `basicctrl/verifier/kqueue_proc.py` — KqueueProcObserver (async-context-manager + watch/unwatch).
+- `basicctrl/verifier/nsworkspace.py` — NSWorkspaceObserver (frontmost-app activation).
+- `basicctrl/verifier/distnotif.py` — DistributedNotificationEvent + Phase-2 stub.
 
 ### Tests
 
@@ -281,7 +281,7 @@ The 2 fd-leak tests in `test_kqueue_proc.py` (`test_no_fd_leak`, `test_unwatch_p
 To run the Calculator-dependent integration tests on Akeil's Mac:
 
 1. Calculator.app must be launchable (`open -a Calculator`).
-2. The Python test runner (uv venv binary) must be granted **Accessibility** TCC permission. Add via System Settings → Privacy & Security → Accessibility → "+", select `~/dev/cua-maximalist/.venv/bin/python` (or the uv-managed interpreter).
+2. The Python test runner (uv venv binary) must be granted **Accessibility** TCC permission. Add via System Settings → Privacy & Security → Accessibility → "+", select `~/dev/basicCtrl/.venv/bin/python` (or the uv-managed interpreter).
 3. Run: `uv run pytest -x -v -m integration tests/integration/test_axobserver.py tests/integration/test_kqueue_proc.py tests/integration/test_nsworkspace.py`.
 
 Test 3 (`test_event_within_50ms`) prints the measured AXValueChanged latency to stdout — capture that value and append to this file's "Measured Latency" subsection on first successful run.
@@ -299,14 +299,14 @@ Test 3 (`test_event_within_50ms`) prints the measured AXValueChanged latency to 
 
 Verified post-write:
 
-- File exists: `cua_overlay/ax/observer.py` (grep: 1× `class AXEventBridge`, 7× CFRunLoop+threading, 3× call_soon_threadsafe, 7× subscription_ts_ns).
-- File exists: `cua_overlay/verifier/axobserver.py` (grep: 1× `class AXObserverManager`, 4× 5_000_000/_GUARD_NS, 1× `async def expect`).
-- File exists: `cua_overlay/verifier/kqueue_proc.py` (grep: 5× EVFILT_PROC/KQ_FILTER_PROC, 7× NOTE_EXIT, 3× loop.add_reader/remove_reader, 4× __aenter__/__aexit__).
-- File exists: `cua_overlay/verifier/nsworkspace.py` (grep: 3× NSWorkspaceDidActivateApplicationNotification).
-- File exists: `cua_overlay/verifier/distnotif.py` (DistributedNotificationEvent Pydantic frozen).
+- File exists: `basicctrl/ax/observer.py` (grep: 1× `class AXEventBridge`, 7× CFRunLoop+threading, 3× call_soon_threadsafe, 7× subscription_ts_ns).
+- File exists: `basicctrl/verifier/axobserver.py` (grep: 1× `class AXObserverManager`, 4× 5_000_000/_GUARD_NS, 1× `async def expect`).
+- File exists: `basicctrl/verifier/kqueue_proc.py` (grep: 5× EVFILT_PROC/KQ_FILTER_PROC, 7× NOTE_EXIT, 3× loop.add_reader/remove_reader, 4× __aenter__/__aexit__).
+- File exists: `basicctrl/verifier/nsworkspace.py` (grep: 3× NSWorkspaceDidActivateApplicationNotification).
+- File exists: `basicctrl/verifier/distnotif.py` (DistributedNotificationEvent Pydantic frozen).
 - File exists: `tests/unit/test_axobserver_filter.py` — 8 tests passing.
 - File exists: `tests/integration/test_axobserver.py` — 4 tests, all 4 markers + 6 subscription_ts_ns refs + 2 50_000_000/<50ms refs + 6 CGEventPost/CGEventCreateMouseEvent refs.
-- Public import smoke: `python -c "from cua_overlay.verifier import AXObserverManager, NSWorkspaceObserver, KqueueProcObserver, DistributedNotificationEvent, DistributedNotificationObserver"` exits 0.
+- Public import smoke: `python -c "from basicctrl.verifier import AXObserverManager, NSWorkspaceObserver, KqueueProcObserver, DistributedNotificationEvent, DistributedNotificationObserver"` exits 0.
 - Commits exist (verified via `git log --oneline`): `eba977b` (Task 1), `ac51427` (Task 2), `bdd1e98` (Task 3).
 - Test count: 45 passed + 10 skipped (skipped = Calculator-dependent integration tests, will run on Akeil's Mac).
 

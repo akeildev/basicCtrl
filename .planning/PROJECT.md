@@ -1,4 +1,4 @@
-# cua-maximalist — Self-Healing Autonomous Mac CU Framework
+# basicCtrl — Self-Healing Autonomous Mac CU Framework
 
 ## What This Is
 
@@ -21,7 +21,7 @@ When everything else fails, the system picks the next translator, races recovery
 ### Active
 
 **Foundation**
-- [ ] **CORE-01**: Fork `trycua/cua` to `~/dev/cua-maximalist/` with Python overlay scaffold above `libs/cua-driver/`
+- [ ] **CORE-01**: Fork `trycua/cua` to `~/dev/basicCtrl/` with Python overlay scaffold above `libs/cua-driver/`
 - [ ] **CORE-02**: Hook into `ToolRegistry.swift:55-97` post-action callback to emit structured events to Python overlay
 - [ ] **CORE-03**: Initialize app classifier — `bundleID → AppProfile` with capability probe (AX-rich? .sdef? CDP-port? Tauri/Wails?), cached per-bundle per-session
 
@@ -155,7 +155,7 @@ When everything else fails, the system picks the next translator, races recovery
 - `~/thinker/vault/research/computer-use-alternatives-2026-04-29.md` — landscape
 - `~/thinker/vault/research/self-healing-cua-driver-2026-04-29.md` — initial cua-driver injection plan
 - `~/thinker/vault/research/cua-autonomous-self-healing-framework-2026-04-29.md` — 8-driver registry v1
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — **THE locked maximalist architecture (this project's blueprint)**
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — **THE locked maximalist architecture (this project's blueprint)**
 
 ### Local clones (reference)
 - `~/thinker/research-clones/trycua-cua/` — Swift driver to fork

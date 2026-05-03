@@ -9,7 +9,7 @@ affects: [Visualizer + HUD integration, AVPlayer scrubbing UI]
 tech_stack_added: [Timeline3D data model, isometric projection math]
 tech_patterns: [Deterministic replay from action_log.ndjson, pure functional state reconstruction]
 key_files:
-  created: [cua_overlay/replay/engine.py, cua_overlay/replay/timeline.py, cua_overlay/replay/__init__.py]
+  created: [basicctrl/replay/engine.py, basicctrl/replay/timeline.py, basicctrl/replay/__init__.py]
   modified: []
 decisions:
   - "ReplayEngine reconstructs StateNode via replay of all prior HoarePost deltas — pure functional for determinism"
@@ -40,7 +40,7 @@ Build Python replay engine that reconstructs full StateNode at any step by repla
 
 ## Technical Implementation
 
-### Task 1: ReplayEngine (cua_overlay/replay/engine.py)
+### Task 1: ReplayEngine (basicctrl/replay/engine.py)
 
 **API:**
 - `__init__(session_id: str)` — loads `~/.cua/sessions/<id>/action_log.ndjson` + `recording_metadata.ndjson`
@@ -55,7 +55,7 @@ Build Python replay engine that reconstructs full StateNode at any step by repla
 - Assumes action_log.ndjson format matches Phase 1-4 schema (with hoare_post.state_delta present)
 - recording_metadata.ndjson consumed but not validated — missing entries return frame_idx=0 (fallback for scrubbing)
 
-### Task 2: Timeline3D (cua_overlay/replay/timeline.py)
+### Task 2: Timeline3D (basicctrl/replay/timeline.py)
 
 **Data model:**
 - `TimelineNode(step_idx, timestamp_ms, app_bundle, tier, is_branch, branch_name)` — one action node
@@ -84,8 +84,8 @@ Build Python replay engine that reconstructs full StateNode at any step by repla
 Both tasks verified via import + basic functionality tests:
 
 ```bash
-python -c "from cua_overlay.replay.engine import ReplayEngine; print('✓ ReplayEngine imports')"
-python -c "from cua_overlay.replay.timeline import Timeline3D, TimelineNode; timeline = Timeline3D([TimelineNode(...)]); coords = timeline.project_to_2d(); assert len(coords) == 1"
+python -c "from basicctrl.replay.engine import ReplayEngine; print('✓ ReplayEngine imports')"
+python -c "from basicctrl.replay.timeline import Timeline3D, TimelineNode; timeline = Timeline3D([TimelineNode(...)]); coords = timeline.project_to_2d(); assert len(coords) == 1"
 ```
 
 No pytest run yet — tests will be added in 05-09 (test plan for Phase 5).
@@ -113,8 +113,8 @@ None — replay engine is pure Python state reconstruction; no new network endpo
 
 ## Self-Check: PASSED
 
-- [x] `/Users/akeilsmith/dev/cua-maximalist/cua_overlay/replay/__init__.py` exists
-- [x] `/Users/akeilsmith/dev/cua-maximalist/cua_overlay/replay/engine.py` exists
-- [x] `/Users/akeilsmith/dev/cua-maximalist/cua_overlay/replay/timeline.py` exists
+- [x] `/Users/akeilsmith/dev/basicCtrl/basicctrl/replay/__init__.py` exists
+- [x] `/Users/akeilsmith/dev/basicCtrl/basicctrl/replay/engine.py` exists
+- [x] `/Users/akeilsmith/dev/basicCtrl/basicctrl/replay/timeline.py` exists
 - [x] Commit 4eb5942 exists in git log
 - [x] All tasks completed (2/2)

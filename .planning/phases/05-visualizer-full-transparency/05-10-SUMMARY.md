@@ -10,9 +10,9 @@ tags:
   - Human verification
 dependency_graph:
   requires:
-    - cua_overlay.visualizer (Waves 1-6, all modules)
-    - cua_overlay.replay (Waves 4-7, all modules)
-    - cua_overlay.observability (Wave 3)
+    - basicctrl.visualizer (Waves 1-6, all modules)
+    - basicctrl.replay (Waves 4-7, all modules)
+    - basicctrl.observability (Wave 3)
     - libs/cua-driver/App (Swift sidecar, all files)
     - tests/conftest.py (pitfall verification fixture from 05-09)
   provides:

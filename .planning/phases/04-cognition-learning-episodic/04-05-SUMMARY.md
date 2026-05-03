@@ -19,12 +19,12 @@ tech_stack:
 key_files:
   created:
     - libs/cua-driver/App/LearningRecorder.swift (~260 LOC)
-    - cua_overlay/learning/recorder.py (~380 LOC)
-    - cua_overlay/learning/coalesce.py (~150 LOC)
+    - basicctrl/learning/recorder.py (~380 LOC)
+    - basicctrl/learning/coalesce.py (~150 LOC)
     - tests/unit/learning/test_recorder.py (~280 LOC)
     - tests/integration/learning/test_cgevent_tap.py (~280 LOC)
   modified:
-    - cua_overlay/learning/__init__.py (added exports)
+    - basicctrl/learning/__init__.py (added exports)
 decisions: []
 metrics:
   duration: 9m
@@ -72,7 +72,7 @@ Per D-11..D-16 (04-CONTEXT.md): Create CGEvent tap sidecar (Swift) + Python cons
 
 **Files created:**
 
-**1. `cua_overlay/learning/recorder.py` (~380 LOC)**
+**1. `basicctrl/learning/recorder.py` (~380 LOC)**
    - `LearningRecorder` class consumes JSONL from stdin or Unix socket
    - Async iterators for both stream sources
    - Converts raw events to `ObservedAction` Pydantic models
@@ -80,7 +80,7 @@ Per D-11..D-16 (04-CONTEXT.md): Create CGEvent tap sidecar (Swift) + Python cons
    - Flushes coalesced keystrokes on word boundaries or non-keystroke events
    - Full ActionCanonical schema compliance (frozen, kind="READ", session_id tracking)
 
-**2. `cua_overlay/learning/coalesce.py` (~150 LOC)**
+**2. `basicctrl/learning/coalesce.py` (~150 LOC)**
    - `KeystrokeCoalescer` implements CFRunLoopTimer-style 0.5s window
    - `add_keystroke(key, ts)` buffers keystrokes; flushes on word boundary
    - Word boundaries: space, return, tab, punctuation (`.`, `,`, `!`, `?`, `;`, `:`, `-`, `/`)

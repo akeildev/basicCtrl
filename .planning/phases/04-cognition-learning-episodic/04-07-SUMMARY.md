@@ -12,13 +12,13 @@ tech_stack:
   patterns: [recovery-branch protocol, capability probing, graceful degradation]
 key_files:
   created:
-    - cua_overlay/recovery/branches/b3_world_replan.py
-    - cua_overlay/recovery/branches/b4_planner_replan.py
+    - basicctrl/recovery/branches/b3_world_replan.py
+    - basicctrl/recovery/branches/b4_planner_replan.py
     - tests/unit/recovery/branches/test_b3_world_replan.py
     - tests/unit/recovery/branches/test_b4_planner_replan.py
     - tests/unit/profile/test_cognition_capability.py
   modified:
-    - cua_overlay/profile/classifier.py (added cognition_capable field + probe)
+    - basicctrl/profile/classifier.py (added cognition_capable field + probe)
 decisions:
   - B3/B4 return ActionCanonical, not ChannelOutcome (recovery orchestrator re-injects into race)
   - Cognition capability probed once at session start, cached in AppProfile
@@ -80,7 +80,7 @@ metrics:
 
 ### Task 1: B3 World-Replan Recovery Branch
 
-**File:** `cua_overlay/recovery/branches/b3_world_replan.py` (250 lines)
+**File:** `basicctrl/recovery/branches/b3_world_replan.py` (250 lines)
 
 **Class: B3RecoveryBranch**
 - Inherits from BranchBase (shared idempotency + event emission)
@@ -112,7 +112,7 @@ Tests:
 
 ### Task 2a: B4 Planner-Replan Recovery Branch
 
-**File:** `cua_overlay/recovery/branches/b4_planner_replan.py` (285 lines)
+**File:** `basicctrl/recovery/branches/b4_planner_replan.py` (285 lines)
 
 **Class: B4RecoveryBranch**
 - Inherits from BranchBase (shared idempotency + event emission)
@@ -151,7 +151,7 @@ Tests:
 
 ### Task 2b: AppProfile.cognition_capable Field + Capability Probe
 
-**File:** `cua_overlay/profile/classifier.py` (modified)
+**File:** `basicctrl/profile/classifier.py` (modified)
 
 **Model Change:**
 - Added field: `cognition_capable: Optional[bool] = None`

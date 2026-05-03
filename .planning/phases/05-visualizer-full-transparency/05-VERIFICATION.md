@@ -79,11 +79,11 @@ re_verification: false
 | Visualizer.swift | NSPanel host + socket listener + overlay window ID registry | ✓ PRESENT | Lines 1-80; VisualizerApplication overlay window registry L13-23; VisualizerPanel NSPanel L46-78; SCContentFilter integration |
 | SessionDiffView.swift | Side-by-side SwiftUI diff view with LCS alignment | ✓ PRESENT | Present; tied to SessionDiffer.py |
 | CounterfactualRenderer.swift | Dashed-path overlay for counterfactual timeline | ✓ PRESENT | Present; uses Timeline3D node extraction |
-| ReplayEngine.py | State reconstruction from action_log.ndjson at any step | ✓ PRESENT | cua_overlay/replay/engine.py; reconstruct_state_at_step() deterministic |
-| Timeline3D.py | 3D scatter plot with isometric projection (X=time, Y=app, Z=depth) | ✓ PRESENT | cua_overlay/replay/timeline.py; TimelineNode model; project_to_2d() |
-| SessionDiffer.py | LCS alignment + DiffRow model for session comparison | ✓ PRESENT | cua_overlay/replay/diff.py; lcs_alignment() + SessionDiffer.compute_diffs() |
-| VisualizerBus (driver.py) | Async unix socket IPC to Swift sidecar | ✓ PRESENT | cua_overlay/visualizer/driver.py; send_command() async |
-| HUDDriver (hud_driver.py) | Ring buffer + tier/channel badge assembly | ✓ PRESENT | cua_overlay/visualizer/hud_driver.py; max 8 entries; badge enums |
+| ReplayEngine.py | State reconstruction from action_log.ndjson at any step | ✓ PRESENT | basicctrl/replay/engine.py; reconstruct_state_at_step() deterministic |
+| Timeline3D.py | 3D scatter plot with isometric projection (X=time, Y=app, Z=depth) | ✓ PRESENT | basicctrl/replay/timeline.py; TimelineNode model; project_to_2d() |
+| SessionDiffer.py | LCS alignment + DiffRow model for session comparison | ✓ PRESENT | basicctrl/replay/diff.py; lcs_alignment() + SessionDiffer.compute_diffs() |
+| VisualizerBus (driver.py) | Async unix socket IPC to Swift sidecar | ✓ PRESENT | basicctrl/visualizer/driver.py; send_command() async |
+| HUDDriver (hud_driver.py) | Ring buffer + tier/channel badge assembly | ✓ PRESENT | basicctrl/visualizer/hud_driver.py; max 8 entries; badge enums |
 
 **All 12 artifacts present and substantive.**
 
@@ -100,7 +100,7 @@ re_verification: false
 | Timeline3D.py | CounterfactualRenderer.py | TimelineNode extraction for branch rendering | ✓ WIRED |
 | SessionDiffer.py | SessionDiffView.swift | LCS alignment result → SwiftUI diff row model | ✓ WIRED |
 | Visualizer.swift (overlay window ID) | ScreenRecorder.swift | SCContentFilter excludingWindows array | ✓ WIRED |
-| cua_overlay.visualizer.models | Swift IPC codecs | NDJSON serialization (Pydantic → JSON → Swift Codable) | ✓ WIRED |
+| basicctrl.visualizer.models | Swift IPC codecs | NDJSON serialization (Pydantic → JSON → Swift Codable) | ✓ WIRED |
 
 **All key links verified. Data flows from orchestrator → visualizer → replay → diff.**
 

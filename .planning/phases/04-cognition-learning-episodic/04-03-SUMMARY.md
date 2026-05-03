@@ -12,13 +12,13 @@ tech_stack:
   patterns: [prompt caching, prefill-only LLM, batching, episodic-first lookup]
 key_files:
   created:
-    - cua_overlay/cognition/planner.py
-    - cua_overlay/cognition/verifier_llm.py
+    - basicctrl/cognition/planner.py
+    - basicctrl/cognition/verifier_llm.py
     - tests/unit/cognition/test_planner.py
     - tests/unit/cognition/test_world_model.py
     - tests/unit/cognition/test_verifier_llm.py
   modified:
-    - cua_overlay/cognition/schemas.py
+    - basicctrl/cognition/schemas.py
     - pyproject.toml
 decisions: []
 metrics:
@@ -64,7 +64,7 @@ metrics:
 ### Task 1: Planner + WorldModelPredictor Agents
 
 **Files created:**
-- `cua_overlay/cognition/planner.py` (265 lines)
+- `basicctrl/cognition/planner.py` (265 lines)
   - `Planner` class with `async plan_action(task, state, episodic_query) -> PlanCandidate`
   - Lazy Anthropic SDK import + client injection for testing
   - D-20: Episodic lookup before LLM (skips planning if hit > 0.85)
@@ -89,7 +89,7 @@ metrics:
 ### Task 2: VerifierLLM Agent (V-Droid Pattern)
 
 **Files created:**
-- `cua_overlay/cognition/verifier_llm.py` (195 lines)
+- `basicctrl/cognition/verifier_llm.py` (195 lines)
   - `VerifierLLM` class with `async verify(action, pre_state, post_state, hoare_pre, hoare_post) -> (bool, float)`
   - Lazy OpenAI SDK import + client injection for testing
   - Batching: queues verifications, flushes when batch_size=30 reached
@@ -108,7 +108,7 @@ metrics:
 ### Schema Updates
 
 **Files modified:**
-- `cua_overlay/cognition/schemas.py` — PlanCandidate phase 4 flexibility
+- `basicctrl/cognition/schemas.py` — PlanCandidate phase 4 flexibility
   - Changed `steps: list[ActionCanonical]` → `steps: list[Any]`
   - Changed `preconds: list[HoarePre]` → `preconds: list[Any]`
   - Phase 4 accepts dicts or objects; Phase 5+ enforces strict types

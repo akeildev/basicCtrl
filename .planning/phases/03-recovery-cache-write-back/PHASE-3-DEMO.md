@@ -200,8 +200,8 @@ Per Phase 3 design, verify correctness on your local Mac.
 ```bash
 # Demo: Inspect classifier logic
 python3 <<'PY'
-from cua_overlay.recovery.classifier import FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
-from cua_overlay.state.causal_dag import HoarePost
+from basicctrl.recovery.classifier import FailureClassifier, FailureCtx, FAILURE_CLASS_TO_BRANCHES
+from basicctrl.state.causal_dag import HoarePost
 import time
 
 classifier = FailureClassifier()
@@ -234,7 +234,7 @@ PY
 ```bash
 python3 <<'PY'
 import asyncio
-from cua_overlay.recovery.circuit_breaker import CircuitBreaker
+from basicctrl.recovery.circuit_breaker import CircuitBreaker
 
 async def test():
     breaker = CircuitBreaker()
@@ -261,7 +261,7 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.recovery.heal_event import HealEvent
+from basicctrl.recovery.heal_event import HealEvent
 
 # AXLabel heal is stable → cassette-writable
 ax_heal = HealEvent(
@@ -293,8 +293,8 @@ PY
 ```bash
 python3 <<'PY'
 import time
-from cua_overlay.cache.cassette import Cassette, CassetteStep
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre, HoarePost
+from basicctrl.cache.cassette import Cassette, CassetteStep
+from basicctrl.state.causal_dag import ActionCanonical, HoarePre, HoarePost
 
 cassette = Cassette(
     cache_key="test",
@@ -370,9 +370,9 @@ PY
 
 | Pitfall | Mitigation file | Tests / Demo evidence |
 |---------|-----------------|----------------------|
-| **P20: Silent heal masking regression** | `cua_overlay/recovery/heal_event.py` + `circuit_breaker.py` (heal-rate budget) | `test_writeback_stable_tier_*` + manual smoke check #3 validates gate. HealEvent emission logged per SC. |
-| **P23: Cassette write-back loop** | `cua_overlay/cache/writeback.py` (stable-tier gate) + `cassette.py` (atomic file ops) | `test_writeback_atomic_file_pattern` verifies no .tmp residue; `test_writeback_stable_tier_rejects_non_stable` verifies Vision tier blocked. |
-| **P26: 5-branch recovery cost explosion** | `cua_overlay/recovery/orchestrator.py` (max_cycles=2) + `circuit_breaker.py` (trip after 3 failures) | Tests SC #6 bounded cycles; SC #5 circuit breaker trip gate Phase 4 cost control. |
+| **P20: Silent heal masking regression** | `basicctrl/recovery/heal_event.py` + `circuit_breaker.py` (heal-rate budget) | `test_writeback_stable_tier_*` + manual smoke check #3 validates gate. HealEvent emission logged per SC. |
+| **P23: Cassette write-back loop** | `basicctrl/cache/writeback.py` (stable-tier gate) + `cassette.py` (atomic file ops) | `test_writeback_atomic_file_pattern` verifies no .tmp residue; `test_writeback_stable_tier_rejects_non_stable` verifies Vision tier blocked. |
+| **P26: 5-branch recovery cost explosion** | `basicctrl/recovery/orchestrator.py` (max_cycles=2) + `circuit_breaker.py` (trip after 3 failures) | Tests SC #6 bounded cycles; SC #5 circuit breaker trip gate Phase 4 cost control. |
 | **P27: Non-determinism baseline** | Phase 1 push events + Phase 2 idempotency tokens (reused in Phase 3 branches) | Branches call `IdempotencyTokenStore.try_claim()` before fire; cassette replay deterministic via pHash matching. |
 
 ---
@@ -384,7 +384,7 @@ PY
 | `test_stale_selector_triggers_b1_rescroll_recovery` SKIPS | Calculator.app not running | This is expected on headless. Manual SC: run on real Mac with `open -a Calculator` before pytest. |
 | `test_circuit_breaker_resets_after_timeout` SKIPS | datetime.utcnow() mocking complexity | Timeout logic tested via unit suite; integration test mocked. No action needed. |
 | `test_writeback_atomic_file_pattern` fails with "permission denied" | TCC grant issue on ~/.cua/sessions | Verify: `System Settings → Privacy & Security → Accessibility → Python interpreter [checked]` |
-| `test_stream_cache_transparently_caches_chunks` fails with "generator called twice" | StreamCache implementation bug | Check: `cua_overlay/cache/writeback.py` `wrap_generator()` must only consume generator once on first iteration. Inspect `mark_cached()` logic. |
+| `test_stream_cache_transparently_caches_chunks` fails with "generator called twice" | StreamCache implementation bug | Check: `basicctrl/cache/writeback.py` `wrap_generator()` must only consume generator once on first iteration. Inspect `mark_cached()` logic. |
 | All tests fail with "ModuleNotFoundError: structlog" | Environment not synced | Run `uv sync --all-extras` to pull all Phase 3 dependencies. |
 | `make doctor` shows "[FAIL] AXIsProcessTrusted" | TCC grant not granted for Python | Manually grant: `System Settings → Privacy & Security → Accessibility → Python interpreter [+]` |
 
@@ -403,14 +403,14 @@ PY
 - [ ] `uv run pytest tests/integration/test_cassette_e2e.py::test_writeback_atomic_file_pattern` — PASSED
 - [ ] `uv run pytest tests/integration/test_cassette_e2e.py::test_stream_cache_transparently_caches_chunks` — PASSED
 - [ ] All manual smoke checks (1-4) completed and passed
-- [ ] `grep -c "class FailureClass" cua_overlay/recovery/classifier.py` returns 1 (enum exists)
-- [ ] `grep -c "FAILURE_CLASS_TO_BRANCHES" cua_overlay/recovery/classifier.py` returns 1 (dispatch table)
-- [ ] `grep -c "class CircuitBreaker" cua_overlay/recovery/circuit_breaker.py` returns 1
-- [ ] `grep -c "is_stable_tier" cua_overlay/recovery/heal_event.py` returns 1 (gate method exists)
-- [ ] `grep -c "def heal" cua_overlay/cache/writeback.py` returns 1 (write-back method exists)
-- [ ] `grep -c "class StreamCache" cua_overlay/cache/writeback.py` returns 1
-- [ ] `grep -c "\.tmp" cua_overlay/cache/writeback.py` returns >=1 (atomic file pattern)
-- [ ] `grep -c "os.rename" cua_overlay/cache/writeback.py` returns >=1 (atomic rename)
+- [ ] `grep -c "class FailureClass" basicctrl/recovery/classifier.py` returns 1 (enum exists)
+- [ ] `grep -c "FAILURE_CLASS_TO_BRANCHES" basicctrl/recovery/classifier.py` returns 1 (dispatch table)
+- [ ] `grep -c "class CircuitBreaker" basicctrl/recovery/circuit_breaker.py` returns 1
+- [ ] `grep -c "is_stable_tier" basicctrl/recovery/heal_event.py` returns 1 (gate method exists)
+- [ ] `grep -c "def heal" basicctrl/cache/writeback.py` returns 1 (write-back method exists)
+- [ ] `grep -c "class StreamCache" basicctrl/cache/writeback.py` returns 1
+- [ ] `grep -c "\.tmp" basicctrl/cache/writeback.py` returns >=1 (atomic file pattern)
+- [ ] `grep -c "os.rename" basicctrl/cache/writeback.py` returns >=1 (atomic rename)
 - [ ] Per-plan SUMMARY.md files exist for all 03-01 through 03-09 plans
 - [ ] PHASE-3-DEMO.md (this file) reviewed end-to-end
 

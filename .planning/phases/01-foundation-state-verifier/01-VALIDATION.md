@@ -65,7 +65,7 @@ created: 2026-04-29
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Calculator click → kAXValueChanged → VERIFIED in <50ms | Success criterion 1 | Requires real macOS app + TCC grant; cannot run in CI | Launch Calculator.app; run `uv run python -m cua_overlay.demo.calculator_click`; assert log line `VERIFIED step_idx=N latency_ms<50` |
+| Calculator click → kAXValueChanged → VERIFIED in <50ms | Success criterion 1 | Requires real macOS app + TCC grant; cannot run in CI | Launch Calculator.app; run `uv run python -m basicctrl.demo.calculator_click`; assert log line `VERIFIED step_idx=N latency_ms<50` |
 | TCC revocation surfaced (P24) | Hard rule | Must toggle Accessibility privacy setting manually | Disable Accessibility for terminal; run probe; assert structlog event `tcc.revoked` |
 | Modal alert blocks AX (P25) | Hard rule | Requires interactive modal | Open System Settings password prompt; run probe; assert HoarePost has `modal_blocking=true` |
 | Postgres crash-resume scaffold | PERSIST-03 | Requires manual `pg_ctl stop` + restart sequence | Start session; checkpoint; `kill -9` python; restart; assert state restored |

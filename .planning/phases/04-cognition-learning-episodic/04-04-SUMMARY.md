@@ -12,9 +12,9 @@ tech_stack:
   patterns: [asyncio async methods, pairwise comparison, type-enforced Literal gates]
 key_files:
   created:
-    - cua_overlay/cognition/ensemble.py
-    - cua_overlay/cognition/critic.py
-    - cua_overlay/cognition/speculative.py
+    - basicctrl/cognition/ensemble.py
+    - basicctrl/cognition/critic.py
+    - basicctrl/cognition/speculative.py
     - tests/unit/cognition/test_ensemble.py
     - tests/unit/cognition/test_critic.py
     - tests/unit/cognition/test_speculative.py
@@ -61,7 +61,7 @@ metrics:
 
 ## What Was Built
 
-### Task 1: EnsembleVote (cua_overlay/cognition/ensemble.py)
+### Task 1: EnsembleVote (basicctrl/cognition/ensemble.py)
 
 **Class: EnsembleVotingEngine**
 - `async vote(opus_action, gpt5_action, apple_fm_output, current_state) -> (action, confidence, model_name)`
@@ -98,7 +98,7 @@ for vote in votes:
 - ✅ test_fm_policy_outputs_do_not_map_to_tier
 - ✅ test_average_confidence_on_agreement
 
-### Task 2: Critic Oracle Ranker (cua_overlay/cognition/critic.py)
+### Task 2: Critic Oracle Ranker (basicctrl/cognition/critic.py)
 
 **Class: Critic**
 - `async rank_candidates(current_state, candidates: list[ActionCanonical], criterion) -> (best_action, confidence)`
@@ -133,7 +133,7 @@ for vote in votes:
 - ✅ test_planner_replan_criterion
 - ✅ test_critic_self_rank_raises
 
-### Task 3: Speculator (cua_overlay/cognition/speculative.py)
+### Task 3: Speculator (basicctrl/cognition/speculative.py)
 
 **Class: Speculator**
 - `async predict_n_plus_k(current_action, current_state, step_index, k=2) -> list[SpeculativeDraft]`

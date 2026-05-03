@@ -17,7 +17,7 @@ tags:
 # Dependency graph
 requires:
   - phase: 01-01
-    provides: "package scaffold (cua_overlay/, tests/, pyproject.toml). Plan 01-02 created a minimal version inline; 01-01's canonical scaffold supersedes on merge."
+    provides: "package scaffold (basicctrl/, tests/, pyproject.toml). Plan 01-02 created a minimal version inline; 01-01's canonical scaffold supersedes on merge."
 
 provides:
   - "AppProfile Pydantic v2 schema (locked contract for Phase 2 translators)"
@@ -51,17 +51,17 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/profile/__init__.py"
-    - "cua_overlay/profile/classifier.py"
-    - "cua_overlay/profile/capability_probe.py"
-    - "cua_overlay/profile/cache.py"
-    - "cua_overlay/profile/tcc.py"
+    - "basicctrl/profile/__init__.py"
+    - "basicctrl/profile/classifier.py"
+    - "basicctrl/profile/capability_probe.py"
+    - "basicctrl/profile/cache.py"
+    - "basicctrl/profile/tcc.py"
     - "tests/unit/test_appprofile_cache.py"
     - "tests/unit/test_tcc.py"
     - "tests/integration/test_app_profile.py"
     - "tests/conftest.py"  # minimal version; 01-01 owns canonical
     - "pyproject.toml"     # minimal version; 01-01 owns canonical
-    - "cua_overlay/__init__.py"  # bare; 01-01 fills exports
+    - "basicctrl/__init__.py"  # bare; 01-01 fills exports
   modified: []
 
 key-decisions:
@@ -191,17 +191,17 @@ Calculator (native AppKit, macOS 26) probe result:
 
 ## Files Created/Modified
 
-- `cua_overlay/profile/__init__.py` — re-exports AppProfile, classify, TCCMonitor.
-- `cua_overlay/profile/classifier.py` — AppProfile model + classify() entry-point with parallel anyio task group + TCC gate.
-- `cua_overlay/profile/capability_probe.py` — 7 async probes with self-capping timeouts and fail-open semantics.
-- `cua_overlay/profile/cache.py` — atomic disk cache with version-keyed invalidation; uses TYPE_CHECKING + lazy import to avoid circular dependency with classifier.
-- `cua_overlay/profile/tcc.py` — TCCMonitor.check (lazy HIServices import) + on_revocation (structlog + SystemExit(2)).
+- `basicctrl/profile/__init__.py` — re-exports AppProfile, classify, TCCMonitor.
+- `basicctrl/profile/classifier.py` — AppProfile model + classify() entry-point with parallel anyio task group + TCC gate.
+- `basicctrl/profile/capability_probe.py` — 7 async probes with self-capping timeouts and fail-open semantics.
+- `basicctrl/profile/cache.py` — atomic disk cache with version-keyed invalidation; uses TYPE_CHECKING + lazy import to avoid circular dependency with classifier.
+- `basicctrl/profile/tcc.py` — TCCMonitor.check (lazy HIServices import) + on_revocation (structlog + SystemExit(2)).
 - `tests/unit/test_appprofile_cache.py` — 8 unit tests covering save/load/atomic-write/invalidation/single-file-per-bundle.
 - `tests/unit/test_tcc.py` — 4 unit tests: AXIsProcessTrusted reflection, structlog `tcc_revoked` event, SystemExit code 2, ordering of TCC check before any probe in classify().
 - `tests/integration/test_app_profile.py` — 4 tests against real Calculator: first-probe latency, cache persistence, version-change invalidation re-probe, T1-first priority for native AppKit.
 - `tests/conftest.py` — minimal calculator_pid fixture (session-scoped, pgrep-based). Plan 01-01 owns canonical version; on merge, 01-01's richer fixture wins.
 - `pyproject.toml` — minimal Python project metadata + pytest config. Plan 01-01 owns canonical version with the full dep set.
-- `cua_overlay/__init__.py` — bare `__version__ = "0.1.0"`. Plan 01-01 fills exports.
+- `basicctrl/__init__.py` — bare `__version__ = "0.1.0"`. Plan 01-01 fills exports.
 
 ## Decisions Made
 
@@ -227,7 +227,7 @@ Calculator (native AppKit, macOS 26) probe result:
 - **Found during:** Task 3 (first run of test_calculator_profile)
 - **Issue:** `probe_ax_observer_works` was passing a plain Python function as the AXObserverCreate callback, which raised `TypeError: Callable argument is not a PyObjC closure`. This made `ax_observer_works=False` for every app — including native AppKit Calculator that demonstrably supports AXObserver.
 - **Fix:** Wrapped the callback with `@objc.callbackFor(AXObserverCreate)`. PyObjC's callable metadata then marshals the function signature across the C boundary correctly.
-- **Files modified:** cua_overlay/profile/capability_probe.py.
+- **Files modified:** basicctrl/profile/capability_probe.py.
 - **Verification:** Calculator probe now returns `ax_observer_works=True` (verified via integration test).
 - **Committed in:** f7a7693.
 
@@ -242,8 +242,8 @@ Calculator (native AppKit, macOS 26) probe result:
 **4. [Rule 3 - Blocking] Circular import between classifier.py and cache.py**
 - **Found during:** Task 2 (running test_tcc.py for the first time)
 - **Issue:** `cache.py` imported `AppProfile` from `classifier.py`, and `classifier.py` imported the cache helpers from `cache.py`. Result: `ImportError: cannot import name 'AppProfile' from partially initialized module`.
-- **Fix:** `cache.py` uses `TYPE_CHECKING` for the `AppProfile` type annotation and a lazy `from cua_overlay.profile.classifier import AppProfile` inside `load_cached_profile()`. `save_cached_profile()` doesn't need the lazy import (it accepts the type as input).
-- **Files modified:** cua_overlay/profile/cache.py.
+- **Fix:** `cache.py` uses `TYPE_CHECKING` for the `AppProfile` type annotation and a lazy `from basicctrl.profile.classifier import AppProfile` inside `load_cached_profile()`. `save_cached_profile()` doesn't need the lazy import (it accepts the type as input).
+- **Files modified:** basicctrl/profile/cache.py.
 - **Verification:** Test imports succeed; all unit tests pass.
 - **Committed in:** 8380208.
 
@@ -275,11 +275,11 @@ None. The plan's frontmatter explicitly omits `user_setup` (Plan 01-07 owns the 
 ## Self-Check: PASSED
 
 Verified:
-- File `cua_overlay/profile/__init__.py` exists.
-- File `cua_overlay/profile/classifier.py` exists, contains `class AppProfile(BaseModel)`.
-- File `cua_overlay/profile/capability_probe.py` exists, all 7 probe functions present.
-- File `cua_overlay/profile/cache.py` exists, contains `os.replace`.
-- File `cua_overlay/profile/tcc.py` exists, contains `AXIsProcessTrusted` and `x-apple.systempreferences`.
+- File `basicctrl/profile/__init__.py` exists.
+- File `basicctrl/profile/classifier.py` exists, contains `class AppProfile(BaseModel)`.
+- File `basicctrl/profile/capability_probe.py` exists, all 7 probe functions present.
+- File `basicctrl/profile/cache.py` exists, contains `os.replace`.
+- File `basicctrl/profile/tcc.py` exists, contains `AXIsProcessTrusted` and `x-apple.systempreferences`.
 - File `tests/unit/test_appprofile_cache.py` exists, 8 tests pass.
 - File `tests/unit/test_tcc.py` exists, 4 tests pass.
 - File `tests/integration/test_app_profile.py` exists, 4 tests pass.
@@ -291,7 +291,7 @@ Verified:
 
 ## Next Phase Readiness
 
-- AppProfile schema is **locked** — Plan 01-03 (AX wrapper) and Phase 2 translators (T1..T5) can import `from cua_overlay.profile import AppProfile, classify` immediately.
+- AppProfile schema is **locked** — Plan 01-03 (AX wrapper) and Phase 2 translators (T1..T5) can import `from basicctrl.profile import AppProfile, classify` immediately.
 - TCCMonitor is **shared** — Plan 01-03's AX wrapper inherits `_tcc` from this plan; revocation handling is centralized.
 - Cache layer is **production-ready** — atomic writes, version-invalidation, fail-open on corrupt cache.
 - ax_observer_works probe is **best-effort** in Phase 1 (subscribe-only). Plan 01-04 builds the full AXEventBridge with CFRunLoop on a dedicated thread; the bridge will replace this probe with a fire-wait test for observer correctness.

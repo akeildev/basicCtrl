@@ -24,7 +24,7 @@ Create PHASE-6-DEMO.md operator runbook for final UAT before v1.0 release. Docum
 
 ## Deliverables
 
-**File created:** `/Users/akeilsmith/dev/cua-maximalist/PHASE-6-DEMO.md` (721 lines)
+**File created:** `/Users/akeilsmith/dev/basicCtrl/PHASE-6-DEMO.md` (721 lines)
 
 ### Content Structure
 
@@ -178,7 +178,7 @@ Operator (Akeil) will:
 ## Self-Check
 
 **File existence:**
-- ✓ PHASE-6-DEMO.md exists at `/Users/akeilsmith/dev/cua-maximalist/PHASE-6-DEMO.md`
+- ✓ PHASE-6-DEMO.md exists at `/Users/akeilsmith/dev/basicCtrl/PHASE-6-DEMO.md`
 
 **Commit verification:**
 - ✓ Commit `09ac8ac` exists in git log

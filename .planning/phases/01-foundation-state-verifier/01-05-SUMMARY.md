@@ -11,12 +11,12 @@ requires:
     provides: UIElement, Bbox, ActionCanonical, HoarePost (model_validator), structlog redaction pipeline
   - phase: 01-foundation-state-verifier
     plan: 03
-    provides: cua_overlay/ax — TokenBucket, walker, AXError hierarchy (consumed transitively via Plan 04 imports)
+    provides: basicctrl/ax — TokenBucket, walker, AXError hierarchy (consumed transitively via Plan 04 imports)
   - phase: 01-foundation-state-verifier
     plan: 04
     provides: AXObserverManager.expect() (subscribe-before-fire); NSWorkspaceObserver; KqueueProcObserver
 provides:
-  - cua_overlay/verifier/ensemble/ subpackage with locked public surface
+  - basicctrl/verifier/ensemble/ subpackage with locked public surface
   - L0Push consumer — drains AXObserverManager + NSWorkspace + kqueue futures into a signal dict; never polls AX (source-grep test enforces)
   - L1Cheap with three sub-checks running in parallel via anyio.create_task_group
     - L1a CGWindowList diff (added / removed / title-changed windows)
@@ -50,16 +50,16 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/verifier/ensemble/__init__.py — re-exports L0Push, L1Cheap, L1Snapshot, WeightedVote, VERIFIED_THRESHOLD, L3_ESCALATE_THRESHOLD"
-    - "cua_overlay/verifier/ensemble/l1_cheap.py — L1Cheap + L1Snapshot dataclass; three sub-checks in anyio task group; ImageHash dHash with hash_size=8 + 5-bit Hamming threshold"
-    - "cua_overlay/verifier/ensemble/l0_push.py — L0Push consumer; _AX_NOTIF_TO_SIGNAL map; never polls AX (source-grep enforced)"
-    - "cua_overlay/verifier/ensemble/weighted_vote.py — WEIGHTS table for click/type/scroll/set_value; aggregate() with present-signal renormalization; VERIFIED_THRESHOLD=0.50 and L3_ESCALATE_THRESHOLD=0.30 module-level constants"
-    - "cua_overlay/verifier/aggregator.py — Aggregator class wiring L0+L1 in parallel via anyio.create_task_group → WeightedVote → HoarePost; tier_signals max-aggregation"
+    - "basicctrl/verifier/ensemble/__init__.py — re-exports L0Push, L1Cheap, L1Snapshot, WeightedVote, VERIFIED_THRESHOLD, L3_ESCALATE_THRESHOLD"
+    - "basicctrl/verifier/ensemble/l1_cheap.py — L1Cheap + L1Snapshot dataclass; three sub-checks in anyio task group; ImageHash dHash with hash_size=8 + 5-bit Hamming threshold"
+    - "basicctrl/verifier/ensemble/l0_push.py — L0Push consumer; _AX_NOTIF_TO_SIGNAL map; never polls AX (source-grep enforced)"
+    - "basicctrl/verifier/ensemble/weighted_vote.py — WEIGHTS table for click/type/scroll/set_value; aggregate() with present-signal renormalization; VERIFIED_THRESHOLD=0.50 and L3_ESCALATE_THRESHOLD=0.30 module-level constants"
+    - "basicctrl/verifier/aggregator.py — Aggregator class wiring L0+L1 in parallel via anyio.create_task_group → WeightedVote → HoarePost; tier_signals max-aggregation"
     - "tests/unit/test_l1_cheap.py — 6 tests (window-diff / pasteboard-int-only / dhash-threshold / parallel-budget / no-secret-leak / signals-are-floats)"
     - "tests/unit/test_l0_push.py — 11 tests (collect-on-event / collect-on-timeout / no-polling-source-grep / 4× WeightedVote math including BLOCKER-1 single-signal-renorm + Calculator-scenario + absent-signal / zero-signal / unknown-action / unit-clamp / required-action-classes)"
     - "tests/unit/test_aggregator.py — 7 tests (hoare-post-with-signals / parallel-execution / verified-above-0.5 / not-verified-below / threshold-consistency / target-key-propagated / action-class-routing)"
   modified:
-    - "cua_overlay/verifier/__init__.py — added Aggregator, L0Push, L1Cheap, L1Snapshot, WeightedVote, VERIFIED_THRESHOLD, L3_ESCALATE_THRESHOLD to __all__"
+    - "basicctrl/verifier/__init__.py — added Aggregator, L0Push, L1Cheap, L1Snapshot, WeightedVote, VERIFIED_THRESHOLD, L3_ESCALATE_THRESHOLD to __all__"
 
 key-decisions:
   - "WeightedVote.aggregate() RENORMALIZES BY SUM OF WEIGHTS OF PRESENT-NON-ZERO SIGNALS (not by total weight). Without this fix, single-signal Calculator click resolves to confidence ≤0.45 and the demo fails. With the fix, ax.value_changed=1.0 alone resolves to 1.0 in its own column. Phase 3 will tune weights against real failure data; Phase 1 demo passes deterministically because Calculator click reliably emits ax.value_changed."
@@ -99,7 +99,7 @@ completed: 2026-04-30T00:36:48Z
 - **Completed:** 2026-04-30T00:36:48Z
 - **Tasks:** 3 (all atomically committed)
 - **Files created:** 8 (4 source modules + 3 test modules + 1 ensemble package init)
-- **Files modified:** 1 (cua_overlay/verifier/__init__.py — public surface widened)
+- **Files modified:** 1 (basicctrl/verifier/__init__.py — public surface widened)
 - **Tests:** 24/24 plan-level green; 97/97 phase-level green (12 skipped — Calculator integration)
 
 ## The BLOCKER 1 Math Fix
@@ -137,7 +137,7 @@ Tests pinning the fix (test_l0_push.py):
 
 ## Public API Surface
 
-`from cua_overlay.verifier import ...`:
+`from basicctrl.verifier import ...`:
 
 | Name | Kind | Purpose |
 |------|------|---------|
@@ -265,15 +265,15 @@ Three layers of defence:
 2. **structlog log.py _redact_sensitive** processor (Plan 01-01) strips fields named `pasteboard_contents`, `clipboard_data`, `secrets`, `password` to `[REDACTED]` before the JSON renderer.
 3. **test_no_pasteboard_contents_logged** in `tests/unit/test_l1_cheap.py` — runs `L1Cheap.run` while a 'SECRET' string is in scope, then asserts `structlog.testing.capture_logs()` contains no entry whose value equals 'SECRET'.
 
-Verification grep step 4: `grep -E "pasteboard.*content|copyContents" cua_overlay/verifier/ensemble/l1_cheap.py` returns 0 matches.
+Verification grep step 4: `grep -E "pasteboard.*content|copyContents" basicctrl/verifier/ensemble/l1_cheap.py` returns 0 matches.
 
 ## Task Commits
 
 Each task committed atomically:
 
-1. **Task 1: L1Cheap three parallel sub-checks** — `3fcd23d` (feat) — `cua_overlay/verifier/ensemble/__init__.py` + `cua_overlay/verifier/ensemble/l1_cheap.py` + `tests/unit/test_l1_cheap.py`. 6 unit tests green.
-2. **Task 2: L0Push consumer + WeightedVote with renormalization** — `d9db4aa` (feat) — `cua_overlay/verifier/ensemble/l0_push.py` + `cua_overlay/verifier/ensemble/weighted_vote.py` + ensemble `__init__.py` widened + `tests/unit/test_l0_push.py`. 11 unit tests green including 4× math-fix tests pinning the BLOCKER 1 fix.
-3. **Task 3: Aggregator wiring L0+L1 → WeightedVote → HoarePost** — `e5e5b9f` (feat) — `cua_overlay/verifier/aggregator.py` + verifier `__init__.py` widened + `tests/unit/test_aggregator.py`. 7 unit tests green.
+1. **Task 1: L1Cheap three parallel sub-checks** — `3fcd23d` (feat) — `basicctrl/verifier/ensemble/__init__.py` + `basicctrl/verifier/ensemble/l1_cheap.py` + `tests/unit/test_l1_cheap.py`. 6 unit tests green.
+2. **Task 2: L0Push consumer + WeightedVote with renormalization** — `d9db4aa` (feat) — `basicctrl/verifier/ensemble/l0_push.py` + `basicctrl/verifier/ensemble/weighted_vote.py` + ensemble `__init__.py` widened + `tests/unit/test_l0_push.py`. 11 unit tests green including 4× math-fix tests pinning the BLOCKER 1 fix.
+3. **Task 3: Aggregator wiring L0+L1 → WeightedVote → HoarePost** — `e5e5b9f` (feat) — `basicctrl/verifier/aggregator.py` + verifier `__init__.py` widened + `tests/unit/test_aggregator.py`. 7 unit tests green.
 
 ## Test Counts
 
@@ -311,9 +311,9 @@ Each task committed atomically:
 
 **2. [Rule 1 - Bug] Plan acceptance-criteria grep caught negative-statement docstrings**
 - **Found during:** Task 2 + Task 3 acceptance verification.
-- **Issue:** The plan specifies `grep -c "walk_subtree\|AXUIElementCopyAttributeValue\|read_attribute" cua_overlay/verifier/ensemble/l0_push.py returns 0` and `grep -E "pasteboard.*content|copyContents" cua_overlay/verifier/ensemble/l1_cheap.py returns 0 matches`. My initial implementation included module docstrings explaining that those exact tokens were forbidden — which made the literal grep return >0 even though the actual class body never called them.
+- **Issue:** The plan specifies `grep -c "walk_subtree\|AXUIElementCopyAttributeValue\|read_attribute" basicctrl/verifier/ensemble/l0_push.py returns 0` and `grep -E "pasteboard.*content|copyContents" basicctrl/verifier/ensemble/l1_cheap.py returns 0 matches`. My initial implementation included module docstrings explaining that those exact tokens were forbidden — which made the literal grep return >0 even though the actual class body never called them.
 - **Fix:** Reworded module docstrings to express the constraint without using the forbidden tokens. The functional source-grep test (`inspect.getsource(L0Push)`) inspects only the class body and was always green; the literal grep is now also clean.
-- **Files modified:** `cua_overlay/verifier/ensemble/l0_push.py` (module docstring), `cua_overlay/verifier/ensemble/l1_cheap.py` (`_pasteboard_change_count` docstring + L1b inline comment).
+- **Files modified:** `basicctrl/verifier/ensemble/l0_push.py` (module docstring), `basicctrl/verifier/ensemble/l1_cheap.py` (`_pasteboard_change_count` docstring + L1b inline comment).
 - **Verification:** Both verification greps return 0; all 24 plan tests still green; phase-level 97/97 still green.
 - **Committed in:** `d9db4aa` (Task 2 docstring) and `e5e5b9f` (Task 3 docstring rewording).
 
@@ -337,11 +337,11 @@ Each task committed atomically:
 
 ## Next Phase Readiness
 
-- **Plan 01-06 unblocked.** Plan 06 will EXTEND `cua_overlay/verifier/aggregator.py` to add L2 (depth-limited walker via Plan 03) and L3 (LLM stub) escalation paths. The contract Plan 06 inherits:
+- **Plan 01-06 unblocked.** Plan 06 will EXTEND `basicctrl/verifier/aggregator.py` to add L2 (depth-limited walker via Plan 03) and L3 (LLM stub) escalation paths. The contract Plan 06 inherits:
   - Aggregator constructor takes `(l0, l1, vote)` — Plan 06 will widen to `(l0, l1, vote, l2, l3)`.
   - `verify()` returns HoarePost with `tier_signals['L2']` and `tier_signals['L3']` already keyed; Plan 06 just sets them to floats when those layers run.
   - `L3_ESCALATE_THRESHOLD = 0.30` is exported and consumed.
-- **Plan 01-08 unblocked.** MCP proxy can `from cua_overlay.verifier import Aggregator, WeightedVote, L0Push, L1Cheap, VERIFIED_THRESHOLD` and wrap `await aggregator.verify(...)` results into MCP tool responses.
+- **Plan 01-08 unblocked.** MCP proxy can `from basicctrl.verifier import Aggregator, WeightedVote, L0Push, L1Cheap, VERIFIED_THRESHOLD` and wrap `await aggregator.verify(...)` results into MCP tool responses.
 - **Plan 01-09 unblocked.** Calculator demo's success-criterion-4 anchor (<50ms total via L0+L1) is now end-to-end testable. The demo will:
   1. `await mgr.expect(target, ['AXValueChanged'], action_id)` BEFORE firing.
   2. `before_l1 = await l1.snapshot(target)` BEFORE firing.
@@ -357,14 +357,14 @@ Each task committed atomically:
 
 Verified post-write:
 
-- File exists: `cua_overlay/verifier/ensemble/__init__.py` (re-exports L0Push, L1Cheap, L1Snapshot, WeightedVote, VERIFIED_THRESHOLD, L3_ESCALATE_THRESHOLD).
-- File exists: `cua_overlay/verifier/ensemble/l0_push.py` (1× class L0Push, 3× AXObserverManager refs, 0× polling-token refs, 3× AX-notif refs).
-- File exists: `cua_overlay/verifier/ensemble/l1_cheap.py` (1× class L1Cheap, 3× create_task_group, 4× imagehash, 2× CGWindowListCopyWindowInfo, 4× changeCount, 5× T-1-03 markers).
-- File exists: `cua_overlay/verifier/ensemble/weighted_vote.py` (4× WEIGHTS, 1× VERIFIED_THRESHOLD=0.50, 1× L3_ESCALATE_THRESHOLD=0.30, 5× action-class refs across click/type/scroll/set_value).
-- File exists: `cua_overlay/verifier/aggregator.py` (1× class Aggregator, 3× create_task_group, 10× HoarePost, 5× VERIFIED_THRESHOLD/0.5, 4× tier_signals).
+- File exists: `basicctrl/verifier/ensemble/__init__.py` (re-exports L0Push, L1Cheap, L1Snapshot, WeightedVote, VERIFIED_THRESHOLD, L3_ESCALATE_THRESHOLD).
+- File exists: `basicctrl/verifier/ensemble/l0_push.py` (1× class L0Push, 3× AXObserverManager refs, 0× polling-token refs, 3× AX-notif refs).
+- File exists: `basicctrl/verifier/ensemble/l1_cheap.py` (1× class L1Cheap, 3× create_task_group, 4× imagehash, 2× CGWindowListCopyWindowInfo, 4× changeCount, 5× T-1-03 markers).
+- File exists: `basicctrl/verifier/ensemble/weighted_vote.py` (4× WEIGHTS, 1× VERIFIED_THRESHOLD=0.50, 1× L3_ESCALATE_THRESHOLD=0.30, 5× action-class refs across click/type/scroll/set_value).
+- File exists: `basicctrl/verifier/aggregator.py` (1× class Aggregator, 3× create_task_group, 10× HoarePost, 5× VERIFIED_THRESHOLD/0.5, 4× tier_signals).
 - File exists: `tests/unit/test_l0_push.py`, `tests/unit/test_l1_cheap.py`, `tests/unit/test_aggregator.py`.
 - Commits exist (verified via `git log --oneline`): `3fcd23d` (Task 1), `d9db4aa` (Task 2), `e5e5b9f` (Task 3).
-- Public API import smoke: `python -c "from cua_overlay.verifier import Aggregator, WeightedVote, L0Push, L1Cheap, VERIFIED_THRESHOLD"` exits 0.
+- Public API import smoke: `python -c "from basicctrl.verifier import Aggregator, WeightedVote, L0Push, L1Cheap, VERIFIED_THRESHOLD"` exits 0.
 - Plan-level test count: 24 PASSED (`uv run pytest -x -q tests/unit/test_l0_push.py tests/unit/test_l1_cheap.py tests/unit/test_aggregator.py`).
 - Phase-level test count under SKIP_INTEGRATION=1: 97 PASSED + 12 skipped, no regressions in earlier-plan modules.
 - Verification grep step 3 (L0 no polling): 0 matches.

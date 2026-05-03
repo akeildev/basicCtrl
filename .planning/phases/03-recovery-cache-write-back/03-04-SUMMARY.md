@@ -21,14 +21,14 @@ tech_stack_patterns:
   - RecoveryBranch Protocol: async attempt(failure_ctx) -> Optional[ChannelOutcome]
   - T-3-05 mitigation: all branches call IdempotencyTokenStore.try_claim before fire
 key_files_created:
-  - cua_overlay/recovery/branches/__init__.py
-  - cua_overlay/recovery/branches/b1_rescroll.py
-  - cua_overlay/recovery/branches/b2_ocr_reground.py
-  - cua_overlay/recovery/branches/b3_world_replan_stub.py
-  - cua_overlay/recovery/branches/b4_planner_reqry_stub.py
-  - cua_overlay/recovery/branches/b5_applescript.py
+  - basicctrl/recovery/branches/__init__.py
+  - basicctrl/recovery/branches/b1_rescroll.py
+  - basicctrl/recovery/branches/b2_ocr_reground.py
+  - basicctrl/recovery/branches/b3_world_replan_stub.py
+  - basicctrl/recovery/branches/b4_planner_reqry_stub.py
+  - basicctrl/recovery/branches/b5_applescript.py
 key_files_modified:
-  - cua_overlay/recovery/__init__.py (added branch re-exports)
+  - basicctrl/recovery/__init__.py (added branch re-exports)
   - tests/unit/recovery/conftest.py (added branch test fixtures)
   - tests/unit/recovery/test_branches.py (comprehensive test suite)
 decisions:
@@ -75,33 +75,33 @@ All branches:
 ### Tasks Completed
 
 **Task 1: Create branches package structure + RecoveryBranch Protocol**
-- Created `cua_overlay/recovery/branches/__init__.py`
+- Created `basicctrl/recovery/branches/__init__.py`
 - Defined RecoveryBranch @runtime_checkable Protocol
 - Defined BranchBase plain class with `_try_claim()` and `_emit_event()` helpers
 - Re-export pattern established for all 5 branches
 
 **Task 2: Implement B1_Rescroll (D-04)**
-- Created `cua_overlay/recovery/branches/b1_rescroll.py` (386 LOC)
+- Created `basicctrl/recovery/branches/b1_rescroll.py` (386 LOC)
 - Walk subtree to locate target, scroll if needed, claim action_id, fire T1/C2
 - Error handling: target_not_found, scroll_failed, t1_unavailable, channel_fire_fails, verify_fails
 - Event emission: branch_attempt, scroll_attempt, channel_success/failure
 - Minimum lines: 80 ✓
 
 **Task 3: Implement B2_OCRRegrounding (D-05)**
-- Created `cua_overlay/recovery/branches/b2_ocr_reground.py` (284 LOC)
+- Created `basicctrl/recovery/branches/b2_ocr_reground.py` (284 LOC)
 - Get T4 Vision translator, re-run uitag to regrounding, claim action_id, fire C3 CGEvent
 - Error handling: t4_unavailable, uitag_failed, claim_lost, channel_fire_fails
 - Event emission: branch_attempt, uitag_success, channel_success/failure
 - Minimum lines: 80 ✓
 
 **Task 4: Implement B3/B4 stubs (D-06, D-07)**
-- Created `cua_overlay/recovery/branches/b3_world_replan_stub.py` (58 LOC)
-- Created `cua_overlay/recovery/branches/b4_planner_reqry_stub.py` (58 LOC)
+- Created `basicctrl/recovery/branches/b3_world_replan_stub.py` (58 LOC)
+- Created `basicctrl/recovery/branches/b4_planner_reqry_stub.py` (58 LOC)
 - Both: emit branch_skipped event with reason "cognition not yet ready — Phase 4", return None
 - Minimum lines: 30 ✓ (both)
 
 **Task 5: Implement B5_AppleScriptFallback (D-08)**
-- Created `cua_overlay/recovery/branches/b5_applescript.py` (405 LOC)
+- Created `basicctrl/recovery/branches/b5_applescript.py` (405 LOC)
 - Claim action_id, sleep stagger_ms (default 500ms), re-check claim, fire T3/C4
 - Implements D-15 500ms stagger pattern per CLAUDE.md hard rule
 - Error handling: claim_lost_initial, stagger_interrupted, claim_lost_post_stagger, t3_unavailable, channel_fire_fails
@@ -113,10 +113,10 @@ All branches:
 - Updated __all__ to export all 5 branch classes
 - Re-exports verified ✓
 
-**Task 7: Update cua_overlay/recovery/__init__.py**
+**Task 7: Update basicctrl/recovery/__init__.py**
 - Added imports: `from . import branches` and `from .branches import B1_Rescroll, ...`
 - Updated __all__ to export branches submodule + all 5 branch classes
-- Chain re-export pattern allows: `from cua_overlay.recovery import B1_Rescroll`
+- Chain re-export pattern allows: `from basicctrl.recovery import B1_Rescroll`
 
 **Task 8: Write comprehensive unit tests**
 - Created `tests/unit/recovery/test_branches.py` (908 LOC)
@@ -187,15 +187,15 @@ B3_WorldReplan and B4_PlannerRequery are fully instantiable Phase 3 stubs:
 ## Files Created/Modified
 
 **Created (6 files):**
-- `cua_overlay/recovery/branches/__init__.py` (88 LOC)
-- `cua_overlay/recovery/branches/b1_rescroll.py` (386 LOC)
-- `cua_overlay/recovery/branches/b2_ocr_reground.py` (284 LOC)
-- `cua_overlay/recovery/branches/b3_world_replan_stub.py` (58 LOC)
-- `cua_overlay/recovery/branches/b4_planner_reqry_stub.py` (58 LOC)
-- `cua_overlay/recovery/branches/b5_applescript.py` (405 LOC)
+- `basicctrl/recovery/branches/__init__.py` (88 LOC)
+- `basicctrl/recovery/branches/b1_rescroll.py` (386 LOC)
+- `basicctrl/recovery/branches/b2_ocr_reground.py` (284 LOC)
+- `basicctrl/recovery/branches/b3_world_replan_stub.py` (58 LOC)
+- `basicctrl/recovery/branches/b4_planner_reqry_stub.py` (58 LOC)
+- `basicctrl/recovery/branches/b5_applescript.py` (405 LOC)
 
 **Modified (3 files):**
-- `cua_overlay/recovery/__init__.py` — added branch re-exports
+- `basicctrl/recovery/__init__.py` — added branch re-exports
 - `tests/unit/recovery/conftest.py` — added 6 new fixtures (translator_registry_mock, channel_registry_mock, channel_outcome_mock, aggregator_mock, l1_cheap_mock)
 - `tests/unit/recovery/test_branches.py` — replaced placeholder, added 25+ comprehensive tests
 

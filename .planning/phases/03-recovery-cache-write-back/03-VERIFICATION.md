@@ -18,12 +18,12 @@ All 8 phase requirements (HEAL-01..05, CACHE-01..03) implemented as production c
 
 | SC | Implementation | Test | Status |
 |----|----------------|------|--------|
-| 1 Stale selector → cassette replay → live re-execute → atomic write-back | `cua_overlay/cache/replay.py:CassetteReplayEngine` + `cua_overlay/cache/writeback.py:WriteBack` (atomic tmp+rename) | `tests/integration/test_cassette_e2e.py` | PASSED (mocked) |
-| 2 All 6 failure classes route to correct branches | `cua_overlay/recovery/classifier.py:FAILURE_CLASS_TO_BRANCHES` dispatch table | `tests/unit/recovery/test_classifier.py` (9 tests) | PASSED |
-| 3 Circuit breaker trips after 3 consecutive same-target failures; reorders priority for 60s | `cua_overlay/recovery/circuit_breaker.py:CircuitBreaker` (per-target state, 60s window) | `tests/unit/recovery/test_circuit_breaker.py` (7 tests) | PASSED |
-| 4 Bounded recovery max 2 cycles → escalate | `cua_overlay/recovery/orchestrator.py:RecoveryOrchestrator.attempt(max_cycles=2)` | `tests/unit/recovery/test_orchestrator.py` (17 tests) | PASSED |
-| 5 HealEvent emitted; heal-rate budget pauses at >5%/session | `cua_overlay/recovery/heal_event.py:HealEvent` + orchestrator `_should_pause_heal()` (D-16) | `tests/unit/recovery/test_heal_event.py` (11 tests) | PASSED |
-| 6 Stable-tier gate (AX-only writes back; vision/coord session-only) | `cua_overlay/cache/writeback.py:WriteBack._is_stable_tier` (AXIdentifier/AXLabel/AXTitle/AXRoleDescription) | `tests/unit/cache/test_writeback.py` (14 tests) | PASSED |
+| 1 Stale selector → cassette replay → live re-execute → atomic write-back | `basicctrl/cache/replay.py:CassetteReplayEngine` + `basicctrl/cache/writeback.py:WriteBack` (atomic tmp+rename) | `tests/integration/test_cassette_e2e.py` | PASSED (mocked) |
+| 2 All 6 failure classes route to correct branches | `basicctrl/recovery/classifier.py:FAILURE_CLASS_TO_BRANCHES` dispatch table | `tests/unit/recovery/test_classifier.py` (9 tests) | PASSED |
+| 3 Circuit breaker trips after 3 consecutive same-target failures; reorders priority for 60s | `basicctrl/recovery/circuit_breaker.py:CircuitBreaker` (per-target state, 60s window) | `tests/unit/recovery/test_circuit_breaker.py` (7 tests) | PASSED |
+| 4 Bounded recovery max 2 cycles → escalate | `basicctrl/recovery/orchestrator.py:RecoveryOrchestrator.attempt(max_cycles=2)` | `tests/unit/recovery/test_orchestrator.py` (17 tests) | PASSED |
+| 5 HealEvent emitted; heal-rate budget pauses at >5%/session | `basicctrl/recovery/heal_event.py:HealEvent` + orchestrator `_should_pause_heal()` (D-16) | `tests/unit/recovery/test_heal_event.py` (11 tests) | PASSED |
+| 6 Stable-tier gate (AX-only writes back; vision/coord session-only) | `basicctrl/cache/writeback.py:WriteBack._is_stable_tier` (AXIdentifier/AXLabel/AXTitle/AXRoleDescription) | `tests/unit/cache/test_writeback.py` (14 tests) | PASSED |
 
 ## Requirement Coverage
 
@@ -51,8 +51,8 @@ All 8 phase requirements (HEAL-01..05, CACHE-01..03) implemented as production c
 
 ## Artifacts
 
-- `cua_overlay/recovery/` — 8 files (classifier, heal_event, circuit_breaker, orchestrator, branches/{b1..b5})
-- `cua_overlay/cache/` — 6 files (key, cassette, agent_cache, replay, writeback, __init__)
+- `basicctrl/recovery/` — 8 files (classifier, heal_event, circuit_breaker, orchestrator, branches/{b1..b5})
+- `basicctrl/cache/` — 6 files (key, cassette, agent_cache, replay, writeback, __init__)
 - 9 PLAN.md + 9 SUMMARY.md + 1 PHASE-3-DEMO.md
 - 463 tests collected (recovery + cache + Phase 1-2 unchanged)
 

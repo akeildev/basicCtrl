@@ -21,12 +21,12 @@ tech_stack:
     - Deferred implementation stubs (ready for Wave 2+)
 key_files:
   created:
-    - cua_overlay/spi/cgs_display.py (120 lines)
-    - cua_overlay/spi/endpoint_security.py (150 lines)
-    - cua_overlay/spi/dtrace.py (160 lines)
+    - basicctrl/spi/cgs_display.py (120 lines)
+    - basicctrl/spi/endpoint_security.py (150 lines)
+    - basicctrl/spi/dtrace.py (160 lines)
     - tests/test_spi_tier_b.py (270 lines)
   modified:
-    - cua_overlay/spi/probe.py (+45 lines: is_sip_partial_off helper)
+    - basicctrl/spi/probe.py (+45 lines: is_sip_partial_off helper)
 decisions:
   - All Tier-B/C SPIs gracefully skip on default Mac (SIP fully on), no gates on core functionality
   - is_sip_partial_off() helper centralized in probe.py for DRY
@@ -52,7 +52,7 @@ metrics:
 
 ### Task 1: Create Tier-B/C SPI Wrappers (CGS, ES, DTrace)
 
-**Completed:** cua_overlay/spi/cgs_display.py, endpoint_security.py, dtrace.py + probe.py helper
+**Completed:** basicctrl/spi/cgs_display.py, endpoint_security.py, dtrace.py + probe.py helper
 
 **CGS Display Space (SPI-03, Tier A):**
 - Optional feature: programmatic Space (Mission Control desktop) switching

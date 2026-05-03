@@ -34,11 +34,11 @@ When verification fails, the system never silently drops. It classifies the fail
 ## Implementation Decisions
 
 ### Failure Classifier
-- **D-01:** 6-class typed Pydantic enum `FailureClass` at `cua_overlay/recovery/classifier.py`: `PERCEPTUAL`, `COGNITIVE`, `ACTUATION`, `ENVIRONMENTAL`, `RESOURCE`, `LOOP`. Module-level dispatch table maps each class to its candidate recovery branches (B1-B5).
+- **D-01:** 6-class typed Pydantic enum `FailureClass` at `basicctrl/recovery/classifier.py`: `PERCEPTUAL`, `COGNITIVE`, `ACTUATION`, `ENVIRONMENTAL`, `RESOURCE`, `LOOP`. Module-level dispatch table maps each class to its candidate recovery branches (B1-B5).
 - **D-02:** Classifier reads HoarePost from RaceOrchestrator (Phase 2 contract) + last verifier signal + last AX/CDP error code. Confidence < 0.50 + specific error patterns route to specific classes (e.g. `kAXErrorCannotComplete` → ACTUATION; `cdp ws closed` → ENVIRONMENTAL; same-target third-failure → LOOP).
 
 ### 5 Recovery Branches
-- **D-03:** Branches at `cua_overlay/recovery/branches/b{1..5}.py`. Each implements a `RecoveryBranch` Protocol: `async def attempt(failure: FailureCtx) -> Optional[ChannelOutcome]`.
+- **D-03:** Branches at `basicctrl/recovery/branches/b{1..5}.py`. Each implements a `RecoveryBranch` Protocol: `async def attempt(failure: FailureCtx) -> Optional[ChannelOutcome]`.
 - **D-04:** B1 (rescroll+AX) — scrolls target into view via Phase 1 walker + retries via T1/C2.
 - **D-05:** B2 (OCR regrounding+CGEvent) — re-runs T4 uitag/ocrmac to ground target, fires C3 CGEvent.
 - **D-06:** B3 (world-model replan) — Phase 3 stub: emits `branch_skipped: cognition_not_ready` event; Phase 4 fills in CUWM-style predictor.
@@ -46,25 +46,25 @@ When verification fails, the system never silently drops. It classifies the fail
 - **D-08:** B5 (AppleScript fallback) — re-fires action via T3/C4 with extra 500ms stagger.
 
 ### Recovery Orchestrator
-- **D-09:** `cua_overlay/recovery/orchestrator.py` — `RecoveryOrchestrator.attempt(failure_ctx)` runs B1..B5 in parallel via `anyio.create_task_group` + `race_first_complete` wrapper from Phase 2 (reuses Phase 2's anyio cancel-scope pattern).
+- **D-09:** `basicctrl/recovery/orchestrator.py` — `RecoveryOrchestrator.attempt(failure_ctx)` runs B1..B5 in parallel via `anyio.create_task_group` + `race_first_complete` wrapper from Phase 2 (reuses Phase 2's anyio cancel-scope pattern).
 - **D-10:** First-verified-branch wins; losers cancelled. Failed branches log structured event `{branch, reason, latency_ms, error}` to `~/.cua/sessions/<id>/recovery_log.ndjson` for RL training buffer.
 - **D-11:** Bounded retries: `max_cycles=2`. After 2nd cycle fails → escalate via user-facing event `{action_id, target_key, last_error, branches_tried, suggested_action}` and abort the action.
 
 ### Circuit Breaker
-- **D-12:** `cua_overlay/recovery/circuit_breaker.py` — per-(bundle_id, target_key) counter. 3 consecutive failures within 60s window → trip; emits `circuit_breaker_tripped` event; for the next 60s the AppProfile.translator_priority for that bundle is reordered (current primary moved to tail, next-priority promoted).
+- **D-12:** `basicctrl/recovery/circuit_breaker.py` — per-(bundle_id, target_key) counter. 3 consecutive failures within 60s window → trip; emits `circuit_breaker_tripped` event; for the next 60s the AppProfile.translator_priority for that bundle is reordered (current primary moved to tail, next-priority promoted).
 - **D-13:** Circuit breaker state stored in-memory dict (process-local, asyncio.Lock guarded — same pattern as Phase 2 IdempotencyTokenStore). Phase 6 may upgrade to LangGraph Postgres for crash-resume.
 
 ### Heal Events + Rate Budget
-- **D-14:** `cua_overlay/recovery/heal_event.py` — Pydantic `HealEvent{old_locator, new_locator, reason, trace_id, ts, locator_tier, source_branch}`. Emitted by branches that produce a healed selector.
+- **D-14:** `basicctrl/recovery/heal_event.py` — Pydantic `HealEvent{old_locator, new_locator, reason, trace_id, ts, locator_tier, source_branch}`. Emitted by branches that produce a healed selector.
 - **D-15:** Heals written via Phase 1's SessionWriter to `~/.cua/sessions/<id>/heals.ndjson` (not the action_log — separate stream so analysts can grep heals).
 - **D-16:** Heal-rate budget: tracks `heals_per_action / total_actions` per session. When ratio > 0.05 (5%), auto-heal is paused; subsequent failures escalate immediately to user without invoking branches B1-B2 (P20 mitigation against 41% silent-regression abandonment).
 
 ### AgentCache + Cassette Write-Back
-- **D-17:** `cua_overlay/cache/agent_cache.py` — `AgentCache` port (Stagehand-style, AgentCache.ts:573-624 pattern). Keys are SHA-256 of `(bundle_id, role_path, instruction)`.
-- **D-18:** `cua_overlay/cache/cassette.py` — Cassette format = JSON Lines per phase 1 SessionWriter pattern. Each step: `{step_idx, hoare_pre, action_canonical, hoare_post, screenshot_phash, ax_subtree_hash, healed_selectors[]}`.
-- **D-19:** `cua_overlay/cache/replay.py` — `CassetteReplayEngine` replays cassette until first non-matching step → falls through to live RaceOrchestrator → on success, calls `WriteBack.heal()`.
-- **D-20:** `cua_overlay/cache/writeback.py` — `WriteBack` only updates the cassette when the healed selector is from a STABLE LOCATOR TIER (AXIdentifier, AXLabel, AXTitle, AXRoleDescription). Coord-based or vision-based heals are session-only (live cache only, never write back to canonical cassette per P23). Atomic replace on cassette file (write to `.tmp`, fsync, rename).
-- **D-21:** Stream wrapping (CACHE-03) — `cua_overlay/cache/stream_wrap.py` wraps any async generator the agent consumes; transparently caches per-chunk and replays on cassette hit.
+- **D-17:** `basicctrl/cache/agent_cache.py` — `AgentCache` port (Stagehand-style, AgentCache.ts:573-624 pattern). Keys are SHA-256 of `(bundle_id, role_path, instruction)`.
+- **D-18:** `basicctrl/cache/cassette.py` — Cassette format = JSON Lines per phase 1 SessionWriter pattern. Each step: `{step_idx, hoare_pre, action_canonical, hoare_post, screenshot_phash, ax_subtree_hash, healed_selectors[]}`.
+- **D-19:** `basicctrl/cache/replay.py` — `CassetteReplayEngine` replays cassette until first non-matching step → falls through to live RaceOrchestrator → on success, calls `WriteBack.heal()`.
+- **D-20:** `basicctrl/cache/writeback.py` — `WriteBack` only updates the cassette when the healed selector is from a STABLE LOCATOR TIER (AXIdentifier, AXLabel, AXTitle, AXRoleDescription). Coord-based or vision-based heals are session-only (live cache only, never write back to canonical cassette per P23). Atomic replace on cassette file (write to `.tmp`, fsync, rename).
+- **D-21:** Stream wrapping (CACHE-03) — `basicctrl/cache/stream_wrap.py` wraps any async generator the agent consumes; transparently caches per-chunk and replays on cassette hit.
 
 ### Threats & Mitigations (Phase 3)
 - **T-3-01:** Silent heal masking real regressions. Mitigation: D-14..D-16 — every heal logs an event; rate budget pauses auto-heal at >5%.
@@ -87,7 +87,7 @@ When verification fails, the system never silently drops. It classifies the fail
 - **D-26:** Total MCP tool count after Phase 3: ~13 (still under RAG-MCP ~30 sweet spot).
 
 ### Claude's Discretion
-- Internal module structure under `cua_overlay/recovery/` and `cua_overlay/cache/` — follow Phase 1/2 per-feature sub-package pattern
+- Internal module structure under `basicctrl/recovery/` and `basicctrl/cache/` — follow Phase 1/2 per-feature sub-package pattern
 - Exact `RecoveryBranch` Protocol field names (Pydantic model)
 - Telemetry counter names for branch wins per (failure_class, branch)
 - Logging schema for `circuit_breaker_tripped`, `heal_rate_paused`, `recovery_escalated` events
@@ -101,17 +101,17 @@ When verification fails, the system never silently drops. It classifies the fail
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Phase 2 deliverables (must read — Phase 3 builds atop)
-- `cua_overlay/actions/race_orchestrator.py` (race_first_complete pattern Phase 3 reuses)
-- `cua_overlay/actions/idempotency.py` (try_claim — branches must use it)
-- `cua_overlay/actions/race_policy.py` (resolve_race_policy — branches honor it)
-- `cua_overlay/actions/duplicate_receipt.py` (2s ring buffer)
-- `cua_overlay/translators/*.py` (T1-T5 — branches dispatch through these)
-- `cua_overlay/actions/channels/*.py` (C1-C5)
-- `cua_overlay/profile/classifier.py` (AppProfile.translator_priority — circuit breaker reorders this)
-- `cua_overlay/persist/session_writer.py` (NDJSON sink — heal events go here)
+- `basicctrl/actions/race_orchestrator.py` (race_first_complete pattern Phase 3 reuses)
+- `basicctrl/actions/idempotency.py` (try_claim — branches must use it)
+- `basicctrl/actions/race_policy.py` (resolve_race_policy — branches honor it)
+- `basicctrl/actions/duplicate_receipt.py` (2s ring buffer)
+- `basicctrl/translators/*.py` (T1-T5 — branches dispatch through these)
+- `basicctrl/actions/channels/*.py` (C1-C5)
+- `basicctrl/profile/classifier.py` (AppProfile.translator_priority — circuit breaker reorders this)
+- `basicctrl/persist/session_writer.py` (NDJSON sink — heal events go here)
 
 ### Architecture refs
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — recovery layer L6+L7
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — recovery layer L6+L7
 - `.planning/research/ARCHITECTURE.md` §"recovery/" §"cache/" §"Backward path — failure → recovery"
 - `.planning/research/PITFALLS.md` — P20, P23, P26, P27 (Phase 3 BLOCKERs)
 

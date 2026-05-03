@@ -14,8 +14,8 @@ key_files:
   created: []
   modified:
     - PHASE-4-DEMO.md
-    - cua_overlay/cognition/__init__.py
-    - cua_overlay/learning/__init__.py
+    - basicctrl/cognition/__init__.py
+    - basicctrl/learning/__init__.py
 decisions:
   - Fixed 4 import name errors in manual smoke-check Python snippets
   - Added public API exports to cognition/__init__.py (EnsembleVotingEngine, Critic, Speculator, Grounder, Planner, WorldModelPredictor, VerifierLLM, AppleFMClassifier, SpeculationMutationGate)
@@ -41,26 +41,26 @@ metrics:
 All 4 incorrect import names in PHASE-4-DEMO.md (manual smoke checks section, ~lines 220-360) have been corrected:
 
 1. **EnsembleVoter → EnsembleVotingEngine** (line 231, 235)
-   - Wrong: `from cua_overlay.cognition.ensemble import EnsembleVoter`
-   - Fixed: `from cua_overlay.cognition import EnsembleVotingEngine`
+   - Wrong: `from basicctrl.cognition.ensemble import EnsembleVoter`
+   - Fixed: `from basicctrl.cognition import EnsembleVotingEngine`
    - Wrong: `voter = EnsembleVoter()`
    - Fixed: `voter = EnsembleVotingEngine()`
-   - File: `cua_overlay/cognition/ensemble.py`
+   - File: `basicctrl/cognition/ensemble.py`
 
 2. **SpeculativeDraft Import Path** (line 287)
-   - Wrong: `from cua_overlay.cognition.speculator import SpeculativeDraft`
-   - Fixed: `from cua_overlay.cognition import SpeculativeDraft`
-   - Source: `SpeculativeDraft` is a Pydantic schema defined in `cua_overlay/cognition/schemas.py`
+   - Wrong: `from basicctrl.cognition.speculator import SpeculativeDraft`
+   - Fixed: `from basicctrl.cognition import SpeculativeDraft`
+   - Source: `SpeculativeDraft` is a Pydantic schema defined in `basicctrl/cognition/schemas.py`
 
 3. **ObservedAction Import Location** (line 323)
-   - Wrong: `from cua_overlay.learning.recipe_synth import RecipeSynthesizer, ObservedAction`
-   - Fixed: `from cua_overlay.learning import RecipeSynthesizer, ObservedAction`
-   - Source: `ObservedAction` is exported from `cua_overlay/learning/__init__.py` (defined in `schemas.py`)
+   - Wrong: `from basicctrl.learning.recipe_synth import RecipeSynthesizer, ObservedAction`
+   - Fixed: `from basicctrl.learning import RecipeSynthesizer, ObservedAction`
+   - Source: `ObservedAction` is exported from `basicctrl/learning/__init__.py` (defined in `schemas.py`)
 
 4. **Recipe/RecipeStep/RecipeParam Import Location** (line 388)
-   - Wrong: `from cua_overlay.learning.recipe_synth import Recipe, RecipeStep, RecipeParam`
-   - Fixed: `from cua_overlay.learning import Recipe, RecipeStep, RecipeParam`
-   - Source: These schemas are exported from `cua_overlay/learning/__init__.py` (defined in `schemas.py`)
+   - Wrong: `from basicctrl.learning.recipe_synth import Recipe, RecipeStep, RecipeParam`
+   - Fixed: `from basicctrl.learning import Recipe, RecipeStep, RecipeParam`
+   - Source: These schemas are exported from `basicctrl/learning/__init__.py` (defined in `schemas.py`)
 
 ### Additional Fixes
 
@@ -72,7 +72,7 @@ All 4 incorrect import names in PHASE-4-DEMO.md (manual smoke checks section, ~l
 
 ### Public API Exports (Ergonomic Improvement)
 
-**cua_overlay/cognition/__init__.py** — Added imports and __all__ entries:
+**basicctrl/cognition/__init__.py** — Added imports and __all__ entries:
 - `EnsembleVotingEngine` (from ensemble.py)
 - `Critic` (from critic.py)
 - `Speculator` (from speculative.py)
@@ -83,7 +83,7 @@ All 4 incorrect import names in PHASE-4-DEMO.md (manual smoke checks section, ~l
 - `VerifierLLM` (from verifier_llm.py)
 - `AppleFMClassifier` (from apple_fm.py)
 
-**cua_overlay/learning/__init__.py** — Added import and __all__ entry:
+**basicctrl/learning/__init__.py** — Added import and __all__ entry:
 - `RecipeSynthesizer` (from recipe_synth.py)
 
 ### Sanity Check
@@ -91,7 +91,7 @@ All 4 incorrect import names in PHASE-4-DEMO.md (manual smoke checks section, ~l
 All imports validated with a single Python command:
 
 ```bash
-uv run python -c "from cua_overlay.cognition import EnsembleVotingEngine, SpeculativeDraft, Critic, Speculator, Grounder, Planner, WorldModelPredictor, VerifierLLM, AppleFMClassifier; from cua_overlay.learning import LearningRecorder, RecipeSynthesizer, ObservedAction, Recipe, RecipeStep, RecipeParam; from cua_overlay.state import EpisodicMemory; print('✓ All imports OK')"
+uv run python -c "from basicctrl.cognition import EnsembleVotingEngine, SpeculativeDraft, Critic, Speculator, Grounder, Planner, WorldModelPredictor, VerifierLLM, AppleFMClassifier; from basicctrl.learning import LearningRecorder, RecipeSynthesizer, ObservedAction, Recipe, RecipeStep, RecipeParam; from basicctrl.state import EpisodicMemory; print('✓ All imports OK')"
 ```
 
 **Result:** PASSED ✓
@@ -132,11 +132,11 @@ All 5 manual smoke-check Python snippets are now executable without errors:
 - **Line 363-367:** Fixed RecipeSynthesizer call — async/await + parameter name
 - **Line 388:** Fixed Recipe/RecipeStep/RecipeParam import path
 
-### cua_overlay/cognition/__init__.py
+### basicctrl/cognition/__init__.py
 - Added 9 imports (EnsembleVotingEngine, Critic, Speculator, SpeculationMutationGate, Grounder, Planner, WorldModelPredictor, VerifierLLM, AppleFMClassifier)
 - Updated __all__ list to include all public classes
 
-### cua_overlay/learning/__init__.py
+### basicctrl/learning/__init__.py
 - Added 1 import (RecipeSynthesizer)
 - Updated __all__ list to include RecipeSynthesizer
 

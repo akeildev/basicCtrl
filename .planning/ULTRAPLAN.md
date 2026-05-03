@@ -1,4 +1,4 @@
-# ULTRAPLAN — finish cua-maximalist for full usage
+# ULTRAPLAN — finish basicCtrl for full usage
 
 > Goal: drive any Mac app, never silently fail, long-horizon, transparent.
 > Estimate: 12-18h wall clock with 5 parallel sub-agents.
@@ -87,7 +87,7 @@ Without trace IDs + waterfall, every other phase flies blind. Build before any a
 
 ### 3.1 Trace ID propagation
 
-**File:** `cua_overlay/observability/trace.py`
+**File:** `basicctrl/observability/trace.py`
 
 ```python
 from contextlib import contextmanager
@@ -186,7 +186,7 @@ Uses `rich.live.Live`. Reads from `/tmp/cua-trace-bus.sock` (live) OR file tail 
 
 ### 3.5 Live event bus
 
-**File:** `cua_overlay/observability/bus.py`
+**File:** `basicctrl/observability/bus.py`
 
 structlog processor that ALSO writes each event to `/tmp/cua-trace-bus.sock` if subscribers exist. cua-monitor connects to this for real-time view without file polling lag.
 
@@ -217,7 +217,7 @@ Before parallel agents — verify the integration point actually works.
 npm install -g @modelcontextprotocol/inspector
 
 # Run
-mcp-inspector uv run cua-maximalist-mcp --cwd /Users/akeilsmith/dev/cua-maximalist
+mcp-inspector uv run basicCtrl-mcp --cwd /Users/akeilsmith/dev/basicCtrl
 ```
 
 Browser opens. Click "List Tools". Assert all 6 healing tools appear.
@@ -450,9 +450,9 @@ TRACK 5 (Visualizer):
 ### 8.3 Real-world acceptance (~30 min)
 
 ```
-1. Wire cua-maximalist into Claude Code MCP config (see §6 of earlier draft)
+1. Wire basicCtrl into Claude Code MCP config (see §6 of earlier draft)
 2. Restart Claude Code
-3. Ask: "Use cua-maximalist to compute 17*23 in Calculator,
+3. Ask: "Use basicCtrl to compute 17*23 in Calculator,
         then open TextEdit and write the answer in math.txt"
 4. Watch:
      - Terminal: cua-monitor (live trace)
@@ -543,4 +543,4 @@ G8  ✓  smoke <90s green
 G9  ✓  cognition runs IF keys set, else skip
 ```
 
-When all 9 hold: cua-maximalist is ready for real-world use.
+When all 9 hold: basicCtrl is ready for real-world use.

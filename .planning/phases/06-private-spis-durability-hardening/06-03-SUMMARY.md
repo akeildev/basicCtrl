@@ -8,11 +8,11 @@ dependency_graph:
   provides: [SPI-02-ax-remote-bridge]
   affects: [Phase-6-Wave-2-T1-integration, occluded-app-automation]
 tech_stack:
-  added: [cua_overlay/spi/ax_remote.py, AXRemoteBridge class]
+  added: [basicctrl/spi/ax_remote.py, AXRemoteBridge class]
   patterns: [capability-probe-delegation, graceful-fallback-to-public-api]
 key_files:
   created:
-    - cua_overlay/spi/ax_remote.py (95 LOC, AXRemoteBridge + module API)
+    - basicctrl/spi/ax_remote.py (95 LOC, AXRemoteBridge + module API)
     - tests/test_spi_ax_remote.py (154 LOC, 9 unit tests)
   modified: []
 decisions:
@@ -44,7 +44,7 @@ Wave 1 formalizes AX remote notifications from Phase 2, adding explicit SPI modu
 
 **Status:** ✅ COMPLETE
 
-**File:** `cua_overlay/spi/ax_remote.py` (95 LOC)
+**File:** `basicctrl/spi/ax_remote.py` (95 LOC)
 
 **Implementation:**
 
@@ -121,7 +121,7 @@ Wave 1 formalizes AX remote notifications from Phase 2, adding explicit SPI modu
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| cua_overlay/spi/ax_remote.py created | ✅ | File exists, 95 LOC |
+| basicctrl/spi/ax_remote.py created | ✅ | File exists, 95 LOC |
 | AXRemoteBridge wraps Phase 2 AXEventBridge | ✅ | set_event_bridge() method; delegation in subscribe |
 | Capability gating via available parameter | ✅ | __init__(available: bool) from capabilities.ax_remote_available |
 | get_ax_remote_bridge() singleton working | ✅ | test_get_ax_remote_bridge_caches_singleton PASS |
@@ -185,7 +185,7 @@ tests/test_spi*.py (probes + profiles + skylight + ax_remote)
 
 ## Self-Check: PASSED
 
-- [x] cua_overlay/spi/ax_remote.py exists (95 LOC)
+- [x] basicctrl/spi/ax_remote.py exists (95 LOC)
 - [x] AXRemoteBridge class with capability gating
 - [x] get_ax_remote_bridge() singleton caching
 - [x] is_ax_remote_available() public API

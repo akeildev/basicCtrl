@@ -33,12 +33,12 @@ tech-stack:
 
 key-files:
   created:
-    - cua_overlay/learning/recipe_synth.py (RecipeSynthesizer class)
+    - basicctrl/learning/recipe_synth.py (RecipeSynthesizer class)
     - tests/unit/learning/test_recipe_synth.py (8 unit tests)
     - tests/unit/state/test_episodic.py (5 new FAISS tests added to 7 existing schema tests)
 
   modified:
-    - cua_overlay/state/episodic.py (EpisodicMemory implementation replaces stub)
+    - basicctrl/state/episodic.py (EpisodicMemory implementation replaces stub)
 
 key-decisions: []
 
@@ -113,9 +113,9 @@ metrics:
 
 ## Files Created/Modified
 
-- `cua_overlay/learning/recipe_synth.py` - RecipeSynthesizer class (285 LOC)
+- `basicctrl/learning/recipe_synth.py` - RecipeSynthesizer class (285 LOC)
 - `tests/unit/learning/test_recipe_synth.py` - 8 unit tests (285 LOC)
-- `cua_overlay/state/episodic.py` - EpisodicMemory full implementation (250+ LOC, replaced stub)
+- `basicctrl/state/episodic.py` - EpisodicMemory full implementation (250+ LOC, replaced stub)
 - `tests/unit/state/test_episodic.py` - Added 5 new tests to existing 7 (12 total)
 
 ## Decisions Made

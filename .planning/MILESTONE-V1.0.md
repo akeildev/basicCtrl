@@ -7,7 +7,7 @@
 
 ## Overview
 
-cua-maximalist v1.0 ships a self-healing, autonomous Mac CU framework with:
+basicCtrl v1.0 ships a self-healing, autonomous Mac CU framework with:
 - Foundation + state graph + deterministic verifier (Phase 1)
 - 5 racing translators + 5 racing channels with atomic idempotency (Phase 2)
 - 5-branch recovery + cache write-back healing (Phase 3)
@@ -252,11 +252,11 @@ Integrations
 
 ### Installation
 ```bash
-git clone https://github.com/akeilsmith/cua-maximalist.git
-cd cua-maximalist
+git clone https://github.com/akeilsmith/basicCtrl.git
+cd basicCtrl
 uv sync --all-extras
 swift build
-python -m cua_overlay.main
+python -m basicctrl.main
 ```
 
 ### Verification
@@ -270,7 +270,7 @@ uv run pytest tests/ --ignore=tests/integration --ignore=tests/unit/recovery -q
 # Manual demo
 python -c "
 import asyncio
-from cua_overlay.main import main
+from basicctrl.main import main
 asyncio.run(main())
 "
 ```

@@ -12,8 +12,8 @@ tech_stack:
   patterns: [lazy imports, asyncio.to_thread for sync APIs, HAS_* availability flags]
 key_files:
   created:
-    - cua_overlay/cognition/apple_fm.py
-    - cua_overlay/cognition/grounder.py
+    - basicctrl/cognition/apple_fm.py
+    - basicctrl/cognition/grounder.py
     - tests/unit/cognition/test_apple_fm.py
     - tests/unit/cognition/test_grounder.py
 decisions: []
@@ -49,7 +49,7 @@ metrics:
 
 ## What Was Built
 
-### Task 1: AppleFMClassifier (cua_overlay/cognition/apple_fm.py)
+### Task 1: AppleFMClassifier (basicctrl/cognition/apple_fm.py)
 
 **Class: AppleFMClassifier**
 - `async classify(state_description: str, decision_context: str) -> Optional[AppleFMOutput]`
@@ -68,7 +68,7 @@ result = await classifier.classify("Modal dialog open", "route_translator")
 # result.output in ["T1", "T2", "T3", "T4", "T5", "retry", "escalate", "abort"]
 ```
 
-### Task 2: Grounder (cua_overlay/cognition/grounder.py)
+### Task 2: Grounder (basicctrl/cognition/grounder.py)
 
 **Class: Grounder**
 - `async ground_ui_tars(screenshot: bytes, instruction: str) -> tuple[tuple[float, float, float, float], float]`

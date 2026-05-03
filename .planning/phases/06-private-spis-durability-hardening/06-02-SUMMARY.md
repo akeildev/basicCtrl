@@ -8,15 +8,15 @@ dependency_graph:
   provides: [SPI-01-C1-channel]
   affects: [Phase-6-Wave-2-parallel-integration]
 tech_stack:
-  added: [cua_overlay/spi/skylight.py, cua_overlay/actions/channels/c1_skylight_spi.py]
+  added: [basicctrl/spi/skylight.py, basicctrl/actions/channels/c1_skylight_spi.py]
   patterns: [ctypes-dlsym-bridge, singleton-pattern, capability-gating, graceful-fallback]
 key_files:
   created:
-    - cua_overlay/spi/skylight.py (SkyLightBridge + get_skylight_bridge + is_skylight_available)
-    - cua_overlay/actions/channels/c1_skylight_spi.py (C1SkyLightSPI channel variant)
+    - basicctrl/spi/skylight.py (SkyLightBridge + get_skylight_bridge + is_skylight_available)
+    - basicctrl/actions/channels/c1_skylight_spi.py (C1SkyLightSPI channel variant)
     - tests/test_spi_skylight.py (11 unit tests covering bridge + channel + registration)
   modified:
-    - cua_overlay/actions/channel_registry.py (added register_with_capabilities method)
+    - basicctrl/actions/channel_registry.py (added register_with_capabilities method)
 decisions:
   - "SkyLight bridge uses ctypes.CDLL(None) + dlsym pattern for symbol lookup (live at runtime, per RESEARCH.md)"
   - "Singleton pattern via global _bridge variable cached at first get_skylight_bridge() call"
@@ -48,7 +48,7 @@ Wave 1 formalizes SkyLight integration from Phase 2, adding proper capability ga
 
 **Status:** ✅ COMPLETE
 
-**File:** `cua_overlay/spi/skylight.py` (108 LOC)
+**File:** `basicctrl/spi/skylight.py` (108 LOC)
 
 **Implementation:**
 - `SkyLightBridge` class wraps `SLEventPostToPid` symbol via ctypes.CDLL(None) + dlsym
@@ -77,8 +77,8 @@ Wave 1 formalizes SkyLight integration from Phase 2, adding proper capability ga
 **Status:** ✅ COMPLETE
 
 **Files:**
-- `cua_overlay/actions/channels/c1_skylight_spi.py` (132 LOC)
-- `cua_overlay/actions/channel_registry.py` (modified +15 LOC)
+- `basicctrl/actions/channels/c1_skylight_spi.py` (132 LOC)
+- `basicctrl/actions/channel_registry.py` (modified +15 LOC)
 
 **Implementation:**
 - `C1SkyLightSPI` class implements Channel protocol (async fire signature from base.py)
@@ -139,7 +139,7 @@ None — plan executed exactly as written.
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| cua_overlay/spi/skylight.py created (SkyLightBridge) | ✅ | File exists, 108 LOC |
+| basicctrl/spi/skylight.py created (SkyLightBridge) | ✅ | File exists, 108 LOC |
 | get_skylight_bridge() singleton working | ✅ | test_get_skylight_bridge_caches PASS |
 | post_to_pid() fallback logic verified | ✅ | test_skylight_bridge_post_to_pid_fallback PASS |
 | C1SkyLightSPI channel created | ✅ | 132 LOC, Channel protocol implemented |
@@ -194,9 +194,9 @@ None — Wave 1 is complete. Wave 2 will integrate AX remote (SPI-02) in paralle
 
 ## Self-Check: PASSED
 
-- [x] cua_overlay/spi/skylight.py exists
-- [x] cua_overlay/actions/channels/c1_skylight_spi.py exists
-- [x] cua_overlay/actions/channel_registry.py modified
+- [x] basicctrl/spi/skylight.py exists
+- [x] basicctrl/actions/channels/c1_skylight_spi.py exists
+- [x] basicctrl/actions/channel_registry.py modified
 - [x] tests/test_spi_skylight.py exists with 11 tests
 - [x] All 11 unit tests passing
 - [x] Phase 2 regression tests passing (39/39)

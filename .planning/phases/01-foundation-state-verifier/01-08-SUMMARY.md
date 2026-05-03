@@ -8,7 +8,7 @@ tags: [mcp, fastmcp, stdio_client, proxy, healing-tools, action-class-wrap, t-1-
 requires:
   - phase: 01-foundation-state-verifier
     plan: 01
-    provides: structlog NDJSON pipeline (cua_overlay.log.configure), Pydantic state-graph contracts (UIElement, Bbox, ActionCanonical, HoarePre, HoarePost)
+    provides: structlog NDJSON pipeline (basicctrl.log.configure), Pydantic state-graph contracts (UIElement, Bbox, ActionCanonical, HoarePre, HoarePost)
   - phase: 01-foundation-state-verifier
     plan: 02
     provides: AppProfile + classify (read transitively for bundle metadata; not wired in Phase 1 wrap)
@@ -26,14 +26,14 @@ requires:
     provides: SessionWriter (~/.cua/sessions/<uuid>/), DurableExecutor (LangGraph PostgresSaver checkpoint)
 
 provides:
-  - cua_overlay/mcp_server/ subpackage — Python MCP proxy that PROXIES trycua's `cua-driver mcp`
+  - basicctrl/mcp_server/ subpackage — Python MCP proxy that PROXIES trycua's `cua-driver mcp`
   - main.py bootstrap — spawns `cua-driver mcp` via mcp.client.stdio.stdio_client + initialises full Phase 1 stack
   - proxy.py — ACTION_CLASS_TOOLS table (10 upstream tool names → 4 canonical action classes) + register_proxied_tool wrapper
   - healing_tools.py — click_with_healing (Phase 1 thin wrapper; Phase 3 swaps body for 5-branch recovery)
-  - __main__.py — `python -m cua_overlay.mcp_server` entry point
+  - __main__.py — `python -m basicctrl.mcp_server` entry point
   - tests/integration/test_mcp_proxy.py — 4 integration tests (skip cleanly when cua-driver binary unavailable)
   - Per-action wrap recipe: PRE-snapshot (HoarePre + L1Cheap.snapshot) → FIRE (upstream.call_tool) → POST (Aggregator.verify) → LOG (SessionWriter.append_action_log) → CHECKPOINT (DurableExecutor.checkpoint, best-effort)
-  - T-1-01 mitigated: stdio-only transport — zero TCP markers across cua_overlay/mcp_server/
+  - T-1-01 mitigated: stdio-only transport — zero TCP markers across basicctrl/mcp_server/
 
 affects:
   - 01-09 (Calculator demo) — wires the same Aggregator + SessionWriter + DurableExecutor through MCP rather than directly
@@ -61,11 +61,11 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/mcp_server/__init__.py — re-exports main + ProxyDeps"
-    - "cua_overlay/mcp_server/main.py — bootstrap with full Phase 1 stack wiring (252 lines)"
-    - "cua_overlay/mcp_server/proxy.py — ACTION_CLASS_TOOLS + register_proxied_tool + _build_minimal_target (259 lines)"
-    - "cua_overlay/mcp_server/healing_tools.py — register_healing_tools + click_with_healing (113 lines)"
-    - "cua_overlay/mcp_server/__main__.py — `python -m cua_overlay.mcp_server` entry point (14 lines)"
+    - "basicctrl/mcp_server/__init__.py — re-exports main + ProxyDeps"
+    - "basicctrl/mcp_server/main.py — bootstrap with full Phase 1 stack wiring (252 lines)"
+    - "basicctrl/mcp_server/proxy.py — ACTION_CLASS_TOOLS + register_proxied_tool + _build_minimal_target (259 lines)"
+    - "basicctrl/mcp_server/healing_tools.py — register_healing_tools + click_with_healing (113 lines)"
+    - "basicctrl/mcp_server/__main__.py — `python -m basicctrl.mcp_server` entry point (14 lines)"
     - "tests/integration/test_mcp_proxy.py — 4 integration tests + cua_driver_available fixture (352 lines)"
   modified:
     - "(none — Plan 01-08 is purely additive; no existing files touched)"
@@ -127,7 +127,7 @@ completed: 2026-04-30T01:02Z
 8. ProxyDeps(axmgr, aggregator, session, durable)
 9. StdioServerParameters(command=os.environ.get("CUA_DRIVER_BIN", "cua-driver"),
                           args=["mcp"])
-10. proxy_server = FastMCP(name="cua-maximalist")
+10. proxy_server = FastMCP(name="basicCtrl")
 11. async with stdio_client(upstream_params) as (read, write):
        async with ClientSession(read, write) as upstream:
          await upstream.initialize()
@@ -238,7 +238,7 @@ async def click_with_healing(
 
 Phase 1 the healing tool is a thin pass-through to the upstream `click` (which is itself wrapped by `register_proxied_tool`, so the verifier ladder + log + checkpoint still run). Phase 3 swaps the body for the 5-branch race (AX click + AppleScript click + CGEvent click + CDP click + Vision-grounded click; first verified channel wins; cache the winner via the recipes subdir under `~/.cua/sessions/<id>/`).
 
-The healing tool exists primarily so MCP hosts can DISCOVER the cua-maximalist surface — when they see `click_with_healing` in `list_tools`, they know they're talking to a self-healing proxy and not vanilla cua-driver.
+The healing tool exists primarily so MCP hosts can DISCOVER the basicCtrl surface — when they see `click_with_healing` in `list_tools`, they know they're talking to a self-healing proxy and not vanilla cua-driver.
 
 ## T-1-01 Mitigation (stdio only, never TCP)
 
@@ -246,16 +246,16 @@ Threat T-1-01 (LOW, Spoofing): MCP server tool-call surface.
 
 **Surface:** Anyone with write access to the proxy's transport could invoke MCP tools.
 
-**Mitigation:** FastMCP.run_stdio_async() exclusively. Acceptance grep across the entire `cua_overlay/mcp_server/` directory for TCP markers (`socket.AF_INET`, `listen(`, `.bind(`) returns 0 matches. Only locally-running clients (Claude Code, Cursor, Codex) that spawned the proxy as a subprocess can connect — there is no network surface.
+**Mitigation:** FastMCP.run_stdio_async() exclusively. Acceptance grep across the entire `basicctrl/mcp_server/` directory for TCP markers (`socket.AF_INET`, `listen(`, `.bind(`) returns 0 matches. Only locally-running clients (Claude Code, Cursor, Codex) that spawned the proxy as a subprocess can connect — there is no network surface.
 
-**Verified:** `grep -rE "socket\.AF_INET|listen\(|\.bind\(" cua_overlay/mcp_server/` → 0 matches.
+**Verified:** `grep -rE "socket\.AF_INET|listen\(|\.bind\(" basicctrl/mcp_server/` → 0 matches.
 
 ## Task Commits
 
 Each task atomically committed:
 
-1. **Task 1: Bootstrap main.py + ProxyDeps + entry point** — `9c7be8f` (feat) — `cua_overlay/mcp_server/__init__.py`, `main.py`, `__main__.py`. Public-API import smoke + module-entry import smoke both green.
-2. **Task 2: Proxy logic + healing tools (PRE/FIRE/POST + click_with_healing)** — `544494f` (feat) — `cua_overlay/mcp_server/proxy.py`, `healing_tools.py`. ACTION_CLASS_TOOLS verified to contain `click` and `type_text`; verifier wrap order verified via grep counts.
+1. **Task 1: Bootstrap main.py + ProxyDeps + entry point** — `9c7be8f` (feat) — `basicctrl/mcp_server/__init__.py`, `main.py`, `__main__.py`. Public-API import smoke + module-entry import smoke both green.
+2. **Task 2: Proxy logic + healing tools (PRE/FIRE/POST + click_with_healing)** — `544494f` (feat) — `basicctrl/mcp_server/proxy.py`, `healing_tools.py`. ACTION_CLASS_TOOLS verified to contain `click` and `type_text`; verifier wrap order verified via grep counts.
 3. **Task 3: Integration tests — list_tools + healing_tool + action_log** — `5c78c28` (test) — `tests/integration/test_mcp_proxy.py` with 4 tests + `cua_driver_available` fixture. All 4 skip cleanly without `cua-driver` (the binary isn't built in the parallel-execution worktree); they will run on Akeil's Mac after `cd libs/cua-driver && swift build -c release`.
 
 ## Test Counts
@@ -346,11 +346,11 @@ uv run pytest -v -m integration tests/integration/test_mcp_proxy.py
 
 - **CORE-02 satisfied.** ToolRegistry post-action callbacks intercepted at the MCP transport layer via PRE-subscribe + POST-aggregate. No Swift edits — `libs/cua-driver/Sources/` untouched (`git diff --name-only fe217eb..HEAD libs/cua-driver/Sources/` returns empty).
 
-- **MCP-01 satisfied.** trycua's MCP tool surface preserved via passthrough (non-action tools) + wrap (action-class tools). The same MCP host that previously talked to `cua-driver mcp` directly now talks to `cua-maximalist` and sees an identical surface plus `click_with_healing`.
+- **MCP-01 satisfied.** trycua's MCP tool surface preserved via passthrough (non-action tools) + wrap (action-class tools). The same MCP host that previously talked to `cua-driver mcp` directly now talks to `basicCtrl` and sees an identical surface plus `click_with_healing`.
 
 - **MCP-02 satisfied.** `click_with_healing` registered as a Phase 1 tool. Phase 3 will swap its body for the 5-branch parallel recovery; the contract (return dict shape with `phase` + `session_id` + `note`) is locked.
 
-- **T-1-01 mitigated and verified.** stdio-only transport; `grep -rE "socket\.AF_INET|listen\(|\.bind\(" cua_overlay/mcp_server/` → 0 matches.
+- **T-1-01 mitigated and verified.** stdio-only transport; `grep -rE "socket\.AF_INET|listen\(|\.bind\(" basicctrl/mcp_server/` → 0 matches.
 
 - **Phase 2 race orchestrator unblocked.** Every translator wraps as a proxied tool; PRE/FIRE/POST/LOG/CHECKPOINT contract preserved. The race orchestrator just adds the parallel-channel race INSIDE the FIRE step.
 
@@ -360,16 +360,16 @@ uv run pytest -v -m integration tests/integration/test_mcp_proxy.py
 
 Verified post-write:
 
-- File exists: `cua_overlay/mcp_server/__init__.py`, `main.py`, `proxy.py`, `healing_tools.py`, `__main__.py`, `tests/integration/test_mcp_proxy.py`.
+- File exists: `basicctrl/mcp_server/__init__.py`, `main.py`, `proxy.py`, `healing_tools.py`, `__main__.py`, `tests/integration/test_mcp_proxy.py`.
 - Commits exist (verified via `git log --oneline`):
   - `9c7be8f` (Task 1 — feat: bootstrap MCP proxy server)
   - `544494f` (Task 2 — feat: proxy logic + healing tools)
   - `5c78c28` (Task 3 — test: integration tests for proxy)
-- Public API import smoke: `uv run python -c "from cua_overlay.mcp_server import main, ProxyDeps; from cua_overlay.mcp_server.proxy import register_proxied_tool, ACTION_CLASS_TOOLS; from cua_overlay.mcp_server.healing_tools import register_healing_tools; assert 'click' in ACTION_CLASS_TOOLS and 'type_text' in ACTION_CLASS_TOOLS"` → exits 0, prints "all imports + assertions OK".
-- Module-entry runnable: `uv run python -c "import cua_overlay.mcp_server.__main__"` → exits 0.
+- Public API import smoke: `uv run python -c "from basicctrl.mcp_server import main, ProxyDeps; from basicctrl.mcp_server.proxy import register_proxied_tool, ACTION_CLASS_TOOLS; from basicctrl.mcp_server.healing_tools import register_healing_tools; assert 'click' in ACTION_CLASS_TOOLS and 'type_text' in ACTION_CLASS_TOOLS"` → exits 0, prints "all imports + assertions OK".
+- Module-entry runnable: `uv run python -c "import basicctrl.mcp_server.__main__"` → exits 0.
 - Plan-level test count: 4 SKIPPED (cua-driver not on PATH; tests will pass on Akeil's Mac after build + PATH update).
 - Phase regression count: 124 passed + 18 skipped under `SKIP_INTEGRATION=1` — no regressions in Plans 01-07 unit suites.
-- Verification grep step 3 (no TCP transport): 0 matches across `cua_overlay/mcp_server/`.
+- Verification grep step 3 (no TCP transport): 0 matches across `basicctrl/mcp_server/`.
 - Acceptance criteria: every grep count ≥ specified threshold (FastMCP=4, stdio_client=4, run_stdio_async=7, Aggregator=5, SessionWriter|DurableExecutor=12, args=["mcp"]=1, ACTION_CLASS_TOOLS=6, click_with_healing in healing_tools.py=7, @proxy.tool=1, test functions=8, integration markers=4).
 
 ---

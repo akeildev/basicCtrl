@@ -9,7 +9,7 @@ requires:
   - phase: 00-bootstrap
     provides: project skeleton, .planning/, ROADMAP.md, REQUIREMENTS.md, research artifacts
 provides:
-  - cua_overlay/ Python package skeleton with __version__ + state subpackage
+  - basicctrl/ Python package skeleton with __version__ + state subpackage
   - libs/cua-driver/ vendored read-only from trycua/cua @ 2304df1f (CLI, Core, Server, App, Tests, Skills, scripts)
   - libs/python/mcp-server/ vendored from trycua (Plan 08 reference)
   - Package.swift root SPM shim re-exporting CuaDriverCore + CuaDriverServer
@@ -66,14 +66,14 @@ key-files:
     - "Package.swift — root SPM shim, header records vendoring source commit"
     - "libs/cua-driver/ (181 vendored files) — trycua Swift driver, READ-ONLY"
     - "libs/python/mcp-server/ — vendored MCP server reference for Plan 08"
-    - "cua_overlay/__init__.py — __version__ = '0.1.0'"
-    - "cua_overlay/log.py — structlog NDJSON pipeline + T-1-03 redaction"
-    - "cua_overlay/state/__init__.py — public re-exports of state types"
-    - "cua_overlay/state/graph.py — Bbox, Capability, Source, EdgeKind, Edge, UIElement, StateGraph"
-    - "cua_overlay/state/fingerprint.py — composite_key tier ladder"
-    - "cua_overlay/state/snapshot.py — atomic dump/load JSON snapshot"
-    - "cua_overlay/state/causal_dag.py — ActionCanonical, HoarePre, HoarePost, CausalDAG"
-    - "cua_overlay/state/ring_buffer.py — StateSnapshot, TemporalRingBuffer"
+    - "basicctrl/__init__.py — __version__ = '0.1.0'"
+    - "basicctrl/log.py — structlog NDJSON pipeline + T-1-03 redaction"
+    - "basicctrl/state/__init__.py — public re-exports of state types"
+    - "basicctrl/state/graph.py — Bbox, Capability, Source, EdgeKind, Edge, UIElement, StateGraph"
+    - "basicctrl/state/fingerprint.py — composite_key tier ladder"
+    - "basicctrl/state/snapshot.py — atomic dump/load JSON snapshot"
+    - "basicctrl/state/causal_dag.py — ActionCanonical, HoarePre, HoarePost, CausalDAG"
+    - "basicctrl/state/ring_buffer.py — StateSnapshot, TemporalRingBuffer"
     - "scripts/doctor.py — environment doctor with rich-coloured table"
     - "tests/conftest.py — session_dir, calculator_pid, structlog reset"
     - "tests/unit/test_scaffold.py — 4 Wave 0 scaffold tests"
@@ -87,7 +87,7 @@ key-files:
 key-decisions:
   - "Vendor trycua/cua at 2304df1f as a read-only copy under libs/cua-driver/ rather than a git submodule — guarantees the 'never edit libs/cua-driver/' hard rule survives rebases by making them explicit, audited operations rather than silent submodule pointer updates."
   - "Use dict[str, object] for ActionCanonical.payload — mypy strict requires type args; the architectural intent is heterogeneous channel-specific dicts (button/x/y for click, text/modifiers for type, etc.) without constraining values."
-  - "Defer cua_overlay.log import inside the structlog conftest fixture — Task 1 conftest references the log module that Task 2 creates; lazy import keeps the test ordering safe and the fixture a no-op if the module is missing."
+  - "Defer basicctrl.log import inside the structlog conftest fixture — Task 1 conftest references the log module that Task 2 creates; lazy import keeps the test ordering safe and the fixture a no-op if the module is missing."
   - "structlog processor order is merge_contextvars → _redact_sensitive → TimeStamper → add_log_level → JSONRenderer. Redaction is AFTER contextvar merge so sensitive fields bound via bind_contextvars are also redacted; redaction is BEFORE timestamp/level so the audit trail still shows the redaction happened."
   - "TemporalRingBuffer PRECEDES edges have src == dst (same composite_key); timestamp_ns disambiguates which frame. Avoids inventing per-frame composite_keys and keeps the edge-list shape uniform with TRIGGERS/CONTAINS edges."
   - "HoarePost.verified must equal confidence >= 0.5, enforced by model_validator(mode='after'). Stops callers from desyncing the boolean and the float."
@@ -116,7 +116,7 @@ completed: 2026-04-29T23:56:49Z
 
 # Phase 1 Plan 1: Foundation Scaffold + State-Graph Contracts Summary
 
-**cua_overlay Python package locked above the vendored trycua Swift driver, with Pydantic v2 state-graph + causal-DAG + temporal-ring contracts that every Phase 1-6 module imports verbatim.**
+**basicctrl Python package locked above the vendored trycua Swift driver, with Pydantic v2 state-graph + causal-DAG + temporal-ring contracts that every Phase 1-6 module imports verbatim.**
 
 ## Performance
 
@@ -142,7 +142,7 @@ completed: 2026-04-29T23:56:49Z
 
 Each task was committed atomically:
 
-1. **Task 1: Fork trycua + scaffold + deps + pytest** — `92ba930` (feat) — vendoring + pyproject.toml + Makefile + .gitignore + scripts/doctor.py + cua_overlay package skeleton + tests/conftest.py + tests/unit/test_scaffold.py.
+1. **Task 1: Fork trycua + scaffold + deps + pytest** — `92ba930` (feat) — vendoring + pyproject.toml + Makefile + .gitignore + scripts/doctor.py + basicctrl package skeleton + tests/conftest.py + tests/unit/test_scaffold.py.
 2. **Task 2: Lock UIElement state-graph contracts (STATE-01)** — `11d1c54` (feat) — graph.py + fingerprint.py + snapshot.py + log.py + state/__init__.py re-exports + 10 tests (6 state graph + 4 fingerprint).
 3. **Task 3: Lock action + causal contracts (STATE-02, STATE-03)** — `4ccbb44` (feat) — causal_dag.py + ring_buffer.py + 9 tests (3 ring buffer + 6 causal DAG).
 4. **Auto-fix: ActionCanonical.payload typing for mypy strict** — `a06c7b5` (fix) — Rule-1 fix; `dict` → `dict[str, object]` to satisfy `[tool.mypy] strict=true`.
@@ -150,14 +150,14 @@ Each task was committed atomically:
 ## Files Created/Modified
 
 ### Python overlay
-- `cua_overlay/__init__.py` — package marker, `__version__ = "0.1.0"`.
-- `cua_overlay/log.py` — structlog NDJSON pipeline with merge_contextvars + sensitive-field redaction (T-1-03 mitigation).
-- `cua_overlay/state/__init__.py` — public re-exports: Bbox, Capability, Edge, EdgeKind, Source, StateGraph, UIElement.
-- `cua_overlay/state/graph.py` — Bbox (4px-grid centroid), Capability, Source, EdgeKind, Edge (frozen), UIElement (22 fields), StateGraph.upsert/get/add_child.
-- `cua_overlay/state/fingerprint.py` — `compute_composite_key(elem)` tier ladder.
-- `cua_overlay/state/snapshot.py` — `dump_snapshot`/`load_snapshot` with atomic tmp+os.replace and version-field validation.
-- `cua_overlay/state/causal_dag.py` — ActionCanonical, HoarePre, HoarePost, CausalDAG.
-- `cua_overlay/state/ring_buffer.py` — StateSnapshot, TemporalRingBuffer.
+- `basicctrl/__init__.py` — package marker, `__version__ = "0.1.0"`.
+- `basicctrl/log.py` — structlog NDJSON pipeline with merge_contextvars + sensitive-field redaction (T-1-03 mitigation).
+- `basicctrl/state/__init__.py` — public re-exports: Bbox, Capability, Edge, EdgeKind, Source, StateGraph, UIElement.
+- `basicctrl/state/graph.py` — Bbox (4px-grid centroid), Capability, Source, EdgeKind, Edge (frozen), UIElement (22 fields), StateGraph.upsert/get/add_child.
+- `basicctrl/state/fingerprint.py` — `compute_composite_key(elem)` tier ladder.
+- `basicctrl/state/snapshot.py` — `dump_snapshot`/`load_snapshot` with atomic tmp+os.replace and version-field validation.
+- `basicctrl/state/causal_dag.py` — ActionCanonical, HoarePre, HoarePost, CausalDAG.
+- `basicctrl/state/ring_buffer.py` — StateSnapshot, TemporalRingBuffer.
 
 ### Tests
 - `tests/__init__.py`, `tests/unit/__init__.py`, `tests/integration/__init__.py` — package markers.
@@ -193,11 +193,11 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Tighten `ActionCanonical.payload` typing for mypy strict**
-- **Found during:** Plan-level verification step 2 (`uv run mypy cua_overlay/state/`).
+- **Found during:** Plan-level verification step 2 (`uv run mypy basicctrl/state/`).
 - **Issue:** `payload: dict` triggered `error: Missing type arguments for generic type "dict"` under `[tool.mypy] strict=true` (which the plan itself set in pyproject.toml).
 - **Fix:** Changed to `payload: dict[str, object]` — captures the architectural intent (heterogeneous channel-specific payloads) without constraining values.
-- **Files modified:** `cua_overlay/state/causal_dag.py`.
-- **Verification:** `uv run mypy cua_overlay/state/` → "Success: no issues found in 6 source files"; 23/23 tests still green.
+- **Files modified:** `basicctrl/state/causal_dag.py`.
+- **Verification:** `uv run mypy basicctrl/state/` → "Success: no issues found in 6 source files"; 23/23 tests still green.
 - **Committed in:** `a06c7b5`.
 
 **2. [Rule 2 - Missing Critical] Add SPM build artifacts to .gitignore**
@@ -210,16 +210,16 @@ Each task was committed atomically:
 
 **3. [Rule 3 - Blocking] Add hatchling build-system to pyproject.toml**
 - **Found during:** Task 1 `uv pip install -e ".[dev]"`.
-- **Issue:** Plan's pyproject.toml omitted `[build-system]` — uv refuses to install an editable package without one. The plan specified `cua_overlay/` as the package layout, so we need a build backend that knows how to find it.
-- **Fix:** Added `[build-system] requires = ["hatchling"] build-backend = "hatchling.build"` and `[tool.hatch.build.targets.wheel] packages = ["cua_overlay"]`.
+- **Issue:** Plan's pyproject.toml omitted `[build-system]` — uv refuses to install an editable package without one. The plan specified `basicctrl/` as the package layout, so we need a build backend that knows how to find it.
+- **Fix:** Added `[build-system] requires = ["hatchling"] build-backend = "hatchling.build"` and `[tool.hatch.build.targets.wheel] packages = ["basicctrl"]`.
 - **Files modified:** `pyproject.toml`.
 - **Verification:** `uv pip install -e ".[dev]"` succeeds; all 23 tests run.
 - **Committed in:** `92ba930` (rolled into Task 1).
 
-**4. [Rule 3 - Blocking] Defer `cua_overlay.log` import inside conftest fixture**
+**4. [Rule 3 - Blocking] Defer `basicctrl.log` import inside conftest fixture**
 - **Found during:** Task 1 (conftest.py write).
-- **Issue:** Plan's Task 1 step 8 specifies `cua_log.configure(testing=True)` in an autouse fixture, but `cua_overlay.log` is created in Task 2 step 1. Without deferral, the Task 1 scaffold tests would fail to collect.
-- **Fix:** Wrap the `from cua_overlay import log as cua_log` inside a `try/except ImportError` that yields a no-op fixture. Fixture becomes a real reset once Task 2 lands.
+- **Issue:** Plan's Task 1 step 8 specifies `cua_log.configure(testing=True)` in an autouse fixture, but `basicctrl.log` is created in Task 2 step 1. Without deferral, the Task 1 scaffold tests would fail to collect.
+- **Fix:** Wrap the `from basicctrl import log as cua_log` inside a `try/except ImportError` that yields a no-op fixture. Fixture becomes a real reset once Task 2 lands.
 - **Files modified:** `tests/conftest.py`.
 - **Verification:** Task 1 scaffold tests pass with no `log.py`; Task 2 tests pass once `log.py` lands; the structlog redaction smoke test (verification step 5) confirms the fixture is doing real work.
 - **Committed in:** `92ba930` (Task 1 — pre-emptive deferral).
@@ -248,14 +248,14 @@ None — TDD RED → GREEN → atomic-commit cycle ran cleanly across all three 
 ```bash
 brew install postgresql@16
 brew services start postgresql@16
-createdb cua_maximalist
+createdb basicctrl
 ```
 
 No environment variables required for Plan 01-01.
 
 ## Next Phase Readiness
 
-- **Phase 1 plans 02-09 unblocked.** Every downstream plan can `from cua_overlay.state.graph import UIElement, Bbox, ...` and `from cua_overlay.state.causal_dag import ActionCanonical, HoarePre, HoarePost` without redefinition. The composite_key tier ladder, atomic snapshot persistence, and structlog redaction pipeline are all in place.
+- **Phase 1 plans 02-09 unblocked.** Every downstream plan can `from basicctrl.state.graph import UIElement, Bbox, ...` and `from basicctrl.state.causal_dag import ActionCanonical, HoarePre, HoarePost` without redefinition. The composite_key tier ladder, atomic snapshot persistence, and structlog redaction pipeline are all in place.
 - **CORE-01, STATE-01, STATE-02, STATE-03 satisfied.** Plan 02 (App Profile probe) can begin immediately; Plan 03 (T1 AX translator) inherits the Pydantic schemas verbatim; Plan 04 (push-event verifier) writes into the CausalDAG; Plan 05 (deterministic ensemble) writes HoarePost objects; Plan 07 (PostgresSaver) checkpoints StateGraph + CausalDAG state.
 - **Vendored Swift driver verified untouched.** `git diff --name-only libs/cua-driver/Sources/` returns empty — Phase 6 SPI bridges and Plan 08 MCP hook can rely on the source being the trycua HEAD at `2304df1f`.
 - **Threat T-1-03 mitigated and tested.** Smoke-test confirms `pasteboard_contents` and `password` redact to `[REDACTED]` in the NDJSON output.
@@ -264,7 +264,7 @@ No environment variables required for Plan 01-01.
 
 Verified post-write:
 
-- File exists: `pyproject.toml`, `cua_overlay/__init__.py`, `cua_overlay/log.py`, `cua_overlay/state/graph.py`, `cua_overlay/state/fingerprint.py`, `cua_overlay/state/snapshot.py`, `cua_overlay/state/causal_dag.py`, `cua_overlay/state/ring_buffer.py`, `cua_overlay/state/__init__.py`, `tests/conftest.py`, `tests/unit/test_scaffold.py`, `tests/unit/test_state_graph.py`, `tests/unit/test_fingerprint.py`, `tests/unit/test_ring_buffer.py`, `tests/integration/test_causal_dag.py`, `scripts/doctor.py`, `Makefile`, `.gitignore`, `Package.swift`, `libs/cua-driver/Sources/CuaDriverServer/ToolRegistry.swift`.
+- File exists: `pyproject.toml`, `basicctrl/__init__.py`, `basicctrl/log.py`, `basicctrl/state/graph.py`, `basicctrl/state/fingerprint.py`, `basicctrl/state/snapshot.py`, `basicctrl/state/causal_dag.py`, `basicctrl/state/ring_buffer.py`, `basicctrl/state/__init__.py`, `tests/conftest.py`, `tests/unit/test_scaffold.py`, `tests/unit/test_state_graph.py`, `tests/unit/test_fingerprint.py`, `tests/unit/test_ring_buffer.py`, `tests/integration/test_causal_dag.py`, `scripts/doctor.py`, `Makefile`, `.gitignore`, `Package.swift`, `libs/cua-driver/Sources/CuaDriverServer/ToolRegistry.swift`.
 - Commits exist (verified via `git log --oneline`): `92ba930` (Task 1), `11d1c54` (Task 2), `4ccbb44` (Task 3), `a06c7b5` (mypy fix).
 - Test count: 23/23 PASSED (`uv run pytest -q tests/`). mypy strict zero errors. doctor exit 0.
 

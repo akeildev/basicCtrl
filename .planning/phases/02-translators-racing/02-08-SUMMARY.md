@@ -7,14 +7,14 @@ tags: [TRANS-04, T4, uitag, ocrmac, asyncio, to_thread, D-05, D-06, D-08, D-14, 
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.state.graph.UIElement + Bbox + Source.OCR + Source.PIXEL
+    provides: basicctrl.state.graph.UIElement + Bbox + Source.OCR + Source.PIXEL
   - phase: 02-translators-racing
-    provides: cua_overlay.translators.base (Translator Protocol, TranslatorTarget with grounded_bbox field, TargetSpec from Plan 02-04)
+    provides: basicctrl.translators.base (Translator Protocol, TranslatorTarget with grounded_bbox field, TargetSpec from Plan 02-04)
   - external: uitag==0.6.0 (D-05; verified PyPI 2026-04-09; pulls transformers>=5.0.0 transitively per D-08), ocrmac==1.0.1 (Phase 1 dep)
 provides:
-  - cua_overlay.translators.t4_vision.T4VisionTranslator — concrete T4 translator (tier='T4') wrapping uitag.run_pipeline + ocrmac fallback
-  - cua_overlay.translators.t4_vision._detection_to_uielement — uitag.Detection → UIElement adapter (Source.OCR for vision_text, Source.PIXEL otherwise)
-  - cua_overlay.translators.t4_vision._score_detections — label-substring case-insensitive matching with highest-confidence tiebreak
+  - basicctrl.translators.t4_vision.T4VisionTranslator — concrete T4 translator (tier='T4') wrapping uitag.run_pipeline + ocrmac fallback
+  - basicctrl.translators.t4_vision._detection_to_uielement — uitag.Detection → UIElement adapter (Source.OCR for vision_text, Source.PIXEL otherwise)
+  - basicctrl.translators.t4_vision._score_detections — label-substring case-insensitive matching with highest-confidence tiebreak
   - 8 unit tests for T4 (mocked uitag PipelineResult/Detection via patch.dict + thread isolation assertion)
 affects:
   - phase-02 plan 02-09 (T5 Pixel translator delegates coordinate resolution to T4 per D-07; T4 must ship first — now unblocked)
@@ -34,9 +34,9 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/translators/t4_vision.py — T4VisionTranslator class; _screenshot_to_path uses CGWindowListCreateImage; _run_uitag wraps run_pipeline in asyncio.to_thread; _ocrmac_fallback wraps ocrmac.OCR.recognize() in asyncio.to_thread; _detection_to_uielement maps Detection fields to UIElement; _score_detections does label-substring matching"
+    - "basicctrl/translators/t4_vision.py — T4VisionTranslator class; _screenshot_to_path uses CGWindowListCreateImage; _run_uitag wraps run_pipeline in asyncio.to_thread; _ocrmac_fallback wraps ocrmac.OCR.recognize() in asyncio.to_thread; _detection_to_uielement maps Detection fields to UIElement; _score_detections does label-substring matching"
   modified:
-    - "cua_overlay/translators/__init__.py — re-exports T4VisionTranslator alongside T1/T2/T3"
+    - "basicctrl/translators/__init__.py — re-exports T4VisionTranslator alongside T1/T2/T3"
     - "tests/unit/translators/test_t4_vision.py — replaced Wave-0 importorskip stub with 8 mocked-uitag tests"
 
 key-decisions:
@@ -60,7 +60,7 @@ requirements-completed:
 threats_mitigated:
   - "T-2-04 uitag bbox origin: physical pixels vs logical points (Retina). Mitigated by emitting (image_width, image_height) at INFO level in `t4.uitag_completed` event on every resolve. First-integration Chess test (Plan 02-12) will compare these against Quartz screensize; if 2:1 ratio observed, RESEARCH A1 mitigation applies a divisor inside _detection_to_uielement (work item for Plan 02-12 if the ratio surfaces). Verification: tests/unit/translators/test_t4_vision.py::test_run_uitag_runs_in_to_thread asserts (iw=1024, ih=768) round-trip from PipelineResult."
   - "Pitfall C uitag-blocks-event-loop — T4._run_uitag wraps the synchronous run_pipeline in `await asyncio.to_thread(_sync)`, executing inference (1-5s wall time) on a worker thread. Race orchestrator's other channels (C1/C2/C5) make progress in parallel. Verified by test_run_uitag_runs_in_to_thread (asserts captured thread name != 'MainThread'). Same pattern applies to ocrmac fallback (also wrapped in asyncio.to_thread)."
-  - "D-06 hard rule (no MacPaw/Screen2AX) — `grep -ci 'screen2ax\\|macpaw' cua_overlay/translators/t4_vision.py` returns 0. Verified at acceptance-criteria check-time AND runtime-asserted by test_no_screen2ax_or_macpaw_imports (reads module source; asserts both literal and lower-case forms absent). Mitigates against accidental reintroduction during refactor."
+  - "D-06 hard rule (no MacPaw/Screen2AX) — `grep -ci 'screen2ax\\|macpaw' basicctrl/translators/t4_vision.py` returns 0. Verified at acceptance-criteria check-time AND runtime-asserted by test_no_screen2ax_or_macpaw_imports (reads module source; asserts both literal and lower-case forms absent). Mitigates against accidental reintroduction during refactor."
 
 # Metrics
 duration: 4min
@@ -77,8 +77,8 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T07:37:36Z
 - **Completed:** 2026-04-30T07:40:00Z
 - **Tasks:** 1 (`type=auto tdd=true`)
-- **Files created:** 1 (cua_overlay/translators/t4_vision.py)
-- **Files modified:** 2 (cua_overlay/translators/__init__.py, tests/unit/translators/test_t4_vision.py — replaced Wave-0 stub)
+- **Files created:** 1 (basicctrl/translators/t4_vision.py)
+- **Files modified:** 2 (basicctrl/translators/__init__.py, tests/unit/translators/test_t4_vision.py — replaced Wave-0 stub)
 
 ## Task Commits
 
@@ -153,7 +153,7 @@ T4.resolve(bundle_id='com.apple.Chess', pid, target_spec)
 
 ## D-06 Hard Rule Verification
 
-The plan's acceptance criteria specify `grep -ci 'screen2ax\|macpaw' cua_overlay/translators/t4_vision.py` returns **0**.
+The plan's acceptance criteria specify `grep -ci 'screen2ax\|macpaw' basicctrl/translators/t4_vision.py` returns **0**.
 
 Initial GREEN draft contained the literal `MacPaw / Screen2AX` in the module docstring (rationale prose: "NO MacPaw/Screen2AX in Phase 2 — research repo, conflicts with pyobjc 12.1, not on PyPI"). The grep correctly flagged it as 1. Same shape as Plan 02-06's D-03 grep deviation and Plan 02-07's D-04 grep deviation (docstring prose triggers grep-enforced rules).
 
@@ -164,7 +164,7 @@ This is now the canonical pattern for D-XX hard rules: when the rule is grep-enf
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/translators/t4_vision.py` (~290 lines) — T4VisionTranslator
+- `basicctrl/translators/t4_vision.py` (~290 lines) — T4VisionTranslator
   - `tier: Literal["T1"-"T5"] = "T4"` Protocol field
   - `_screenshot_to_path(pid)` — CGWindowListCreateImage → PIL.Image → temp PNG
   - `_run_uitag(path)` — `asyncio.to_thread(_sync)` wrapping `from uitag import run_pipeline`
@@ -175,7 +175,7 @@ This is now the canonical pattern for D-XX hard rules: when the rule is grep-enf
   - `validate(target)` — `grounded_bbox is not None`
 
 ### Modified
-- `cua_overlay/translators/__init__.py` — adds `T4VisionTranslator` re-export and to `__all__`
+- `basicctrl/translators/__init__.py` — adds `T4VisionTranslator` re-export and to `__all__`
 - `tests/unit/translators/test_t4_vision.py` — replaced Wave-0 importorskip stub with 8 mocked-uitag tests
 
 ## Acceptance Criteria — All PASS
@@ -190,7 +190,7 @@ This is now the canonical pattern for D-XX hard rules: when the rule is grep-enf
 | `T4VisionTranslator` re-exported in __init__.py | YES | YES |
 | `grep -ci 'screen2ax\|macpaw'` returns | 0 | 0 |
 | `uv run pytest -q tests/unit/translators/test_t4_vision.py` | 8 passed | 8 passed |
-| `uv run python -c "from cua_overlay.translators import T4VisionTranslator; print(T4VisionTranslator().tier)"` prints | T4 | T4 |
+| `uv run python -c "from basicctrl.translators import T4VisionTranslator; print(T4VisionTranslator().tier)"` prints | T4 | T4 |
 | Full unit suite (was 214 after 02-07) | +8 = 222 | 222 passed, 8 skipped, 29 deselected |
 
 ## Deviations from Plan
@@ -199,9 +199,9 @@ This is now the canonical pattern for D-XX hard rules: when the rule is grep-enf
 
 **1. [Rule 1 - Bug] D-06 grep-enforced 'Screen2AX/MacPaw' literals in module docstring**
 - **Found during:** Task 1 GREEN (acceptance criteria check)
-- **Issue:** Module docstring contained the literal `MacPaw / Screen2AX` substring in prose ("NO MacPaw/Screen2AX in Phase 2 — research repo..."), which the strict acceptance criterion `grep -ci 'screen2ax\|macpaw' cua_overlay/translators/t4_vision.py` correctly flagged as 1 (must be 0). Same shape as Plan 02-06's D-03 grep deviation (`browser_harness` in docstring) and Plan 02-07's D-04 grep deviation (`osascript` in docstring).
+- **Issue:** Module docstring contained the literal `MacPaw / Screen2AX` substring in prose ("NO MacPaw/Screen2AX in Phase 2 — research repo..."), which the strict acceptance criterion `grep -ci 'screen2ax\|macpaw' basicctrl/translators/t4_vision.py` correctly flagged as 1 (must be 0). Same shape as Plan 02-06's D-03 grep deviation (`browser_harness` in docstring) and Plan 02-07's D-04 grep deviation (`osascript` in docstring).
 - **Fix:** Rephrased docstring to "the synthetic-AX-tree research alternative is OUT OF SCOPE in Phase 2 — research repo, conflicts with pyobjc 12.1, not on PyPI". Preserved the D-06 reference for human readers.
-- **Files modified:** `cua_overlay/translators/t4_vision.py` (docstring only)
+- **Files modified:** `basicctrl/translators/t4_vision.py` (docstring only)
 - **Commit:** `9cf992c` (rolled into Task 1 GREEN since the file hadn't been committed yet between bug discovery and fix)
 
 ## Issues Encountered
@@ -228,10 +228,10 @@ For Plan 02-12's eventual Chess integration test (D-27):
 ## Self-Check: PASSED
 
 Files created (verified via `[ -f path ]`):
-- FOUND: `cua_overlay/translators/t4_vision.py`
+- FOUND: `basicctrl/translators/t4_vision.py`
 
 Files modified (verified):
-- FOUND: `cua_overlay/translators/__init__.py` (re-exports T4VisionTranslator)
+- FOUND: `basicctrl/translators/__init__.py` (re-exports T4VisionTranslator)
 - FOUND: `tests/unit/translators/test_t4_vision.py` (replaced Wave-0 stub with 8 mocked tests)
 
 Commits verified (all in `git log --oneline`):
@@ -239,14 +239,14 @@ Commits verified (all in `git log --oneline`):
 - FOUND: `9cf992c` feat(02-08): GREEN T4VisionTranslator (uitag + ocrmac fallback)
 
 Acceptance criteria literals (all greppable, verified):
-- FOUND: `class T4VisionTranslator`, `from uitag import run_pipeline`, `asyncio.to_thread`, `ocrmac`, `image_width` in `cua_overlay/translators/t4_vision.py`
-- VERIFIED: `grep -ci 'screen2ax|macpaw' cua_overlay/translators/t4_vision.py` returns 0 (D-06 hard rule)
-- FOUND: `T4VisionTranslator` in `cua_overlay/translators/__init__.py`
+- FOUND: `class T4VisionTranslator`, `from uitag import run_pipeline`, `asyncio.to_thread`, `ocrmac`, `image_width` in `basicctrl/translators/t4_vision.py`
+- VERIFIED: `grep -ci 'screen2ax|macpaw' basicctrl/translators/t4_vision.py` returns 0 (D-06 hard rule)
+- FOUND: `T4VisionTranslator` in `basicctrl/translators/__init__.py`
 
 Verification commands (all pass):
 - `uv run pytest -q tests/unit/translators/test_t4_vision.py` → 8 passed in 0.07s
-- `uv run python -c "from cua_overlay.translators import T4VisionTranslator; print(T4VisionTranslator().tier)"` → `T4`
-- `grep -ci "screen2ax|macpaw" cua_overlay/translators/t4_vision.py` → 0
+- `uv run python -c "from basicctrl.translators import T4VisionTranslator; print(T4VisionTranslator().tier)"` → `T4`
+- `grep -ci "screen2ax|macpaw" basicctrl/translators/t4_vision.py` → 0
 - `SKIP_INTEGRATION=1 uv run pytest -q tests/ -m "not integration and not manual"` → 222 passed, 8 skipped, 29 deselected in 1.10s (was 214 after 02-07; +8 from this plan's 8 T4 unit tests)
 
 ---

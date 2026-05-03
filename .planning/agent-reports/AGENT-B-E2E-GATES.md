@@ -105,7 +105,7 @@ Delivered 5 new e2e gates + 1 canary test (7 pytest functions total):
 ### B5: Multi-App Canary (test_canary_multi_app.py)
 
 **What it does:**
-- Spawns `python -m cua_overlay.mcp_server.main` as subprocess (stdio MCP)
+- Spawns `python -m basicctrl.mcp_server.main` as subprocess (stdio MCP)
 - Uses official `mcp.ClientSession` to initialize + list tools
 - Launches Calculator app, clicks 1+1= sequence via `call_tool("click_with_healing", ...)`
 - Optionally tries Chromium (skipped if not available) + Chess
@@ -202,11 +202,11 @@ Exit code: **0** ✓
 ## Files Created/Modified
 
 ### Created
-- `/Users/akeilsmith/dev/cua-maximalist/tests/integration/test_cdp_chromium_e2e.py` (120 LOC)
-- `/Users/akeilsmith/dev/cua-maximalist/tests/integration/test_durability_sigkill_resume_e2e.py` (230 LOC)
-- `/Users/akeilsmith/dev/cua-maximalist/tests/integration/test_visualizer_socket_e2e.py` (145 LOC)
-- `/Users/akeilsmith/dev/cua-maximalist/tests/integration/test_memory_recall_e2e.py` (175 LOC)
-- `/Users/akeilsmith/dev/cua-maximalist/tests/integration/test_canary_multi_app.py` (280 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/tests/integration/test_cdp_chromium_e2e.py` (120 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/tests/integration/test_durability_sigkill_resume_e2e.py` (230 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/tests/integration/test_visualizer_socket_e2e.py` (145 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/tests/integration/test_memory_recall_e2e.py` (175 LOC)
+- `/Users/akeilsmith/dev/basicCtrl/tests/integration/test_canary_multi_app.py` (280 LOC)
 
 ### Staged (not committed yet)
 All 5 test files staged in git, awaiting `uv run git commit -m "test(integration): add 5 e2e gates (B1-B5)"`

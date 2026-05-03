@@ -10,10 +10,10 @@ tags:
   - SwiftUI UI
 dependency_graph:
   requires:
-    - cua_overlay.state (UIElement, ActionCanonical schemas from Phase 1-4)
-    - cua_overlay.observability (SessionWriter, NDJSON persistence)
+    - basicctrl.state (UIElement, ActionCanonical schemas from Phase 1-4)
+    - basicctrl.observability (SessionWriter, NDJSON persistence)
   provides:
-    - cua_overlay.replay.diff (SessionDiffer, DiffRow, lcs_alignment)
+    - basicctrl.replay.diff (SessionDiffer, DiffRow, lcs_alignment)
     - libs/cua-driver/App/SessionDiffView.swift (side-by-side SwiftUI diff view)
     - tests/test_session_diff.py (17 comprehensive unit tests)
   affects:
@@ -30,7 +30,7 @@ tech_stack:
     - Heal event detection: verdict failed→verified at same target
 key_files:
   created:
-    - cua_overlay/replay/diff.py (163 lines)
+    - basicctrl/replay/diff.py (163 lines)
     - libs/cua-driver/App/SessionDiffView.swift (217 lines)
     - tests/test_session_diff.py (392 lines)
     - tests/fixtures/session_a.ndjson (5 actions)
@@ -65,7 +65,7 @@ metrics:
 
 Plan 05-08 completes OBS-06 (differential session compare). Implementation ships:
 
-1. **Python LCS differ** (`cua_overlay/replay/diff.py`) — O(N²) alignment + DiffRow model
+1. **Python LCS differ** (`basicctrl/replay/diff.py`) — O(N²) alignment + DiffRow model
 2. **SwiftUI diff view** (`SessionDiffView.swift`) — split-view layout with markers
 3. **Comprehensive tests** (17 unit tests) — LCS edge cases, heal event detection, fixtures
 
@@ -81,7 +81,7 @@ All tests pass. Swift builds cleanly. Ready for Phase 5 finalization.
 
 **Deliverables:**
 
-- `cua_overlay/replay/diff.py` — 163 lines
+- `basicctrl/replay/diff.py` — 163 lines
   - `lcs_alignment(seq_a, seq_b)` — O(N²) longest common subsequence
   - `DiffRow` Pydantic model (frozen) with fields: kind, step_idx_a/b, action_a/b, before/after_verdict, heal_reason
   - `SessionDiffer` class — loads two sessions from NDJSON, generates aligned diff
@@ -253,7 +253,7 @@ No new threat surface introduced by session diff:
 ## Self-Check
 
 ✅ **All created files exist:**
-- `cua_overlay/replay/diff.py` — 163 lines, imports cleanly
+- `basicctrl/replay/diff.py` — 163 lines, imports cleanly
 - `libs/cua-driver/App/SessionDiffView.swift` — 217 lines, Swift 6.0 syntax valid
 - `tests/test_session_diff.py` — 392 lines, 17 tests
 - `tests/fixtures/session_{a,b}.ndjson` — NDJSON valid

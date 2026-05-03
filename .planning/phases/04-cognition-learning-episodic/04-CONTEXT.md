@@ -36,7 +36,7 @@ Plan with multiple agents in parallel, predict ahead READ-ONLY, learn from obser
 ## Implementation Decisions
 
 ### Cognition Layer (multi-agent in parallel)
-- **D-01:** Module path `cua_overlay/cognition/` mirrors Phase 1-3 per-feature sub-package pattern.
+- **D-01:** Module path `basicctrl/cognition/` mirrors Phase 1-3 per-feature sub-package pattern.
 - **D-02:** **Apple FM (`apple-fm-sdk 0.1.1`)** is tier-0 classifier ONLY. Output is Pydantic `Literal["T1","T2","T3","T4","T5"]` or `Literal["retry","escalate","abort"]`. NEVER JSON, NEVER multi-field params (P6). Hard-validate output against allowed enum; on mismatch, fall through to next tier. Text-only API gate (P7) — Apple FM never sees pixels; if visual context needed, OCR + uitag SoM produce a textual scene description first.
 - **D-03:** **Planner (Opus 4.x)** via `anthropic` SDK with prompt caching enabled. Bounded plan generation (`max_steps=20` default). Returns Pydantic `PlanCandidate{steps, preconds, success_criteria}`.
 - **D-04:** **Grounder (UI-TARS-1.5-7B 4-bit MLX via mlx-vlm 0.4.4)** runs in PARALLEL with planner. Output: bbox candidates. **Sanity gate** rejects any output where `|x - W/2| < 10 AND |y - H/2| < 10` UNLESS pixel-hash of expected element confirms it (P4). Force re-ground via uitag if sanity gate fails.
@@ -52,10 +52,10 @@ Plan with multiple agents in parallel, predict ahead READ-ONLY, learn from obser
 - **D-12:** Background DispatchQueue, never main thread. CFRunLoop source registered on the Swift thread; events stream over JSONL stdio to Python overlay (same IPC pattern as Phase 1-2).
 - **D-13:** Auto re-enable on `tapDisabledByTimeout` — Swift side detects, re-creates the tap, emits `tap_re_enabled` event.
 - **D-14:** **Keystroke coalescing** via `CFRunLoopTimer(0.5s)` — 1 `typeText` action per word (whitespace-separated boundary) instead of N keystroke events.
-- **D-15:** Python side at `cua_overlay/learning/recorder.py` consumes JSONL events; converts to `ObservedAction` Pydantic model.
+- **D-15:** Python side at `basicctrl/learning/recorder.py` consumes JSONL events; converts to `ObservedAction` Pydantic model.
 
 ### Recipe Synthesis
-- **D-16:** `cua_overlay/learning/recipe_synth.py` — converts a sequence of `ObservedAction` events into a Recipe JSON. Schema:
+- **D-16:** `basicctrl/learning/recipe_synth.py` — converts a sequence of `ObservedAction` events into a Recipe JSON. Schema:
   ```
   Recipe {
     name, app_bundle_id, params: dict,
@@ -68,14 +68,14 @@ Plan with multiple agents in parallel, predict ahead READ-ONLY, learn from obser
 - **D-17:** Recipe ingestion: 5 minutes of recording → 1 valid Recipe JSON written to `~/.cua/sessions/<id>/recipes/<recipe_hash>.json`.
 
 ### Episodic Memory (FAISS)
-- **D-18:** `cua_overlay/state/episodic.py` (extends Phase 1 STATE-04 stub) — `EpisodicMemory` wraps `faiss-cpu==1.13.2` with IndexFlatL2 (Phase 4 scale; IVFPQ when 1M+).
+- **D-18:** `basicctrl/state/episodic.py` (extends Phase 1 STATE-04 stub) — `EpisodicMemory` wraps `faiss-cpu==1.13.2` with IndexFlatL2 (Phase 4 scale; IVFPQ when 1M+).
 - **D-19:** Keys are `(app_bundle_id, task_class, state_fingerprint)` SHA-256 hashes. Embedding model: a small local sentence-transformer (or Apple FM text embedding) — exact model TBD by planner from current options at execute time. Episodic store also keeps the embedding's `source_text` so re-embedding on model swap is possible.
 - **D-20:** **Episodic-first retrieval**: BEFORE the planner makes any LLM call, `episodic.lookup(query_state)` returns top-K matching recipes with similarity > 0.85. Cognition layer presents these to the user/agent as "I've done this before" suggestions.
 - **D-21:** Episodic memory is local-only (FAISS file at `~/.cua/episodic.faiss` + metadata sidecar JSON).
 
 ### Wiring B3 + B4 (Phase 3 stubs become real)
-- **D-22:** Phase 3 B3 stub (`world_replan_stub.py`) is replaced by `cua_overlay/recovery/branches/b3_world_replan.py` — calls `cognition/world_model.py:WorldModelPredictor.predict()` and `cognition/planner.py:Planner.replan()` to produce a new candidate action.
-- **D-23:** Phase 3 B4 stub (`planner_reqry_stub.py`) is replaced by `cua_overlay/recovery/branches/b4_planner_replan.py` — calls `cognition/critic.py:Critic.rank_candidates()` to pick best replan from N candidates.
+- **D-22:** Phase 3 B3 stub (`world_replan_stub.py`) is replaced by `basicctrl/recovery/branches/b3_world_replan.py` — calls `cognition/world_model.py:WorldModelPredictor.predict()` and `cognition/planner.py:Planner.replan()` to produce a new candidate action.
+- **D-23:** Phase 3 B4 stub (`planner_reqry_stub.py`) is replaced by `basicctrl/recovery/branches/b4_planner_replan.py` — calls `cognition/critic.py:Critic.rank_candidates()` to pick best replan from N candidates.
 - **D-24:** Both real branches still respect Phase 3 contracts: try_claim BEFORE fire, cancel_event check, RecoveryOrchestrator's max_cycles=2 gate.
 
 ### Threats & Mitigations (Phase 4)
@@ -105,7 +105,7 @@ Plan with multiple agents in parallel, predict ahead READ-ONLY, learn from obser
 - **D-32:** Total MCP tool count after Phase 4: ~17 (still under RAG-MCP ~30 sweet spot).
 
 ### Claude's Discretion
-- Internal module structure under `cua_overlay/cognition/` and `cua_overlay/learning/`
+- Internal module structure under `basicctrl/cognition/` and `basicctrl/learning/`
 - Exact embedding model for episodic memory (sentence-transformers small vs Apple FM text vs OpenAI ada-002 — pick one at planner time, document in summary)
 - Critic's pairwise comparison model (Apple FM vs Haiku 3.5 vs Opus mini)
 - Recipe schema field-naming details
@@ -117,10 +117,10 @@ Plan with multiple agents in parallel, predict ahead READ-ONLY, learn from obser
 ## Canonical References
 
 ### Phase 1-3 deliverables (must read — Phase 4 builds atop)
-- `cua_overlay/state/causal_dag.py` — ActionCanonical.kind Literal["READ","MUTATE"] (speculation gate)
-- `cua_overlay/recovery/orchestrator.py` (Phase 4 wires B3/B4 into this)
-- `cua_overlay/recovery/branches/b3_world_replan_stub.py` + `b4_planner_reqry_stub.py` (replaced)
-- `cua_overlay/cache/agent_cache.py` (episodic memory consumes from this)
+- `basicctrl/state/causal_dag.py` — ActionCanonical.kind Literal["READ","MUTATE"] (speculation gate)
+- `basicctrl/recovery/orchestrator.py` (Phase 4 wires B3/B4 into this)
+- `basicctrl/recovery/branches/b3_world_replan_stub.py` + `b4_planner_reqry_stub.py` (replaced)
+- `basicctrl/cache/agent_cache.py` (episodic memory consumes from this)
 
 ### Stack refs
 - `apple-fm-sdk 0.1.1` (PyPI) — text-only, requires macOS 26 + Apple Intelligence ON

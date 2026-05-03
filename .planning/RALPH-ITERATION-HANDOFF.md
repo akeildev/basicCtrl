@@ -172,7 +172,7 @@ Each one above unlocks a "real medium proven" tick.
   (a) drop `print(..., file=sys.stderr, flush=True)` into production code
       (works — used during F1/F2 debugging), OR
   (b) flip `cache_logger_on_first_use=False` AND drop the autouse fixture
-      AND set the env var BEFORE `cua_overlay.log` is imported (heavy).
+      AND set the env var BEFORE `basicctrl.log` is imported (heavy).
 
 ## Hard constraints (do not violate)
 
@@ -198,9 +198,9 @@ If next Ralph iteration starts with a fresh /clear:
 
 ## Files modified in this iteration (uncommitted state should be clean)
 
-- `cua_overlay/recovery/branches/b1_rescroll.py`, `b2_ocr_reground.py`, `b5_applescript.py` (4 attribute fixes + 2 missing imports)
-- `cua_overlay/profile/known_apps.py` (Calculator priority added T5)
-- `cua_overlay/translators/t1_ax.py` (debug prints removed clean)
+- `basicctrl/recovery/branches/b1_rescroll.py`, `b2_ocr_reground.py`, `b5_applescript.py` (4 attribute fixes + 2 missing imports)
+- `basicctrl/profile/known_apps.py` (Calculator priority added T5)
+- `basicctrl/translators/t1_ax.py` (debug prints removed clean)
 - `tests/conftest.py` (function-scoped calculator_pid: AX-readiness probe + no SIGTERM + AppleScript timeout-safe)
 - `tests/unit/recovery/conftest.py` (MagicMock not AsyncMock for sync APIs)
 - `tests/unit/recovery/test_branches.py` (real UIElement + MagicMock idempotency)

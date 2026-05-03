@@ -35,7 +35,7 @@ Plan 06-04 implements SPI-07 WebKit RemoteInspector as a stub bridge with full c
 
 ### Task 1: WebKit RemoteInspector Wrapper
 
-**File:** `cua_overlay/spi/webkit_inspector.py`
+**File:** `basicctrl/spi/webkit_inspector.py`
 
 **Class:** `WebKitInspectorBridge`
 - Stub implementation per RESEARCH.md L50 (MEDIUM confidence, private API)
@@ -123,7 +123,7 @@ None. Plan executed exactly as written:
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `cua_overlay/spi/webkit_inspector.py` | 74 | WebKit RemoteInspector wrapper stub |
+| `basicctrl/spi/webkit_inspector.py` | 74 | WebKit RemoteInspector wrapper stub |
 | `tests/test_spi_webkit.py` | 136 | Unit tests (7 cases: init, caching, fallback, capability) |
 
 **Total: 2 files, 210 lines**
@@ -185,7 +185,7 @@ None. Plan executed exactly as written:
 
 | Stub | File | Line | Reason |
 |------|------|------|--------|
-| `async evaluate_js_in_safari(script: str) -> str` returns None | `cua_overlay/spi/webkit_inspector.py` | 42-57 | RemoteInspector protocol undocumented; full implementation deferred to future phase when WebKit headers documented or reverse-engineered |
+| `async evaluate_js_in_safari(script: str) -> str` returns None | `basicctrl/spi/webkit_inspector.py` | 42-57 | RemoteInspector protocol undocumented; full implementation deferred to future phase when WebKit headers documented or reverse-engineered |
 
 This stub is **intentional and tracked**. Safari deep access currently falls back to T3 AppleScript, which is acceptable for Phase 6 Wave 1. Future phase (Phase 6 Wave 2 or Phase 7) can add Safari JavaScript introspection if RemoteInspector becomes available.
 

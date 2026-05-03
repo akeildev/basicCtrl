@@ -224,10 +224,10 @@ On load, reader checks version + available fields. Schema v2 adds new fields but
 
 - [ ] `libs/cua-driver/App/Visualizer*.swift` — Ghost cursor, element box, HUD, hotkey handler
 - [ ] `libs/cua-driver/App/Recorder.swift` — VideoToolbox H.265 encoder + metadata writer
-- [ ] `cua_overlay/visualizer_bus.py` — IPC channel to Visualizer sidecar (unix socket NDJSON)
-- [ ] `cua_overlay/replay/engine.py` — StateNode reconstruction from action_log.ndjson
-- [ ] `cua_overlay/replay/timeline.py` — 3D scatter plot data model + isometric projection
-- [ ] `cua_overlay/replay/diff.py` — LCS alignment of two session action_logs
+- [ ] `basicctrl/visualizer_bus.py` — IPC channel to Visualizer sidecar (unix socket NDJSON)
+- [ ] `basicctrl/replay/engine.py` — StateNode reconstruction from action_log.ndjson
+- [ ] `basicctrl/replay/timeline.py` — 3D scatter plot data model + isometric projection
+- [ ] `basicctrl/replay/diff.py` — LCS alignment of two session action_logs
 - [ ] Tests framework: `tests/conftest.py` fixtures for MockSCStream, MockAVPlayer, MockVisualizer
 
 ### Phase 5 Test Infrastructure
@@ -241,7 +241,7 @@ On load, reader checks version + available fields. Schema v2 adds new fields but
 
 **Quick smoke (per-task commit):** `pytest tests/test_visualizer.py -k "not performance" --tb=short` (~30s)
 
-**Full suite (per-wave merge):** `pytest tests/test_*.py --cov=cua_overlay --cov=libs/cua-driver/App -x` (~2min, covers all 6 VIS + 6 OBS)
+**Full suite (per-wave merge):** `pytest tests/test_*.py --cov=basicctrl --cov=libs/cua-driver/App -x` (~2min, covers all 6 VIS + 6 OBS)
 
 **Phase gate:** Full suite green + recording artifact created + replay deterministic ✓ before `/gsd-verify-work`
 

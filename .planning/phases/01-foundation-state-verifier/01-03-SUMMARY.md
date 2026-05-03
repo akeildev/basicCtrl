@@ -10,7 +10,7 @@ requires:
     plan: 01
     provides: UIElement, Bbox, Source enum, structlog log.py, Pydantic state-graph contracts, tests/conftest.py with calculator_pid fixture
 provides:
-  - cua_overlay/ax/ subpackage with locked public surface (8 exports)
+  - basicctrl/ax/ subpackage with locked public surface (8 exports)
   - TokenBucket(rate_per_sec=20.0, capacity=20) — per-pid AX call rate limiter (P2 mitigation)
   - walk_subtree() — iterative BFS depth-limited walker (P3 mitigation; max_depth=3, max_children=50, max_nodes=500; emits truncated flag + cap_hit reason)
   - has_blocking_modal() — pre-action modal probe (P25 mitigation; scans up to 10 top-level windows for AXModal=True)
@@ -33,18 +33,18 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/ax/__init__.py — public API exports (8 names: 6 errors + axerror_from_code, TokenBucket, walk_subtree + WalkResult, has_blocking_modal, AXUIElementWrapper)"
-    - "cua_overlay/ax/errors.py — AXError + 6 typed subclasses + axerror_from_code; canonical AX error codes pulled from HIServices via try/import-fallback"
-    - "cua_overlay/ax/rate_limit.py — TokenBucket per-pid (20/sec/pid) with asyncio.Lock + structlog ax.rate_limited deny event"
-    - "cua_overlay/ax/walker.py — walk_subtree iterative BFS + WalkResult + _read_attr (typed-error-mapping AXUIElementCopyAttributeValue) + _coords_to_bbox"
-    - "cua_overlay/ax/modal_probe.py — has_blocking_modal(pid, *, bundle_id, bucket); MAX_WINDOWS_TO_CHECK=10"
-    - "cua_overlay/ax/element.py — AXUIElementWrapper façade with 100ms read cache (CACHE_TTL_SECONDS=0.1)"
+    - "basicctrl/ax/__init__.py — public API exports (8 names: 6 errors + axerror_from_code, TokenBucket, walk_subtree + WalkResult, has_blocking_modal, AXUIElementWrapper)"
+    - "basicctrl/ax/errors.py — AXError + 6 typed subclasses + axerror_from_code; canonical AX error codes pulled from HIServices via try/import-fallback"
+    - "basicctrl/ax/rate_limit.py — TokenBucket per-pid (20/sec/pid) with asyncio.Lock + structlog ax.rate_limited deny event"
+    - "basicctrl/ax/walker.py — walk_subtree iterative BFS + WalkResult + _read_attr (typed-error-mapping AXUIElementCopyAttributeValue) + _coords_to_bbox"
+    - "basicctrl/ax/modal_probe.py — has_blocking_modal(pid, *, bundle_id, bucket); MAX_WINDOWS_TO_CHECK=10"
+    - "basicctrl/ax/element.py — AXUIElementWrapper façade with 100ms read cache (CACHE_TTL_SECONDS=0.1)"
     - "tests/unit/test_rate_limit.py — 6 tests (initial-burst-20, 21st-deny, per-pid-isolation, refill-at-20/sec frozen-clock, structlog-deny-event, non-blocking-deny)"
     - "tests/unit/test_ax_errors.py — 9 tests (canonical -252xx tripwire, parametrised 6 subclasses, unknown-code fallback, message-includes-code)"
     - "tests/unit/test_walker.py — 8 tests (depth/children/nodes caps + no-truncation, role_path emission, default-caps signature, no-recursion source check, rate-limit-throttle integration)"
     - "tests/integration/test_modal_probe.py — 7 tests (1 real-Calculator skipped under SKIP_INTEGRATION=1, 1 manual-only @skip, 5 mock-driven + 2 cache-behaviour)"
   modified:
-    - "(none — Plan 01-03 is purely additive; cua_overlay/state/* stay untouched per Plan 01-01 contract)"
+    - "(none — Plan 01-03 is purely additive; basicctrl/state/* stay untouched per Plan 01-01 contract)"
 
 key-decisions:
   - "Source AX error codes from PyObjC HIServices's live exports (`from HIServices import kAXErrorAPIDisabled, ...`) rather than hardcoded integer literals. macOS 26.4's AXError.h verified to match canonical values (-25202 / -25204 / -25205 / -25206 / -25207 / -25211); a tripwire test (test_canonical_axerror_h_values) fails immediately if Apple changes the integer values in macOS 27+."
@@ -52,7 +52,7 @@ key-decisions:
   - "Walker cap_hit ladder: nodes > children > depth (first-hit wins, but nodes is checked before pop-from-queue so it always wins for >=max_nodes-tree). Recorded in WalkResult.cap_hit string; downstream verifier confidence drops by 0.1 / 0.2 / 0.3 depending on which cap fired (consumer-side mapping, not enforced here)."
   - "Modal probe is intentionally NOT a walker — it scans top-level windows only via direct AXModal read. A walker invocation would defeat the point: modals often coincide with main-thread saturation, and we want to know within a single bucket-token whether to abort the action."
   - "AXUIElementWrapper raises AXError on InvalidUIElement / NotificationUnsupported (in addition to the API-disabled / cannot-complete codes that walker raises on). Reason: the wrapper is the high-level façade that VERIFIER code uses, and the verifier needs to know if its AX ref went stale or if a notification couldn't be subscribed. Walker is bulk-read and treats those as 'attribute not present'."
-  - "Tests freeze time.monotonic via monkeypatch on cua_overlay.ax.rate_limit.time.monotonic rather than mocking the whole time module. This keeps refill-rate tests deterministic without affecting other tests' real-clock behaviour."
+  - "Tests freeze time.monotonic via monkeypatch on basicctrl.ax.rate_limit.time.monotonic rather than mocking the whole time module. This keeps refill-rate tests deterministic without affecting other tests' real-clock behaviour."
 
 patterns-established:
   - "Pattern: PyObjC live-import-with-integer-fallback for AX-framework constants — try/import the named const, fall back to literal value with a comment recording the AXError.h-verified value"
@@ -73,7 +73,7 @@ completed: 2026-04-30T00:22:46Z
 
 # Phase 1 Plan 3: AX Safety Primitives Summary
 
-**TokenBucket + depth-limited walker + modal probe + typed AX errors + AXUIElementWrapper façade — three BLOCKER-class pitfalls (P2/P3/P25) and threat T-1-04 mitigated at the cua_overlay/ax/ entry-point. 28 dedicated tests green; 63/63 plan-level test suite green.**
+**TokenBucket + depth-limited walker + modal probe + typed AX errors + AXUIElementWrapper façade — three BLOCKER-class pitfalls (P2/P3/P25) and threat T-1-04 mitigated at the basicctrl/ax/ entry-point. 28 dedicated tests green; 63/63 plan-level test suite green.**
 
 ## Performance
 
@@ -86,7 +86,7 @@ completed: 2026-04-30T00:22:46Z
 
 ## Public API Surface
 
-`from cua_overlay.ax import ...`:
+`from basicctrl.ax import ...`:
 
 | Name | Kind | Purpose |
 |------|------|---------|
@@ -133,9 +133,9 @@ Tripwire test `test_canonical_axerror_h_values` confirms these match AXError.h o
 
 Each task committed atomically:
 
-1. **Task 1: TokenBucket + typed AX errors** — `de3af52` (feat) — cua_overlay/ax/__init__.py, cua_overlay/ax/errors.py, cua_overlay/ax/rate_limit.py, tests/unit/test_rate_limit.py, tests/unit/test_ax_errors.py. 15 tests green.
-2. **Task 2: Depth-limited iterative walker** — `b850776` (feat) — cua_overlay/ax/walker.py, tests/unit/test_walker.py. 8 tests green (one auto-fix during TDD: structural-cap tests now pass an explicit big_bucket so rate-limit and structural caps are isolated).
-3. **Task 3: Modal probe + AXUIElementWrapper façade** — `83a3e50` (feat) — cua_overlay/ax/__init__.py update, cua_overlay/ax/modal_probe.py, cua_overlay/ax/element.py, tests/integration/test_modal_probe.py. 7 tests green (5 mock + 2 cache); 1 real-Calculator skipped under SKIP_INTEGRATION=1; 1 manual-only @skip pending real-modal verification.
+1. **Task 1: TokenBucket + typed AX errors** — `de3af52` (feat) — basicctrl/ax/__init__.py, basicctrl/ax/errors.py, basicctrl/ax/rate_limit.py, tests/unit/test_rate_limit.py, tests/unit/test_ax_errors.py. 15 tests green.
+2. **Task 2: Depth-limited iterative walker** — `b850776` (feat) — basicctrl/ax/walker.py, tests/unit/test_walker.py. 8 tests green (one auto-fix during TDD: structural-cap tests now pass an explicit big_bucket so rate-limit and structural caps are isolated).
+3. **Task 3: Modal probe + AXUIElementWrapper façade** — `83a3e50` (feat) — basicctrl/ax/__init__.py update, basicctrl/ax/modal_probe.py, basicctrl/ax/element.py, tests/integration/test_modal_probe.py. 7 tests green (5 mock + 2 cache); 1 real-Calculator skipped under SKIP_INTEGRATION=1; 1 manual-only @skip pending real-modal verification.
 
 ## Test Counts
 
@@ -187,7 +187,7 @@ Each task committed atomically:
 
 ## Next Phase Readiness
 
-- **Plan 01-04 (AXObserver bridge)** — unblocked. Sibling agent in Wave 2 can now `from cua_overlay.ax import TokenBucket, AXError, AXAPIDisabledError, AXInvalidUIElementError, ...` without redefinition. Plan 01-04's AXEventBridge + AXObserverManager will subscribe to push events using a `TokenBucket` instance shared with the walker.
+- **Plan 01-04 (AXObserver bridge)** — unblocked. Sibling agent in Wave 2 can now `from basicctrl.ax import TokenBucket, AXError, AXAPIDisabledError, AXInvalidUIElementError, ...` without redefinition. Plan 01-04's AXEventBridge + AXObserverManager will subscribe to push events using a `TokenBucket` instance shared with the walker.
 - **Plan 01-05 (L0+L1 ensemble)** — unblocked. Verifier code uses `AXUIElementWrapper` to read post-action AX state with the 100ms cache + typed errors.
 - **Plan 01-06 (L2 walker invocation)** — unblocked. `walk_subtree(...)` returns a `WalkResult` with structured `truncated` flag the verifier consumes to reduce L2 confidence.
 - **Pitfall P2 mitigated and tested** — TokenBucket(20, 20) caps at 20/sec/pid; per-pid isolation verified; refill-at-20/sec verified via frozen-clock monkeypatch.
@@ -199,10 +199,10 @@ Each task committed atomically:
 
 Verified post-write:
 
-- File exists: `cua_overlay/ax/__init__.py`, `cua_overlay/ax/errors.py`, `cua_overlay/ax/rate_limit.py`, `cua_overlay/ax/walker.py`, `cua_overlay/ax/modal_probe.py`, `cua_overlay/ax/element.py`, `tests/unit/test_rate_limit.py`, `tests/unit/test_ax_errors.py`, `tests/unit/test_walker.py`, `tests/integration/test_modal_probe.py`.
+- File exists: `basicctrl/ax/__init__.py`, `basicctrl/ax/errors.py`, `basicctrl/ax/rate_limit.py`, `basicctrl/ax/walker.py`, `basicctrl/ax/modal_probe.py`, `basicctrl/ax/element.py`, `tests/unit/test_rate_limit.py`, `tests/unit/test_ax_errors.py`, `tests/unit/test_walker.py`, `tests/integration/test_modal_probe.py`.
 - Commits exist (verified via `git log --oneline`): `de3af52` (Task 1), `b850776` (Task 2), `83a3e50` (Task 3).
 - Test count: 28/28 plan-specific tests passed (5 module test files); 63/63 phase-level tests passed (no regressions in Plan 01/02 tests).
-- Public-API import smoke: `python -c "from cua_overlay.ax import TokenBucket, walk_subtree, has_blocking_modal, AXUIElementWrapper, AXError, AXAPIDisabledError, WalkResult, axerror_from_code"` exits 0.
+- Public-API import smoke: `python -c "from basicctrl.ax import TokenBucket, walk_subtree, has_blocking_modal, AXUIElementWrapper, AXError, AXAPIDisabledError, WalkResult, axerror_from_code"` exits 0.
 - libs/cua-driver/ untouched: `git diff --name-only $WORKTREE_BASE..HEAD libs/cua-driver/` returns empty.
 
 ---

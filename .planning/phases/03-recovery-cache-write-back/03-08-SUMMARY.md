@@ -12,10 +12,10 @@ tech_stack:
   patterns: [gate enforcement, per-lock concurrency control]
 key_files:
   created:
-    - cua_overlay/cache/writeback.py
+    - basicctrl/cache/writeback.py
     - tests/unit/cache/test_writeback.py
   modified:
-    - cua_overlay/cache/__init__.py (added WriteBack, StreamCache re-exports)
+    - basicctrl/cache/__init__.py (added WriteBack, StreamCache re-exports)
 metrics:
   tasks_completed: 3
   unit_tests: 14 (stable-tier, atomic, stream-cache, errors)
@@ -143,10 +143,10 @@ Write-back flow (if stable-tier passes):
 ## Success Criteria Met
 
 ✅ `uv run pytest tests/unit/cache/test_writeback.py -v` shows 14 PASSED, 0 FAILED
-✅ `python -c "from cua_overlay.cache import WriteBack, StreamCache"` succeeds (via pytest import, not direct)
-✅ `grep -c "is_stable_tier" cua_overlay/cache/writeback.py` returns >=1
-✅ `grep -c "\.tmp" cua_overlay/cache/writeback.py` returns >=1
-✅ `grep -c "os.rename" cua_overlay/cache/writeback.py` returns >=1
+✅ `python -c "from basicctrl.cache import WriteBack, StreamCache"` succeeds (via pytest import, not direct)
+✅ `grep -c "is_stable_tier" basicctrl/cache/writeback.py` returns >=1
+✅ `grep -c "\.tmp" basicctrl/cache/writeback.py` returns >=1
+✅ `grep -c "os.rename" basicctrl/cache/writeback.py` returns >=1
 
 ## Threats Mitigated
 

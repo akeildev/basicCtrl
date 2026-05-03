@@ -32,13 +32,13 @@ requires:
     provides: MCP proxy + click_with_healing tool
 
 provides:
-  - cua_overlay/demo/calculator_click.py — runnable Phase 1 end-to-end demo
+  - basicctrl/demo/calculator_click.py — runnable Phase 1 end-to-end demo
   - run_demo() public callable returning a result dict (testable core)
   - main() CLI wrapper with rich pretty-print
   - tests/integration/test_calculator_click.py — 6 pytest tests mirroring the demo
   - tests/integration/test_phase1_e2e.py — single ship-gate test walking all 6 ROADMAP success criteria
   - .planning/phases/01-foundation-state-verifier/PHASE-1-DEMO.md — operator runbook
-  - cua_overlay/ax/observer.py: three Rule-1 bug fixes for live macOS 26 AX delivery (callback signature, refcon-as-int, callback retention, CFRunLoopRunInMode loop)
+  - basicctrl/ax/observer.py: three Rule-1 bug fixes for live macOS 26 AX delivery (callback signature, refcon-as-int, callback retention, CFRunLoopRunInMode loop)
 
 affects:
   - phase-2 (every translator imports run_demo's wiring shape: classify → bridge.subscribe → fire → aggregator.verify)
@@ -61,13 +61,13 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/demo/__init__.py — subpackage marker"
-    - "cua_overlay/demo/calculator_click.py — run_demo() coroutine + main() CLI wrapper (560 lines)"
+    - "basicctrl/demo/__init__.py — subpackage marker"
+    - "basicctrl/demo/calculator_click.py — run_demo() coroutine + main() CLI wrapper (560 lines)"
     - "tests/integration/test_calculator_click.py — 6 integration tests calling run_demo() directly (147 lines)"
     - "tests/integration/test_phase1_e2e.py — Phase 1 ROADMAP ship-gate test (211 lines)"
     - ".planning/phases/01-foundation-state-verifier/PHASE-1-DEMO.md — operator runbook (180 lines)"
   modified:
-    - "cua_overlay/ax/observer.py — three Rule-1 bug fixes for live PyObjC AX subscription (callback signature, refcon int, GC retention) + Rule-3 CFRunLoop fix"
+    - "basicctrl/ax/observer.py — three Rule-1 bug fixes for live PyObjC AX subscription (callback signature, refcon int, GC retention) + Rule-3 CFRunLoop fix"
 
 key-decisions:
   - "Demo uses bounded BFS (not the locked walker) to find Calculator's '5' button. Calculator's keypad is at AXChildren depth 5 from AXApplication, deeper than walk_subtree's max_depth=3 cap. Per CLAUDE.md hard rule we cannot raise max_depth, so the demo composes the rate-limit primitive (TokenBucket) with a hand-coded BFS bounded to 200 reads. This is demo-only convenience — Phase 2 translators replace it with proper hit-testing (T1 AX with AXIdentifier, T3 AppleScript 'button \"5\" of window 1', T4 Vision OCR for non-AX apps)."
@@ -102,7 +102,7 @@ completed: 2026-04-30
 - **Duration:** ~95 min wall clock (Tasks 1, 2, 3 + AX-bridge bug fixes during integration)
 - **Tasks:** 3 (all atomically committed)
 - **Files created:** 5 (demo + 2 tests + runbook + subpackage init)
-- **Files modified:** 1 (cua_overlay/ax/observer.py — Rule-1 bug fixes)
+- **Files modified:** 1 (basicctrl/ax/observer.py — Rule-1 bug fixes)
 
 ## run_demo() Public Surface (locked)
 
@@ -153,16 +153,16 @@ async def run_demo() -> dict:
 
 | Pitfall | Mitigation file | Test |
 |---------|-----------------|------|
-| **P2** (cmux #2985 / AX rate-limit ≥30/sec stalls Cocoa main thread) | `cua_overlay/ax/rate_limit.py::TokenBucket` (default 20/sec/pid) | `tests/unit/test_rate_limit.py` (initial-burst-20 + 21st-deny + per-pid + frozen-clock refill) |
-| **P3** (full recursive AX = 15-20s on Safari) | `cua_overlay/ax/walker.py::walk_subtree` (max_depth=3, max_children=50, max_nodes=500) | `tests/unit/test_walker.py` (caps + no-recursion source-grep) |
-| **P14** (AX notifs fail on web/Electron) | `cua_overlay/profile/capability_probe.py::probe_ax_observer_works` (AppProfile.ax_observer_works field) | `tests/integration/test_app_profile.py::test_calculator_profile` |
-| **P24** (TCC revoked mid-session) | `cua_overlay/profile/tcc.py::TCCMonitor.check` at every classify() entry | `tests/unit/test_tcc.py` + Manual smoke check |
-| **P25** (modal alert blocks AX) | `cua_overlay/ax/modal_probe.py::has_blocking_modal` (window cap=10, no walker) | `tests/integration/test_modal_probe.py` + Manual smoke check |
-| **P28** (stale notification races verifier) | `cua_overlay/verifier/axobserver.py::_passes_filter` (5ms ts guard + action_id refcon match + notif-set check) | `tests/unit/test_axobserver_filter.py` (4 predicates × isolation) |
+| **P2** (cmux #2985 / AX rate-limit ≥30/sec stalls Cocoa main thread) | `basicctrl/ax/rate_limit.py::TokenBucket` (default 20/sec/pid) | `tests/unit/test_rate_limit.py` (initial-burst-20 + 21st-deny + per-pid + frozen-clock refill) |
+| **P3** (full recursive AX = 15-20s on Safari) | `basicctrl/ax/walker.py::walk_subtree` (max_depth=3, max_children=50, max_nodes=500) | `tests/unit/test_walker.py` (caps + no-recursion source-grep) |
+| **P14** (AX notifs fail on web/Electron) | `basicctrl/profile/capability_probe.py::probe_ax_observer_works` (AppProfile.ax_observer_works field) | `tests/integration/test_app_profile.py::test_calculator_profile` |
+| **P24** (TCC revoked mid-session) | `basicctrl/profile/tcc.py::TCCMonitor.check` at every classify() entry | `tests/unit/test_tcc.py` + Manual smoke check |
+| **P25** (modal alert blocks AX) | `basicctrl/ax/modal_probe.py::has_blocking_modal` (window cap=10, no walker) | `tests/integration/test_modal_probe.py` + Manual smoke check |
+| **P28** (stale notification races verifier) | `basicctrl/verifier/axobserver.py::_passes_filter` (5ms ts guard + action_id refcon match + notif-set check) | `tests/unit/test_axobserver_filter.py` (4 predicates × isolation) |
 
 ## Task Commits
 
-1. **Task 1 (initial): Calculator click <50ms end-to-end demo** — `9c39d79` (feat) — cua_overlay/demo/__init__.py + cua_overlay/demo/calculator_click.py wires the full Phase 1 stack with run_demo() + main().
+1. **Task 1 (initial): Calculator click <50ms end-to-end demo** — `9c39d79` (feat) — basicctrl/demo/__init__.py + basicctrl/demo/calculator_click.py wires the full Phase 1 stack with run_demo() + main().
 2. **Task 1 (auto-fix follow-up): wire AX observer + button discovery for live Calculator demo** — `062efe2` (fix) — observer.py 3 Rule-1 bugs + 1 Rule-3 blocker; demo's button finder + bbox extraction + label cascade.
 3. **Task 2: integration tests for Calculator demo + Phase 1 ROADMAP gate** — `3d4f12a` (test) — tests/integration/test_calculator_click.py + tests/integration/test_phase1_e2e.py.
 4. **Task 3: PHASE-1-DEMO.md operator runbook** — `ab9603c` (docs) — pre-flight, demo run, automated tests, manual smoke checks, pitfall mitigations, recovery table, phase exit checklist.
@@ -173,9 +173,9 @@ async def run_demo() -> dict:
 
 **1. [Rule 1 - Bug] AXObserverCreate callback signature was 5 args, must be 4 with objc.callbackFor**
 - **Found during:** Task 1 first live demo run.
-- **Issue:** `cua_overlay/ax/observer.py::subscribe()` registered a callback `(observer, axelem, notif_name, user_info_ref, refcon) -> None` — five arguments. PyObjC raised `TypeError: Callable argument is not a PyObjC closure`. Per Plan 02's deviation log + PyObjC docs, the AXObserverCreate callback signature is `(observer, axelem, notif_name, refcon) -> None` (four args), and the callback MUST be wrapped via `@objc.callbackFor(AXObserverCreate)` so PyObjC can marshal the C signature.
+- **Issue:** `basicctrl/ax/observer.py::subscribe()` registered a callback `(observer, axelem, notif_name, user_info_ref, refcon) -> None` — five arguments. PyObjC raised `TypeError: Callable argument is not a PyObjC closure`. Per Plan 02's deviation log + PyObjC docs, the AXObserverCreate callback signature is `(observer, axelem, notif_name, refcon) -> None` (four args), and the callback MUST be wrapped via `@objc.callbackFor(AXObserverCreate)` so PyObjC can marshal the C signature.
 - **Fix:** Updated `_callback` to take 4 args, wrapped with `@objc.callbackFor(AXObserverCreate)`. Removed the orphaned `user_info_ref` reference.
-- **Files modified:** `cua_overlay/ax/observer.py`.
+- **Files modified:** `basicctrl/ax/observer.py`.
 - **Verification:** Standalone bridge probe shows AXValueChanged events arriving on the queue.
 - **Committed in:** `062efe2`.
 
@@ -183,7 +183,7 @@ async def run_demo() -> dict:
 - **Found during:** Task 1 second live demo run.
 - **Issue:** `bridge.subscribe()` passed `action_id.encode()` (bytes) as the refcon arg to `AXObserverAddNotification`, raising `ValueError: depythonifying 'unsigned long', got 'bytes'`. PyObjC's typed signature requires `unsigned long` (int marshalled as `uintptr_t`).
 - **Fix:** Hash `action_id` to a 32-bit integer (`abs(hash(action_id)) & 0xFFFFFFFF`); pass that int as refcon. Stash the reverse mapping in `bridge._refcon_to_action` so the callback resolves back to the original UUID. The `event.action_id == sub.action_id` filter predicate (Pitfall P28 part 2) still works.
-- **Files modified:** `cua_overlay/ax/observer.py`.
+- **Files modified:** `basicctrl/ax/observer.py`.
 - **Verification:** Subscription succeeds without ValueError; events delivered with the correct action_id resolved.
 - **Committed in:** `062efe2`.
 
@@ -191,15 +191,15 @@ async def run_demo() -> dict:
 - **Found during:** Task 1 third live demo run.
 - **Issue:** PyObjC returns AX positions/sizes as `AXValueRef` opaque wrappers (e.g. `<AXValue 0xafd169e30> {value = x:642 y:885 type = kAXValueCGPointType}`), NOT plain (x, y) tuples. The demo's `_coords_to_bbox` was treating `position[0]` as a number and getting `Bbox(0,0,0,0)` for every element — clicks landed at (0, 0) (off-screen).
 - **Fix:** Use `AXValueGetValue(position, kAXValueCGPointType, None)` to extract the CGPoint struct, then read `.x`/`.y`/`.width`/`.height`. Fallback to subscriptable for mock test paths (which use plain tuples).
-- **Files modified:** `cua_overlay/demo/calculator_click.py::_coords_to_bbox`.
+- **Files modified:** `basicctrl/demo/calculator_click.py::_coords_to_bbox`.
 - **Verification:** Click coordinates land on the actual Calculator '5' button; display shows '5' after fire.
 - **Committed in:** `062efe2`.
 
 **4. [Rule 3 - Blocking] CFRunLoopRun() returns immediately without registered sources**
 - **Found during:** Task 1 fourth live demo run.
-- **Issue:** `cua_overlay/ax/observer.py::_runloop_target` called `CFRunLoopRun()` which returns immediately if no sources/timers are registered. The bridge's CFRunLoop thread DIED before the first `subscribe()` call could add a source. AX events never delivered because the run loop wasn't alive to dispatch them.
+- **Issue:** `basicctrl/ax/observer.py::_runloop_target` called `CFRunLoopRun()` which returns immediately if no sources/timers are registered. The bridge's CFRunLoop thread DIED before the first `subscribe()` call could add a source. AX events never delivered because the run loop wasn't alive to dispatch them.
 - **Fix:** Replace `CFRunLoopRun()` with a `while not self._stop_requested: CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1.0, False)` loop. Each iteration runs for up to 1 second, allowing time for sources to be added from the main thread; the outer while-loop polls `_stop_requested` so `bridge.stop()` exits cleanly between iterations.
-- **Files modified:** `cua_overlay/ax/observer.py`.
+- **Files modified:** `basicctrl/ax/observer.py`.
 - **Verification:** Standalone bridge probe shows the thread stays alive for the lifetime of the demo; events delivered.
 - **Committed in:** `062efe2`.
 
@@ -207,7 +207,7 @@ async def run_demo() -> dict:
 - **Found during:** Task 1 fifth live demo run (after fixing 1-4).
 - **Issue:** Even with the right signature + refcon int + run loop alive, AX callbacks didn't fire reliably. Investigation showed the Python closure passed to `AXObserverCreate` was being GC'd between the create call and the dispatch. PyObjC's wrapped callback objects need an explicit Python reference held somewhere.
 - **Fix:** Add `self._callbacks: list[Any]` to AXEventBridge; append each newly-created callback BEFORE calling `AXObserverCreate`. The list lives for the lifetime of the bridge.
-- **Files modified:** `cua_overlay/ax/observer.py`.
+- **Files modified:** `basicctrl/ax/observer.py`.
 - **Verification:** Standalone bridge probe consistently delivers AXValueChanged events.
 - **Committed in:** `062efe2`.
 
@@ -215,7 +215,7 @@ async def run_demo() -> dict:
 - **Found during:** Task 1 sixth live demo run (after AX delivery worked).
 - **Issue:** Calculator buttons report `AXTitle=None` and `AXLabel=None` on macOS 26; the human-readable label ("5", "Delete", "Equals") lives in `AXDescription`. The demo's button-finder cascaded AXTitle → AXLabel → AXValue and missed every button.
 - **Fix:** Cascade `AXTitle → AXLabel → AXDescription → ""` in the BFS finder.
-- **Files modified:** `cua_overlay/demo/calculator_click.py::_bounded_button_search`.
+- **Files modified:** `basicctrl/demo/calculator_click.py::_bounded_button_search`.
 - **Verification:** Demo finds button '5' with composite_key `axid:com.apple.calculator:Five`.
 - **Committed in:** `062efe2`.
 
@@ -223,7 +223,7 @@ async def run_demo() -> dict:
 - **Found during:** Task 1 second live demo run.
 - **Issue:** Calculator's '5' button is at AXChildren depth 5 from AXApplication (`AXApplication/AXMenuBar` is the only child of root; the keypad lives under `AXWindows[0].AXChildren[0].AXChildren[0]...`). The locked `walk_subtree` primitive caps at `max_depth=3` (CLAUDE.md hard rule, can't override).
 - **Fix:** Demo composes the bucket primitive with a hand-coded BFS bounded to 200 reads (Calculator is small — total tree < 50 elements). Documented as demo-only convenience; Phase 2 translators replace this with proper hit-testing (T1 AX with AXIdentifier, T3 AppleScript `button "5" of window 1`).
-- **Files modified:** `cua_overlay/demo/calculator_click.py::_bounded_button_search`.
+- **Files modified:** `basicctrl/demo/calculator_click.py::_bounded_button_search`.
 - **Verification:** Button found within 1 attempt (~150 reads through Calculator's 21-button keypad).
 - **Committed in:** `062efe2`.
 
@@ -231,7 +231,7 @@ async def run_demo() -> dict:
 - **Found during:** Task 1 seventh live demo run.
 - **Issue:** Demo originally pre-subscribed via `bridge.subscribe()` BEFORE fire (Pitfall P28 secret weapon), then fired the click, then aggregator.verify ran L0Push.collect which calls axmgr.expect (registers a waiter on the dispatcher loop). But the AX event delivered BEFORE the waiter registered — dispatcher drained the queue with no matching waiter and silently dropped the event.
 - **Fix:** Schedule CGEvent fire via `asyncio.create_task` with a 5ms delay AFTER `aggregator.verify` starts. The L0Push.collect's expect() runs first (registers waiter), then the click fires, then the AX event matches a registered waiter.
-- **Files modified:** `cua_overlay/demo/calculator_click.py::run_demo` (Step 5 restructure).
+- **Files modified:** `basicctrl/demo/calculator_click.py::run_demo` (Step 5 restructure).
 - **Verification:** With sufficient timeout, L0 signal=1.0 (AXValueChanged delivered).
 - **Committed in:** `062efe2`.
 
@@ -270,12 +270,12 @@ Plus TCC Accessibility for the Python interpreter via System Settings → Privac
 
 Verified post-write:
 
-- File exists: `cua_overlay/demo/__init__.py`, `cua_overlay/demo/calculator_click.py` (>100 LOC).
+- File exists: `basicctrl/demo/__init__.py`, `basicctrl/demo/calculator_click.py` (>100 LOC).
 - File exists: `tests/integration/test_calculator_click.py` (6 `@pytest.mark.integration` tests).
 - File exists: `tests/integration/test_phase1_e2e.py` (1 `test_all_six_success_criteria` test with SC-1..SC-6 prints).
 - File exists: `.planning/phases/01-foundation-state-verifier/PHASE-1-DEMO.md` (5 required headers, 9 pitfall mentions, 3 SIGKILL/kill -9 mentions).
 - Commits exist (verified via `git log --oneline`): `9c39d79` (Task 1 initial), `062efe2` (Task 1 fixes), `3d4f12a` (Task 2), `ab9603c` (Task 3).
-- Public-API import smoke: `python -c "import cua_overlay.demo.calculator_click; print(cua_overlay.demo.calculator_click.run_demo)"` exits 0.
+- Public-API import smoke: `python -c "import basicctrl.demo.calculator_click; print(basicctrl.demo.calculator_click.run_demo)"` exits 0.
 - Unit tests: 111 PASSED, 0 failed (`SKIP_INTEGRATION=1 uv run pytest -x -q tests/unit/`).
 - Integration tests: 7 SKIPPED cleanly under SKIP_INTEGRATION=1; will run on Akeil's Mac with TCC + Calculator.
 - libs/cua-driver/ untouched: `git diff --name-only $WORKTREE_BASE..HEAD libs/cua-driver/Sources/` returns empty.

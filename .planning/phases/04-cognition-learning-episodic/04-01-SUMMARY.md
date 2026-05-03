@@ -12,18 +12,18 @@ tech_stack:
   patterns: [pytest.importorskip, TYPE_CHECKING forward refs, circular import avoidance]
 key_files:
   created:
-    - cua_overlay/cognition/__init__.py
-    - cua_overlay/cognition/schemas.py
-    - cua_overlay/learning/__init__.py
-    - cua_overlay/learning/schemas.py
-    - cua_overlay/state/episodic.py
+    - basicctrl/cognition/__init__.py
+    - basicctrl/cognition/schemas.py
+    - basicctrl/learning/__init__.py
+    - basicctrl/learning/schemas.py
+    - basicctrl/state/episodic.py
     - tests/unit/cognition/test_schemas.py
     - tests/unit/learning/test_schemas.py
     - tests/unit/state/test_episodic.py
     - tests/unit/cognition/__init__.py
     - tests/unit/learning/__init__.py
   modified:
-    - cua_overlay/state/__init__.py
+    - basicctrl/state/__init__.py
 decisions: []
 metrics:
   duration: "5m 42s"
@@ -55,8 +55,8 @@ metrics:
 ### Task 1: Cognition Module Stubs + Pydantic Schemas
 
 **Files created:**
-- `cua_overlay/cognition/__init__.py` — re-exports 6 Pydantic models
-- `cua_overlay/cognition/schemas.py` — 6 frozen models:
+- `basicctrl/cognition/__init__.py` — re-exports 6 Pydantic models
+- `basicctrl/cognition/schemas.py` — 6 frozen models:
   - `AppleFMOutput(output: Literal["T1", "T2", "T3", "T4", "T5", "retry", "escalate", "abort"])` (D-02, P6)
   - `PlanCandidate(steps, preconds, success_criteria, bounded)` (D-03)
   - `PredictedState(ax_delta, screenshot_phash_delta, expected_notifs)` (D-07)
@@ -74,8 +74,8 @@ metrics:
 ### Task 2: Learning Module Stubs + Recipe/ObservedAction Schemas
 
 **Files created:**
-- `cua_overlay/learning/__init__.py` — re-exports 5 Pydantic models
-- `cua_overlay/learning/schemas.py` — 5 frozen models:
+- `basicctrl/learning/__init__.py` — re-exports 5 Pydantic models
+- `basicctrl/learning/schemas.py` — 5 frozen models:
   - `ObservedAction(step_idx, action, user_gesture_type, timestamp, success, ax_delta)` (D-15)
   - `RecipeParam(name, description, type: Literal["str", "int", "bbox", "element"])` (D-16)
   - `RecipePrecondition(expression, expected_value, confidence)` (D-16)
@@ -93,12 +93,12 @@ metrics:
 ### Task 3: Episodic Memory Schemas + State Exports
 
 **Files created:**
-- `cua_overlay/state/episodic.py` — 3 models + 1 class stub:
+- `basicctrl/state/episodic.py` — 3 models + 1 class stub:
   - `EpisodicQuery(app_bundle_id, task_class, state_fingerprint, query_embedding, top_k)` (D-20)
   - `EpisodicHit(recipe, similarity, embedding_source_text, success_count, failure_count, quarantined)` (D-20, D-19 P22)
   - `EpisodicMemory` class stub with docstring (D-18)
-    - Placeholder for Wave 4 FAISS integration (IndexFlatL2, ~/thinker/vault/research/cua-maximalist-* archref)
-- `cua_overlay/state/__init__.py` — updated exports to include EpisodicMemory, EpisodicQuery, EpisodicHit
+    - Placeholder for Wave 4 FAISS integration (IndexFlatL2, ~/thinker/vault/research/basicCtrl-* archref)
+- `basicctrl/state/__init__.py` — updated exports to include EpisodicMemory, EpisodicQuery, EpisodicHit
 - `tests/unit/state/test_episodic.py` — 7 unit tests + pytest.importorskip
 
 **Test coverage:**
@@ -135,10 +135,10 @@ No new threat surfaces introduced. All threat mitigations (P6, P19, P21, P22) ar
 
 | Flag | File | Description |
 |------|------|-------------|
-| P6 gate | cua_overlay/cognition/schemas.py:AppleFMOutput | Literal enum hard-validates Apple FM output; ValidationError on mismatch |
-| P21 gate | cua_overlay/cognition/schemas.py:OracleOutput | Critic ranks external oracles only (type-enforced) |
-| P22 gate | cua_overlay/cognition/schemas.py:SpeculativeDraft | kind=Literal["READ"] prevents speculative MUTATE at type level |
-| P19 mitigation | cua_overlay/state/episodic.py:EpisodicHit | success_count/failure_count + quarantined flag for poison detection |
+| P6 gate | basicctrl/cognition/schemas.py:AppleFMOutput | Literal enum hard-validates Apple FM output; ValidationError on mismatch |
+| P21 gate | basicctrl/cognition/schemas.py:OracleOutput | Critic ranks external oracles only (type-enforced) |
+| P22 gate | basicctrl/cognition/schemas.py:SpeculativeDraft | kind=Literal["READ"] prevents speculative MUTATE at type level |
+| P19 mitigation | basicctrl/state/episodic.py:EpisodicHit | success_count/failure_count + quarantined flag for poison detection |
 
 ## Test Results
 

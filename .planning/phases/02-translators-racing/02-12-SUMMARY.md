@@ -127,7 +127,7 @@ See `key-decisions` in frontmatter. Highlights:
 
 **1. [Rule 1 - Bug] Chess test pre-flight uitag API mismatch**
 - **Found during:** Initial chess test write (Task 2 in execution flow)
-- **Issue:** Plan's pseudocode example used `from cua_overlay.translators.t4_vision import _capture_screenshot` returning a PIL.Image; actual T4 module exposes `T4VisionTranslator._screenshot_to_path` returning a `Path` and `T4VisionTranslator._run_uitag(path) -> tuple[list, int, int]`.
+- **Issue:** Plan's pseudocode example used `from basicctrl.translators.t4_vision import _capture_screenshot` returning a PIL.Image; actual T4 module exposes `T4VisionTranslator._screenshot_to_path` returning a `Path` and `T4VisionTranslator._run_uitag(path) -> tuple[list, int, int]`.
 - **Fix:** Rewrote pre-flight to instantiate `T4VisionTranslator()`, call `await t4._screenshot_to_path(pid)`, then `await t4._run_uitag(screenshot_path)` to get `(detections, image_width, image_height)`. Pre-flight wrapped in `try/except ImportError + except Exception` so missing uitag + capture failures are non-fatal (canonical fire test is the post-execute `action.tier` assertion).
 - **Files modified:** `tests/integration/test_chess_t4_t5.py`
 - **Committed in:** `d4e385f` (combined into the SC #3 commit)

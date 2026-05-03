@@ -26,9 +26,9 @@ tech_stack_patterns:
   - Heal-rate budget: tracks heals/actions, pauses recovery at >5%
   - Circuit breaker integration: consult before branching, record after failure
 key_files_created:
-  - cua_overlay/recovery/orchestrator.py
+  - basicctrl/recovery/orchestrator.py
 key_files_modified:
-  - cua_overlay/recovery/__init__.py (added RecoveryOrchestrator re-export)
+  - basicctrl/recovery/__init__.py (added RecoveryOrchestrator re-export)
   - tests/unit/recovery/test_orchestrator.py (17 comprehensive unit tests)
 decisions:
   - Reuse Phase 2's anyio cancel_scope pattern for losers cancellation (D-13)
@@ -67,7 +67,7 @@ Per CONTEXT.md D-09..D-16, D-25, implemented full recovery orchestration:
 
 ### Task 1: RecoveryOrchestrator class + attempt() method + bounded cycle loop
 
-**Created:** `cua_overlay/recovery/orchestrator.py` (548 LOC)
+**Created:** `basicctrl/recovery/orchestrator.py` (548 LOC)
 
 **Key components:**
 
@@ -116,7 +116,7 @@ Per CONTEXT.md D-09..D-16, D-25, implemented full recovery orchestration:
    - `recovery_exhausted`: max cycles reached, escalating to user
    - `recovery_escalated`: final escalation event with suggested_action
 
-**Verification:** ✓ `python -c "from cua_overlay.recovery import RecoveryOrchestrator; ro = RecoveryOrchestrator(None, None, [], None, None); assert ro.max_cycles == 2"` succeeds
+**Verification:** ✓ `python -c "from basicctrl.recovery import RecoveryOrchestrator; ro = RecoveryOrchestrator(None, None, [], None, None); assert ro.max_cycles == 2"` succeeds
 
 ### Task 2: Comprehensive unit tests (17 tests, 100% pass)
 
@@ -160,14 +160,14 @@ async def test_recovery_succeeds_on_first_cycle():
 
 **Verification:** `uv run pytest tests/unit/recovery/test_orchestrator.py -v` → 17 PASSED
 
-### Task 3: Update cua_overlay/recovery/__init__.py with RecoveryOrchestrator re-export
+### Task 3: Update basicctrl/recovery/__init__.py with RecoveryOrchestrator re-export
 
-**Modified:** `cua_overlay/recovery/__init__.py`
+**Modified:** `basicctrl/recovery/__init__.py`
 - Added: `from .orchestrator import RecoveryOrchestrator`
 - Updated `__all__` to include `"RecoveryOrchestrator"`
-- Chain re-export pattern: `from cua_overlay.recovery import RecoveryOrchestrator` now works
+- Chain re-export pattern: `from basicctrl.recovery import RecoveryOrchestrator` now works
 
-**Verification:** ✓ `python -c "from cua_overlay.recovery import RecoveryOrchestrator; print('OK')"` succeeds
+**Verification:** ✓ `python -c "from basicctrl.recovery import RecoveryOrchestrator; print('OK')"` succeeds
 
 ## Deviations from Plan
 
@@ -187,19 +187,19 @@ All must_haves achieved:
 | Criteria | Result |
 |----------|--------|
 | `uv run pytest tests/unit/recovery/test_orchestrator.py -v` | 17 PASSED ✓ |
-| `python -c "from cua_overlay.recovery import RecoveryOrchestrator; ro = RecoveryOrchestrator(None, None, [], None, None); assert ro.max_cycles == 2"` | ✓ |
-| `grep -c "max_cycles" cua_overlay/recovery/orchestrator.py` | 13 (>=2) ✓ |
-| `grep -c "0.05" cua_overlay/recovery/orchestrator.py` | 2 (>=1) ✓ |
-| `grep -c "tg.cancel_scope.cancel" cua_overlay/recovery/orchestrator.py` | 1 (>=1) ✓ |
+| `python -c "from basicctrl.recovery import RecoveryOrchestrator; ro = RecoveryOrchestrator(None, None, [], None, None); assert ro.max_cycles == 2"` | ✓ |
+| `grep -c "max_cycles" basicctrl/recovery/orchestrator.py` | 13 (>=2) ✓ |
+| `grep -c "0.05" basicctrl/recovery/orchestrator.py` | 2 (>=1) ✓ |
+| `grep -c "tg.cancel_scope.cancel" basicctrl/recovery/orchestrator.py` | 1 (>=1) ✓ |
 
 ## Files Created/Modified
 
 **Created (2):**
-- `cua_overlay/recovery/orchestrator.py` (548 LOC)
+- `basicctrl/recovery/orchestrator.py` (548 LOC)
 - `tests/unit/recovery/test_orchestrator.py` (675 LOC)
 
 **Modified (1):**
-- `cua_overlay/recovery/__init__.py` (+3 lines)
+- `basicctrl/recovery/__init__.py` (+3 lines)
 
 **Total code:** 548 + 675 = 1,223 LOC
 
@@ -216,7 +216,7 @@ All must_haves achieved:
 ## Reusable Patterns
 
 **Phase 2 Race Pattern (D-13):**
-Reused from `cua_overlay/actions/race_orchestrator.py`:
+Reused from `basicctrl/actions/race_orchestrator.py`:
 - `anyio.create_task_group()` for parallel execution
 - `cancel_scope.cancel()` to terminate losers on first winner
 - `anyio.get_cancelled_exc_class()` to catch cancellation gracefully

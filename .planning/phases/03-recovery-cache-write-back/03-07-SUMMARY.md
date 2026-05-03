@@ -12,10 +12,10 @@ tech_stack:
   patterns: [step-by-step replay, early termination on mismatch]
 key_files:
   created:
-    - cua_overlay/cache/replay.py
+    - basicctrl/cache/replay.py
     - tests/unit/cache/test_replay.py
   modified:
-    - cua_overlay/cache/__init__.py (added CassetteReplayEngine re-export)
+    - basicctrl/cache/__init__.py (added CassetteReplayEngine re-export)
 metrics:
   tasks_completed: 3
   unit_tests: 14 (hamming + replay + errors + edge cases)
@@ -125,9 +125,9 @@ for step_idx, step in enumerate(cassette.steps):
 ## Success Criteria Met
 
 ✅ `uv run pytest tests/unit/cache/test_replay.py -v` shows 14 PASSED, 0 FAILED
-✅ `python -c "from cua_overlay.cache import CassetteReplayEngine"` succeeds
-✅ `grep -c "phash_threshold.*8" cua_overlay/cache/replay.py` returns >=1
-✅ `grep -c "hamming_distance" cua_overlay/cache/replay.py` returns >=2
+✅ `python -c "from basicctrl.cache import CassetteReplayEngine"` succeeds
+✅ `grep -c "phash_threshold.*8" basicctrl/cache/replay.py` returns >=1
+✅ `grep -c "hamming_distance" basicctrl/cache/replay.py` returns >=2
 
 ## Threats Mitigated
 

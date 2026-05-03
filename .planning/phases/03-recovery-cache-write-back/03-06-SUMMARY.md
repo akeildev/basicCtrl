@@ -12,10 +12,10 @@ tech_stack:
   patterns: [per-feature sub-packages, atomic file I/O (.tmp+fsync+rename)]
 key_files:
   created:
-    - cua_overlay/cache/__init__.py
-    - cua_overlay/cache/key.py
-    - cua_overlay/cache/cassette.py
-    - cua_overlay/cache/agent_cache.py
+    - basicctrl/cache/__init__.py
+    - basicctrl/cache/key.py
+    - basicctrl/cache/cassette.py
+    - basicctrl/cache/agent_cache.py
     - tests/unit/cache/conftest.py
     - tests/unit/cache/test_agent_cache.py
     - tests/unit/cache/test_cassette.py
@@ -125,14 +125,14 @@ Ported Stagehand's AgentCache pattern to Python, storing cassettes on disk under
 2. **Asyncio.Lock**: Per Phase 2 pattern for concurrent access (not thread-safe, but event-loop safe)
 3. **Graceful degradation**: Corrupted cassettes treated as cache misses, not errors
 4. **.tmp + fsync + rename**: POSIX atomic file replacement ensures no partial/corrupted cassettes on disk
-5. **Per-feature sub-packages**: `cua_overlay/cache/` with re-exports in `__init__.py` for clean imports
+5. **Per-feature sub-packages**: `basicctrl/cache/` with re-exports in `__init__.py` for clean imports
 
 ## Success Criteria Met
 
 ✅ `uv run pytest tests/unit/cache/ -v` shows 20 PASSED, 0 FAILED
-✅ `python -c "from cua_overlay.cache import AgentCache, Cassette, compute_cache_key"` succeeds
-✅ `grep -c "schema_version" cua_overlay/cache/cassette.py` returns >=3
-✅ `grep -c "asyncio.Lock" cua_overlay/cache/agent_cache.py` returns >=1
+✅ `python -c "from basicctrl.cache import AgentCache, Cassette, compute_cache_key"` succeeds
+✅ `grep -c "schema_version" basicctrl/cache/cassette.py` returns >=3
+✅ `grep -c "asyncio.Lock" basicctrl/cache/agent_cache.py` returns >=1
 
 ## Threats Mitigated
 

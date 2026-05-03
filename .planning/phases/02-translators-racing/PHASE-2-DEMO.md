@@ -209,16 +209,16 @@ Per `02-VALIDATION.md` "Manual-Only Verifications":
 
 | Pitfall | Mitigation file | Tests / Demo evidence |
 |---------|-----------------|-----------------------|
-| **Pitfall A** (anyio shield=True breaks race-cancel) | `cua_overlay/actions/race_orchestrator.py:race_first_complete` (CancelScope shield=False) | `test_race_orchestrator.py::test_race_first_complete_winner_idx_zero_cancels_loser` |
-| **Pitfall B** (cdp-use without flatten=True hangs) | `cua_overlay/translators/t2_cdp.py` (Target.attachToTarget params={"flatten": True}) | `test_t2_cdp.py` (Plan 02-06) — workspace filter test |
-| **Pitfall C** (uitag blocks asyncio loop 1-5s) | `cua_overlay/translators/t4_vision.py:_run_uitag` (asyncio.to_thread wrap) | `test_t4_vision.py::test_run_uitag_runs_in_to_thread` |
-| **Pitfall D** (Slack helper-process attaches wrong target) | `cua_overlay/translators/t2_cdp.py:_pick_workspace_target` (type=page AND url~/.slack.com/) | `test_slack_t2_wins.py` (SC #1) |
-| **Pitfall E** (py-applescript recompiles every call 50-200ms) | `cua_overlay/translators/t3_applescript.py` (module-level dict cache) | `test_t3_applescript.py` (Plan 02-07) |
+| **Pitfall A** (anyio shield=True breaks race-cancel) | `basicctrl/actions/race_orchestrator.py:race_first_complete` (CancelScope shield=False) | `test_race_orchestrator.py::test_race_first_complete_winner_idx_zero_cancels_loser` |
+| **Pitfall B** (cdp-use without flatten=True hangs) | `basicctrl/translators/t2_cdp.py` (Target.attachToTarget params={"flatten": True}) | `test_t2_cdp.py` (Plan 02-06) — workspace filter test |
+| **Pitfall C** (uitag blocks asyncio loop 1-5s) | `basicctrl/translators/t4_vision.py:_run_uitag` (asyncio.to_thread wrap) | `test_t4_vision.py::test_run_uitag_runs_in_to_thread` |
+| **Pitfall D** (Slack helper-process attaches wrong target) | `basicctrl/translators/t2_cdp.py:_pick_workspace_target` (type=page AND url~/.slack.com/) | `test_slack_t2_wins.py` (SC #1) |
+| **Pitfall E** (py-applescript recompiles every call 50-200ms) | `basicctrl/translators/t3_applescript.py` (module-level dict cache) | `test_t3_applescript.py` (Plan 02-07) |
 | **Pitfall F** (asyncio.Lock first-claimer-wins) | DESIGN — D-17 says first-to-call try_claim wins; OS-delivery timing is what verifier measures | `test_race_idempotency_stress.py` (SC #4) — 0 near_miss_duplicate after 100 fires confirms |
-| **Pitfall G** (CGEvent.postToPid sometimes drops to backgrounded apps) | `cua_overlay/actions/channels/c1_skylight.py + c3_cgevent.py` (foreground-only fallback documented) | `test_chess_t4_t5.py` (SC #3) — Chess foreground confirmed via screenshot dHash diff |
+| **Pitfall G** (CGEvent.postToPid sometimes drops to backgrounded apps) | `basicctrl/actions/channels/c1_skylight.py + c3_cgevent.py` (foreground-only fallback documented) | `test_chess_t4_t5.py` (SC #3) — Chess foreground confirmed via screenshot dHash diff |
 | **Pitfall H** (Tahoe SCScreenshotManager 1-5% capture failure) | Phase 1 L1 capture path retries; T4 reuses | Phase 1 already validates |
-| **T-2-05** (CGEvent global cursor warp) | `cua_overlay/actions/channels/c1_skylight.py + c3_cgevent.py` use CGEventPostToPid only | grep verified — no `kCGSessionEventTap`; manual smoke (cursor warp absence) above |
-| **T-2-09** (race policy enforcement) | `cua_overlay/actions/race_policy.py:resolve_race_policy` + `cua_overlay/mcp_server/healing_tools.py:send_destructive` no-race_policy | `test_race_orchestrator.py::test_race_policy_destructive_force_single_channel` + `test_healing_tools_v2.py::test_send_destructive_always_single_channel` |
+| **T-2-05** (CGEvent global cursor warp) | `basicctrl/actions/channels/c1_skylight.py + c3_cgevent.py` use CGEventPostToPid only | grep verified — no `kCGSessionEventTap`; manual smoke (cursor warp absence) above |
+| **T-2-09** (race policy enforcement) | `basicctrl/actions/race_policy.py:resolve_race_policy` + `basicctrl/mcp_server/healing_tools.py:send_destructive` no-race_policy | `test_race_orchestrator.py::test_race_policy_destructive_force_single_channel` + `test_healing_tools_v2.py::test_send_destructive_always_single_channel` |
 
 ---
 
@@ -231,9 +231,9 @@ Per `02-VALIDATION.md` "Manual-Only Verifications":
 | `chess_launcher fixture: Chess.app not found` | Removed/disabled by user (rare on macOS) | `ls /System/Applications/Chess.app` to confirm |
 | SC #3 PASS but `winner.tier == None` (no winner) | uitag returned no detections AND ocrmac fallback empty | Per Open Question 5: add geometric fallback (8x8 grid in known viewport) — Phase 3 spike if recurring |
 | SC #4 fails with `near_miss_duplicate > 0` | asyncio.Lock contention bug under stress | Inspect `tests/unit/actions/test_idempotency.py` for atomicity coverage; re-run with `pytest -p no:randomly` to rule out random-order races |
-| `image_width == image_height * 2` and clicks land off-target | A1 Retina assumption WRONG (uitag returns physical pixels, not logical points) | Apply `/scale_factor` divisor in `cua_overlay/translators/t4_vision.py:_detection_to_uielement` |
+| `image_width == image_height * 2` and clicks land off-target | A1 Retina assumption WRONG (uitag returns physical pixels, not logical points) | Apply `/scale_factor` divisor in `basicctrl/translators/t4_vision.py:_detection_to_uielement` |
 | `kAXErrorInvalidUIElement` from T1 mid-fire | Stale AXUIElement after window re-render | Phase 1 fingerprint module re-resolves; if persistent, force `T1.validate()` re-check before fire (already wired) |
-| Cursor jumps visibly during test | T-2-05 broke — wrong CGEvent post mode used | `grep -r 'kCGSessionEventTap\|CGEventPost(' cua_overlay/actions/channels/` — must return zero non-comment matches |
+| Cursor jumps visibly during test | T-2-05 broke — wrong CGEvent post mode used | `grep -r 'kCGSessionEventTap\|CGEventPost(' basicctrl/actions/channels/` — must return zero non-comment matches |
 | MCP host (Claude Code) shows old 1-tool surface | `register_healing_tools` 4-arg signature change in Plan 02-11 not applied | Confirm `main.py` calls `register_healing_tools(proxy, upstream, deps, race_orch)` with 4 args |
 
 ---
@@ -253,8 +253,8 @@ Per `02-VALIDATION.md` "Manual-Only Verifications":
 - [ ] Manual Pages document smoke check completed (D-26).
 - [ ] Per-plan SUMMARY.md files exist for plans 02-01 through 02-12 (`ls .planning/phases/02-translators-racing/02-*-SUMMARY.md`).
 - [ ] No edits under `libs/cua-driver/Sources/` (Phase 1 hard rule preserved).
-- [ ] `grep -r 'kCGSessionEventTap' cua_overlay/actions/channels/` returns zero non-comment matches (T-2-05 enforcement).
-- [ ] `grep -r 'shield=True' cua_overlay/actions/race_orchestrator.py` returns zero matches (Pitfall A).
+- [ ] `grep -r 'kCGSessionEventTap' basicctrl/actions/channels/` returns zero non-comment matches (T-2-05 enforcement).
+- [ ] `grep -r 'shield=True' basicctrl/actions/race_orchestrator.py` returns zero matches (Pitfall A).
 - [ ] PHASE-2-DEMO.md (this file) reviewed end-to-end.
 
 If every box ticks, Phase 2 is ready to hand off to Phase 3 (Failure classifier + 5-branch recovery).

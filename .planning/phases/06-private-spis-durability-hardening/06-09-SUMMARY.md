@@ -144,13 +144,13 @@ None.
 
 ```bash
 brew install postgresql@16
-createdb cua_maximalist
+createdb basicctrl
 ```
 
 Run before any durability tests. If unavailable, tests gracefully skip with actionable message:
 
 ```
-Postgres not reachable on localhost:5432/cua_maximalist — run 
+Postgres not reachable on localhost:5432/basicctrl — run 
 `bash scripts/init_postgres.sh` first.
 ```
 

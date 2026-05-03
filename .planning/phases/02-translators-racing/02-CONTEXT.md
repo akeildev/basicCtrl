@@ -10,8 +10,8 @@
 Phase 2 ships 5 protocol translators (T1 AX / T2 CDP / T3 AppleScript / T4 Vision/uitag/ocrmac / T5 Pixel) and 5 racing action channels (C1 SkyLight-as-public-CGEvent / C2 AX kAXPress / C3 CGEvent.postToPid / C4 AppleScript / C5 CDP Input.dispatchMouseEvent), with atomic idempotency tokens, per-action-class race policy, and AppleScript stagger. Phase 1's verifier decides race winners; state graph receives writes from all translators.
 
 **In scope (Phase 2):**
-- All 5 translators T1-T5 implemented as Python modules under `cua_overlay/translators/`
-- All 5 channels C1-C5 implemented as Python modules under `cua_overlay/actions/channels/`
+- All 5 translators T1-T5 implemented as Python modules under `basicctrl/translators/`
+- All 5 channels C1-C5 implemented as Python modules under `basicctrl/actions/channels/`
 - Race orchestrator (`asyncio.wait(FIRST_COMPLETED)` + cancellation)
 - Atomic idempotency token storage (in-memory dict + NDJSON trace)
 - Per-action-class race policy enforcement (read/focus/scroll/hover race; type/set_value/drag/destructive single-channel)
@@ -38,9 +38,9 @@ Phase 2 ships 5 protocol translators (T1 AX / T2 CDP / T3 AppleScript / T4 Visio
 
 ### Translator Stack (T1-T5)
 
-- **D-01:** T1 AX translator wraps Phase 1's `cua_overlay.ax.*` (TokenBucket rate limiter, depth-limited walker, AXObserver bridge, modal probe, typed errors). T1 is in-process Python via PyObjC HIServices — no Swift IPC needed. No new AX primitives in Phase 2.
+- **D-01:** T1 AX translator wraps Phase 1's `basicctrl.ax.*` (TokenBucket rate limiter, depth-limited walker, AXObserver bridge, modal probe, typed errors). T1 is in-process Python via PyObjC HIServices — no Swift IPC needed. No new AX primitives in Phase 2.
 - **D-02:** T2 CDP translator takes `cdp-use==1.4.5` as a direct project dependency (PyPI, MIT, last upload 2026-02-22, maintained by `browser-use` org — same upstream as browser-harness). Confirmed via local read of `/Users/akeilsmith/browser-harness/pyproject.toml` and `/Users/akeilsmith/browser-harness/daemon.py:6` (`from cdp_use.client import CDPClient`). Electron uses identical CDP wire format per https://www.electronjs.org/docs/latest/api/debugger ("alternate transport for Chrome's remote debugging protocol").
-- **D-03:** T2 CDP translator does NOT vendor or runtime-import browser-harness. Browser-harness is a flat-script tool (`py-modules = ["run", "helpers", "daemon", "admin"]` — no package), uses hard-coded `/tmp/bu-{NAME}.sock`, designed for one-shot CLI invocation, not in-process import. cua-maximalist must coexist with browser-harness — both call cdp-use directly, neither owns the other.
+- **D-03:** T2 CDP translator does NOT vendor or runtime-import browser-harness. Browser-harness is a flat-script tool (`py-modules = ["run", "helpers", "daemon", "admin"]` — no package), uses hard-coded `/tmp/bu-{NAME}.sock`, designed for one-shot CLI invocation, not in-process import. basicCtrl must coexist with browser-harness — both call cdp-use directly, neither owns the other.
 - **D-04:** T3 AppleScript translator uses `py-applescript==1.0.3` (in-process NSAppleScript via PyObjC OSAKit) on a dedicated `concurrent.futures.ThreadPoolExecutor(max_workers=2)`. Never `osascript` subprocess. Per Pitfall P5 (50-200ms baseline) and `macOS26-Agent/Conversation.swift:245-248` (NSAppleScript on detached background thread can hang waiting for AppleEvent reply — must NOT run on main asyncio loop thread).
 - **D-05:** T4 Vision translator ships `uitag==0.6.0` (PyPI 2026-04-09, MIT, https://github.com/laywens/uitag — Apple Vision + YOLO11 MLX, 90.8% ScreenSpot-Pro coverage) + `ocrmac==1.0.1` (PyPI 2026-01-08, already in Phase 1 dependencies). uitag's `from uitag import run_pipeline` returns `PipelineResult` with `Detection` dataclass (label, x, y, w, h, confidence, source, som_id, element_type) → adapt directly to UIElement.
 - **D-06:** T4 does NOT include MacPaw/Screen2AX in Phase 2. Reasons: (a) NOT on PyPI (research repo at https://github.com/MacPaw/Screen2AX), (b) last commit 2025-07-23 = 8 months stale, (c) pinned `pyobjc==10.3.1` conflicts with our `pyobjc==12.1`, (d) heavy deps (ultralytics, torch 2.6, transformers 4.48, opencv, streamlit). uitag covers the same use case (synthetic UIElement from screenshot) with maintained code.
@@ -49,7 +49,7 @@ Phase 2 ships 5 protocol translators (T1 AX / T2 CDP / T3 AppleScript / T4 Visio
 
 ### Race Orchestrator + Channels (C1-C5)
 
-- **D-09:** Race policy is **per-action-class**, encoded on `ActionCanonical.action_type` and validated by a Pydantic enum + module-level dispatch table. The `Literal["READ","MUTATE"]` kind field already pinned in Phase 1's `cua_overlay/state/causal_dag.py:35` is the speculation-safety gate; Phase 2 adds a separate orthogonal `RacePolicy` enum at the channel-orchestrator level.
+- **D-09:** Race policy is **per-action-class**, encoded on `ActionCanonical.action_type` and validated by a Pydantic enum + module-level dispatch table. The `Literal["READ","MUTATE"]` kind field already pinned in Phase 1's `basicctrl/state/causal_dag.py:35` is the speculation-safety gate; Phase 2 adds a separate orthogonal `RacePolicy` enum at the channel-orchestrator level.
 - **D-10:** RACE allowlist (multiple channels fire concurrently with idempotency token):
   - `click_button` / `click` (locked)
   - `focus` (locked)
@@ -77,7 +77,7 @@ Phase 2 ships 5 protocol translators (T1 AX / T2 CDP / T3 AppleScript / T4 Visio
 
 ### App Classifier + Top-12 Association Map
 
-- **D-20:** Phase 1's `cua_overlay.profile.classifier.AppProfile.translator_priority` (already shipped) is extended in Phase 2 with a **bundled top-12 association map** at `cua_overlay/profile/known_apps.py`. The map is a static dict; classifier consults it BEFORE running capability probes (cache-hit path), so well-known apps skip probe latency.
+- **D-20:** Phase 1's `basicctrl.profile.classifier.AppProfile.translator_priority` (already shipped) is extended in Phase 2 with a **bundled top-12 association map** at `basicctrl/profile/known_apps.py`. The map is a static dict; classifier consults it BEFORE running capability probes (cache-hit path), so well-known apps skip probe latency.
 - **D-21:** Top-12 map (verified bundleIDs via local `defaults read` 2026-04-30):
 
   | bundle_id | name | electron | sdef | priority | notes |
@@ -126,7 +126,7 @@ Phase 2 ships 5 protocol translators (T1 AX / T2 CDP / T3 AppleScript / T4 Visio
 ### Claude's Discretion
 
 The following are technical implementation details where Claude has flexibility (no user opinion captured):
-- Internal module structure under `cua_overlay/translators/<t>` and `cua_overlay/actions/channels/<c>` — follow Phase 1's per-feature sub-package pattern
+- Internal module structure under `basicctrl/translators/<t>` and `basicctrl/actions/channels/<c>` — follow Phase 1's per-feature sub-package pattern
 - Race orchestrator's exact cancellation propagation order (anyio details)
 - pytest fixture composition for the 3 test apps (Slack relaunch helper, Pages AS bootstrap, Chess.app launcher)
 - Exact `RacePolicy` enum field names and Pydantic v2 validator wiring
@@ -145,7 +145,7 @@ None — no pending todos matched Phase 2 scope (gsd-tools `todo match-phase 2` 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Architecture (locked, in vault)
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE locked maximalist blueprint (Phase 2 sections: Translators L3, Actions L4)
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — THE locked maximalist blueprint (Phase 2 sections: Translators L3, Actions L4)
 - `~/thinker/vault/research/cua-autonomous-self-healing-framework-2026-04-29.md` — driver registry context
 
 ### Project planning (in repo)
@@ -158,17 +158,17 @@ None — no pending todos matched Phase 2 scope (gsd-tools `todo match-phase 2` 
 - `.planning/research/FEATURES.md` — Translator + channel feature inventory
 
 ### Phase 1 deliverables (must read for Phase 2 hooks)
-- `cua_overlay/state/graph.py` — UIElement, Source, Capability, Bbox, EdgeKind
-- `cua_overlay/state/causal_dag.py` — ActionCanonical, HoarePre, HoarePost (idempotency token field)
-- `cua_overlay/profile/classifier.py` — AppProfile + classify() + translator_priority derivation
-- `cua_overlay/ax/observer.py` — AXEventBridge (CFRunLoop thread + asyncio Queue)
-- `cua_overlay/ax/rate_limit.py` — TokenBucket (20 calls/sec/pid)
-- `cua_overlay/ax/walker.py` — depth-limited subtree (3 levels)
-- `cua_overlay/verifier/axobserver.py` — AXObserverManager.expect (subscribe-before-fire)
-- `cua_overlay/verifier/aggregator.py` — WeightedVote + ensemble L0+L1
-- `cua_overlay/persist/session_writer.py` — NDJSON trace (idempotency token sink for D-16)
-- `cua_overlay/mcp_server/healing_tools.py` — Phase 1's `click_with_healing` (D-29 extends this)
-- `cua_overlay/mcp_server/main.py` + `proxy.py` — Existing MCP server shape
+- `basicctrl/state/graph.py` — UIElement, Source, Capability, Bbox, EdgeKind
+- `basicctrl/state/causal_dag.py` — ActionCanonical, HoarePre, HoarePost (idempotency token field)
+- `basicctrl/profile/classifier.py` — AppProfile + classify() + translator_priority derivation
+- `basicctrl/ax/observer.py` — AXEventBridge (CFRunLoop thread + asyncio Queue)
+- `basicctrl/ax/rate_limit.py` — TokenBucket (20 calls/sec/pid)
+- `basicctrl/ax/walker.py` — depth-limited subtree (3 levels)
+- `basicctrl/verifier/axobserver.py` — AXObserverManager.expect (subscribe-before-fire)
+- `basicctrl/verifier/aggregator.py` — WeightedVote + ensemble L0+L1
+- `basicctrl/persist/session_writer.py` — NDJSON trace (idempotency token sink for D-16)
+- `basicctrl/mcp_server/healing_tools.py` — Phase 1's `click_with_healing` (D-29 extends this)
+- `basicctrl/mcp_server/main.py` + `proxy.py` — Existing MCP server shape
 
 ### External research artifacts (verified 2026-04-30)
 - https://pypi.org/project/cdp-use/ — version 1.4.5, MIT (D-02)
@@ -200,13 +200,13 @@ None — no pending todos matched Phase 2 scope (gsd-tools `todo match-phase 2` 
 ## Existing Code Insights
 
 ### Reusable Assets (built in Phase 1)
-- **`cua_overlay/state/graph.py`** — UIElement schema, Source enum (AX, CDP, AS, OCR, PIXEL — already covers all 5 translators), Capability enum (PRESS, INCREMENT, SHOWMENU, PICK, SET_VALUE, FOCUS), Bbox.centroid (4px-quantised stable identity).
-- **`cua_overlay/state/causal_dag.py`** — ActionCanonical with `id` field that doubles as ACT-03 idempotency token. `kind: Literal["READ","MUTATE"]` enforces speculation safety. `tier: Optional[Literal["T1"-"T5"]]` and `channel: Optional[Literal["C1"-"C5"]]` already declared (Phase 1 left them Optional; Phase 2 fills them).
-- **`cua_overlay/profile/classifier.py`** — AppProfile with full capability probe (AX-rich, AX observer works, .sdef present, CDP port reachable, Electron, Tauri/Wails). `translator_priority` derivation already implements rule-based ordering (T2 first when Electron+CDP; T1 for ax_rich; T3 for sdef; T4/T5 always tail). Phase 2 adds the bundled top-12 short-circuit (D-20).
-- **`cua_overlay/ax/*`** — Full AX safety stack: TokenBucket rate limiter (20/sec/pid), depth-limited walker (3 levels), AXEventBridge (CFRunLoop thread + asyncio Queue), AXObserver bridge with action_id refcon for stale-event filtering. T1 reuses ALL of this.
-- **`cua_overlay/verifier/*`** — AXObserverManager.expect() is the subscribe-before-fire entry point. Race orchestrator passes the expected subscription future to `asyncio.wait` alongside the channel coroutines.
-- **`cua_overlay/persist/session_writer.py`** — NDJSON sink for D-16 (idempotency trace).
-- **`cua_overlay/mcp_server/`** — Existing MCP proxy + `click_with_healing` shape that D-29 extends.
+- **`basicctrl/state/graph.py`** — UIElement schema, Source enum (AX, CDP, AS, OCR, PIXEL — already covers all 5 translators), Capability enum (PRESS, INCREMENT, SHOWMENU, PICK, SET_VALUE, FOCUS), Bbox.centroid (4px-quantised stable identity).
+- **`basicctrl/state/causal_dag.py`** — ActionCanonical with `id` field that doubles as ACT-03 idempotency token. `kind: Literal["READ","MUTATE"]` enforces speculation safety. `tier: Optional[Literal["T1"-"T5"]]` and `channel: Optional[Literal["C1"-"C5"]]` already declared (Phase 1 left them Optional; Phase 2 fills them).
+- **`basicctrl/profile/classifier.py`** — AppProfile with full capability probe (AX-rich, AX observer works, .sdef present, CDP port reachable, Electron, Tauri/Wails). `translator_priority` derivation already implements rule-based ordering (T2 first when Electron+CDP; T1 for ax_rich; T3 for sdef; T4/T5 always tail). Phase 2 adds the bundled top-12 short-circuit (D-20).
+- **`basicctrl/ax/*`** — Full AX safety stack: TokenBucket rate limiter (20/sec/pid), depth-limited walker (3 levels), AXEventBridge (CFRunLoop thread + asyncio Queue), AXObserver bridge with action_id refcon for stale-event filtering. T1 reuses ALL of this.
+- **`basicctrl/verifier/*`** — AXObserverManager.expect() is the subscribe-before-fire entry point. Race orchestrator passes the expected subscription future to `asyncio.wait` alongside the channel coroutines.
+- **`basicctrl/persist/session_writer.py`** — NDJSON sink for D-16 (idempotency trace).
+- **`basicctrl/mcp_server/`** — Existing MCP proxy + `click_with_healing` shape that D-29 extends.
 
 ### Established Patterns (follow these in Phase 2)
 - **Pydantic v2 with `ConfigDict(frozen=True)`** for all action/state contracts (graph.py, causal_dag.py)
@@ -217,11 +217,11 @@ None — no pending todos matched Phase 2 scope (gsd-tools `todo match-phase 2` 
 - **Type-system enforcement over runtime check** — `Literal["READ","MUTATE"]` for speculation; `RacePolicy` enum for D-09 race policy.
 
 ### Integration Points
-- T1-T5 translators register into a shared registry at `cua_overlay/translators/registry.py` (new). Registry is a `dict[str, Translator]` keyed by tier name; AppProfile.translator_priority drives selection.
-- C1-C5 channels register into `cua_overlay/actions/channel_registry.py` (new). Channels are awaitables that take an ActionCanonical, return a ChannelOutcome.
-- Race orchestrator at `cua_overlay/actions/race_orchestrator.py` (new) wires translator (target resolution) + channels (delivery) + verifier (decision) + idempotency (atomicity).
+- T1-T5 translators register into a shared registry at `basicctrl/translators/registry.py` (new). Registry is a `dict[str, Translator]` keyed by tier name; AppProfile.translator_priority drives selection.
+- C1-C5 channels register into `basicctrl/actions/channel_registry.py` (new). Channels are awaitables that take an ActionCanonical, return a ChannelOutcome.
+- Race orchestrator at `basicctrl/actions/race_orchestrator.py` (new) wires translator (target resolution) + channels (delivery) + verifier (decision) + idempotency (atomicity).
 - MCP server's `healing_tools.py` (extend) re-routes `click_with_healing` through the race orchestrator instead of the Phase 1 stub.
-- Phase 1's `cua_overlay/persist/session_writer.py` gains a new event type `idempotency_token` for D-16 trace.
+- Phase 1's `basicctrl/persist/session_writer.py` gains a new event type `idempotency_token` for D-16 trace.
 
 </code_context>
 

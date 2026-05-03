@@ -64,23 +64,23 @@ No items deferred — all gaps are Phase 2 scope. No later phase in ROADMAP.md c
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `cua_overlay/translators/t1_ax.py` | T1 AX translator | VERIFIED | 371 lines, substantive. TokenBucket rate_limiter, walker via AXUIElementCopyAttributeValue in asyncio.to_thread. resolve + validate implemented. |
-| `cua_overlay/translators/t2_cdp.py` | T2 CDP translator | VERIFIED | 245 lines. _discover_ws_url probes 9222-9225. _pick_workspace_target D-24 Slack/Cursor/Obsidian filter. Pitfall B flatten=True enforced. |
-| `cua_overlay/translators/t3_applescript.py` | T3 AppleScript translator | VERIFIED | 204 lines. ThreadPoolExecutor(max_workers=2, thread_name_prefix='cua-as'). execute() via loop.run_in_executor(self._exec). Compiled script cache. |
-| `cua_overlay/translators/t4_vision.py` | T4 Vision translator | VERIFIED | 299 lines. uitag.run_pipeline in asyncio.to_thread. ocrmac fallback. Retina (image_width, image_height) logging per A1. |
-| `cua_overlay/translators/t5_pixel.py` | T5 Pixel translator | VERIFIED | 107 lines. Delegates to T4.resolve(). Pre-fire phash via imagehash.phash in extras. validate() checks grounded_bbox. |
-| `cua_overlay/actions/channels/c1_skylight.py` | C1 channel — CGEventPostToPid | VERIFIED | 93 lines. Uses Quartz.CGEventPostToPid (NOT CGEvent.post). cancel_event.is_set() pre-syscall. try_claim before syscall. |
-| `cua_overlay/actions/channels/c2_ax_press.py` | C2 channel — AX kAXPress | VERIFIED | 118 lines. AXUIElementPerformAction in asyncio.to_thread. Claim → cancel-check → validate ax_element → fire. |
-| `cua_overlay/actions/channels/c3_cgevent.py` | C3 channel — CGEventPostToPid | VERIFIED | 76 lines. Delegates to _post_left_click from C1. Claim → cancel → fire. |
-| `cua_overlay/actions/channels/c4_applescript.py` | C4 channel — AS via T3 executor | VERIFIED | 154 lines. Reads target.as_target_spec. Delegates to T3.execute(). No osascript subprocess. |
-| `cua_overlay/actions/channels/c5_cdp_input.py` | C5 channel — CDP Input.dispatchMouseEvent | VERIFIED | 167 lines. Re-opens CDPClient at ws_url from target.extras. mousePressed + mouseReleased pair at bbox center. |
-| `cua_overlay/actions/race_orchestrator.py` | Race orchestrator | VERIFIED | 377 lines. anyio.create_task_group via race_first_complete. _staggered_fire for C4 (500ms). axmgr.expect before fan-out. cancel_event.set() on first winner. 12-step contract matches D-13..D-19. |
-| `cua_overlay/actions/idempotency.py` | IdempotencyTokenStore | VERIFIED | 98 lines. asyncio.Lock try_claim. is_claimed lock-free peek. NDJSON trace via SessionWriter. D-17: claim written BEFORE syscall. |
-| `cua_overlay/actions/race_policy.py` | RacePolicy enum + dispatch | VERIFIED | 145 lines. RACE_ALLOWLIST, SINGLE_CHANNEL_ALLOWLIST, DESTRUCTIVE_COMBOS, SAFE_RACE_COMBOS. T-2-09 destructive override. NOTE: 'key_combo' bare string not in RACE_ALLOWLIST — D-12 wiring gap (see anti-patterns). |
-| `cua_overlay/actions/duplicate_receipt.py` | DuplicateReceipt — 2s ring buffer | VERIFIED | 78 lines. deque popleft pruning. record() returns is_duplicate. near_miss_duplicate structlog event. |
-| `cua_overlay/actions/channel_registry.py` | ChannelRegistry | VERIFIED | 110 lines. TIER_TO_CHANNEL_DEFAULT T1→C2..T5→C3. select() handles RACE (all tiers) vs SINGLE_CHANNEL (first tier). tier_for_channel reverse lookup. |
-| `cua_overlay/profile/known_apps.py` | Top-12 + 5 bonus association map | VERIFIED | 221 lines. 17 entries. cdp_after_relaunch=True for Slack/Cursor/Obsidian. Chess T4/T5. Pages T3/T1/T4. |
-| `cua_overlay/mcp_server/healing_tools.py` | 6 MCP healing tools (D-29) | VERIFIED | 363 lines. click_with_healing extended, 5 new siblings. send_destructive has no race_policy param (inspect.signature verified in tests). T-2-09 three-layer defense. RaceOrchestrator.execute wired in all 6 tools. |
+| `basicctrl/translators/t1_ax.py` | T1 AX translator | VERIFIED | 371 lines, substantive. TokenBucket rate_limiter, walker via AXUIElementCopyAttributeValue in asyncio.to_thread. resolve + validate implemented. |
+| `basicctrl/translators/t2_cdp.py` | T2 CDP translator | VERIFIED | 245 lines. _discover_ws_url probes 9222-9225. _pick_workspace_target D-24 Slack/Cursor/Obsidian filter. Pitfall B flatten=True enforced. |
+| `basicctrl/translators/t3_applescript.py` | T3 AppleScript translator | VERIFIED | 204 lines. ThreadPoolExecutor(max_workers=2, thread_name_prefix='cua-as'). execute() via loop.run_in_executor(self._exec). Compiled script cache. |
+| `basicctrl/translators/t4_vision.py` | T4 Vision translator | VERIFIED | 299 lines. uitag.run_pipeline in asyncio.to_thread. ocrmac fallback. Retina (image_width, image_height) logging per A1. |
+| `basicctrl/translators/t5_pixel.py` | T5 Pixel translator | VERIFIED | 107 lines. Delegates to T4.resolve(). Pre-fire phash via imagehash.phash in extras. validate() checks grounded_bbox. |
+| `basicctrl/actions/channels/c1_skylight.py` | C1 channel — CGEventPostToPid | VERIFIED | 93 lines. Uses Quartz.CGEventPostToPid (NOT CGEvent.post). cancel_event.is_set() pre-syscall. try_claim before syscall. |
+| `basicctrl/actions/channels/c2_ax_press.py` | C2 channel — AX kAXPress | VERIFIED | 118 lines. AXUIElementPerformAction in asyncio.to_thread. Claim → cancel-check → validate ax_element → fire. |
+| `basicctrl/actions/channels/c3_cgevent.py` | C3 channel — CGEventPostToPid | VERIFIED | 76 lines. Delegates to _post_left_click from C1. Claim → cancel → fire. |
+| `basicctrl/actions/channels/c4_applescript.py` | C4 channel — AS via T3 executor | VERIFIED | 154 lines. Reads target.as_target_spec. Delegates to T3.execute(). No osascript subprocess. |
+| `basicctrl/actions/channels/c5_cdp_input.py` | C5 channel — CDP Input.dispatchMouseEvent | VERIFIED | 167 lines. Re-opens CDPClient at ws_url from target.extras. mousePressed + mouseReleased pair at bbox center. |
+| `basicctrl/actions/race_orchestrator.py` | Race orchestrator | VERIFIED | 377 lines. anyio.create_task_group via race_first_complete. _staggered_fire for C4 (500ms). axmgr.expect before fan-out. cancel_event.set() on first winner. 12-step contract matches D-13..D-19. |
+| `basicctrl/actions/idempotency.py` | IdempotencyTokenStore | VERIFIED | 98 lines. asyncio.Lock try_claim. is_claimed lock-free peek. NDJSON trace via SessionWriter. D-17: claim written BEFORE syscall. |
+| `basicctrl/actions/race_policy.py` | RacePolicy enum + dispatch | VERIFIED | 145 lines. RACE_ALLOWLIST, SINGLE_CHANNEL_ALLOWLIST, DESTRUCTIVE_COMBOS, SAFE_RACE_COMBOS. T-2-09 destructive override. NOTE: 'key_combo' bare string not in RACE_ALLOWLIST — D-12 wiring gap (see anti-patterns). |
+| `basicctrl/actions/duplicate_receipt.py` | DuplicateReceipt — 2s ring buffer | VERIFIED | 78 lines. deque popleft pruning. record() returns is_duplicate. near_miss_duplicate structlog event. |
+| `basicctrl/actions/channel_registry.py` | ChannelRegistry | VERIFIED | 110 lines. TIER_TO_CHANNEL_DEFAULT T1→C2..T5→C3. select() handles RACE (all tiers) vs SINGLE_CHANNEL (first tier). tier_for_channel reverse lookup. |
+| `basicctrl/profile/known_apps.py` | Top-12 + 5 bonus association map | VERIFIED | 221 lines. 17 entries. cdp_after_relaunch=True for Slack/Cursor/Obsidian. Chess T4/T5. Pages T3/T1/T4. |
+| `basicctrl/mcp_server/healing_tools.py` | 6 MCP healing tools (D-29) | VERIFIED | 363 lines. click_with_healing extended, 5 new siblings. send_destructive has no race_policy param (inspect.signature verified in tests). T-2-09 three-layer defense. RaceOrchestrator.execute wired in all 6 tools. |
 
 ---
 
@@ -142,9 +142,9 @@ Step 7b: SKIPPED for SCs #1-#4 — require live macOS apps and TCC grants. SC #5
 
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
-| `cua_overlay/actions/race_policy.py` | 36-44 | `RACE_ALLOWLIST` does not include `'key_combo'` | Blocker | `healing_tools.key_combo_with_healing` dispatches `action_type='key_combo'` for cmd+c/cmd+v, but this string is not in RACE_ALLOWLIST. Falls through to conservative SINGLE_CHANNEL default. D-12 intent (safe-race combos should race) not reached via the MCP surface. Functionally safe (conservative), but D-12 is violated. |
-| `cua_overlay/translators/t1_ax.py` | 53 | `_MAX_DEPTH = 6` | Warning | Violates CLAUDE.md literal rule "Always depth-limited (3 levels max)". Code provides engineering justification: Calculator buttons are at depth 5 on macOS 26 Tahoe; 200-node cap is the load-bearing safety bound; this is a one-shot resolution walk. The rule's intent (prevent Safari-scale 15-20s hangs) is honored by the node cap. The deviation is documented, not silent. |
-| `cua_overlay/translators/t1_ax.py` | 63 | `_RESOLUTION_BUCKET_RATE = 200.0` | Warning | Exceeds CLAUDE.md "Never poll AX at >20 calls/sec/pid" literal rule. Code justifies as one-shot burst (<100ms to complete 200-node walk), not sustained polling. cmux #2985 stall risk is from sustained >30/sec, not a 100ms burst. Documented, not silent. |
+| `basicctrl/actions/race_policy.py` | 36-44 | `RACE_ALLOWLIST` does not include `'key_combo'` | Blocker | `healing_tools.key_combo_with_healing` dispatches `action_type='key_combo'` for cmd+c/cmd+v, but this string is not in RACE_ALLOWLIST. Falls through to conservative SINGLE_CHANNEL default. D-12 intent (safe-race combos should race) not reached via the MCP surface. Functionally safe (conservative), but D-12 is violated. |
+| `basicctrl/translators/t1_ax.py` | 53 | `_MAX_DEPTH = 6` | Warning | Violates CLAUDE.md literal rule "Always depth-limited (3 levels max)". Code provides engineering justification: Calculator buttons are at depth 5 on macOS 26 Tahoe; 200-node cap is the load-bearing safety bound; this is a one-shot resolution walk. The rule's intent (prevent Safari-scale 15-20s hangs) is honored by the node cap. The deviation is documented, not silent. |
+| `basicctrl/translators/t1_ax.py` | 63 | `_RESOLUTION_BUCKET_RATE = 200.0` | Warning | Exceeds CLAUDE.md "Never poll AX at >20 calls/sec/pid" literal rule. Code justifies as one-shot burst (<100ms to complete 200-node walk), not sustained polling. cmux #2985 stall risk is from sustained >30/sec, not a 100ms burst. Documented, not silent. |
 
 **Stub classification:** The `return []` instances in t1_ax.py and t4_vision.py are defensive failure paths (HIServices ImportError, uitag pipeline error) — not stub implementations. Real data flows when imports succeed.
 

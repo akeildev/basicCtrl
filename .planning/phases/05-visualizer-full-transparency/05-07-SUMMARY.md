@@ -22,7 +22,7 @@ tech-stack:
   patterns: [Counterfactual branch extraction from action_log, dashed-path Canvas rendering]
 key-files:
   created:
-    - cua_overlay/replay/counterfactual.py (Python data model + extraction logic)
+    - basicctrl/replay/counterfactual.py (Python data model + extraction logic)
     - libs/cua-driver/App/CounterfactualRenderer.swift (SwiftUI Canvas rendering)
   modified: []
 key-decisions:
@@ -80,7 +80,7 @@ completed: "2026-05-01"
 
 ## Files Created/Modified
 
-- `cua_overlay/replay/counterfactual.py` - Python data model + candidate branch extraction (106 lines)
+- `basicctrl/replay/counterfactual.py` - Python data model + candidate branch extraction (106 lines)
 - `libs/cua-driver/App/CounterfactualRenderer.swift` - Swift Canvas rendering + preview (241 lines)
 
 ## Decisions Made
@@ -134,11 +134,11 @@ None — counterfactual module is pure Python state extraction + SwiftUI renderi
 
 ## Self-Check: PASSED
 
-- [x] `/Users/akeilsmith/dev/cua-maximalist/cua_overlay/replay/counterfactual.py` exists (106 lines)
-- [x] `/Users/akeilsmith/dev/cua-maximalist/libs/cua-driver/App/CounterfactualRenderer.swift` exists (241 lines)
+- [x] `/Users/akeilsmith/dev/basicCtrl/basicctrl/replay/counterfactual.py` exists (106 lines)
+- [x] `/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/App/CounterfactualRenderer.swift` exists (241 lines)
 - [x] Commit `487d06d` exists in git log
 - [x] `swift build` succeeds (0 errors)
-- [x] `python -c "from cua_overlay.replay.counterfactual import CounterfactualRenderer"` imports successfully
+- [x] `python -c "from basicctrl.replay.counterfactual import CounterfactualRenderer"` imports successfully
 - [x] All tasks completed (2/2)
 - [x] OBS-05 requirement satisfied (counterfactual replay visualization)
 

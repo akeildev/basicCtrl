@@ -9,11 +9,11 @@ tags:
   - test infrastructure
 dependency_graph:
   requires:
-    - cua_overlay.state (UIElement, ActionCanonical schemas)
-    - cua_overlay.log (structlog patterns)
+    - basicctrl.state (UIElement, ActionCanonical schemas)
+    - basicctrl.log (structlog patterns)
   provides:
-    - cua_overlay.visualizer (Pydantic IPC models)
-    - cua_overlay.observability (SessionWriter, PerformanceMetrics)
+    - basicctrl.visualizer (Pydantic IPC models)
+    - basicctrl.observability (SessionWriter, PerformanceMetrics)
     - tests/test_visualizer.py (Wave 0-5 test scaffold)
   affects:
     - Phase 5 downstream plans (05-02..05-10) — all import from visualizer.models + observability
@@ -28,10 +28,10 @@ tech_stack:
     - SessionWriter instantiated once per session, passed to all components
 key_files:
   created:
-    - cua_overlay/visualizer/__init__.py (88 lines)
-    - cua_overlay/visualizer/models.py (158 lines)
-    - cua_overlay/observability/__init__.py (10 lines)
-    - cua_overlay/observability/session_storage.py (97 lines)
+    - basicctrl/visualizer/__init__.py (88 lines)
+    - basicctrl/visualizer/models.py (158 lines)
+    - basicctrl/observability/__init__.py (10 lines)
+    - basicctrl/observability/session_storage.py (97 lines)
     - tests/test_visualizer.py (274 lines)
   modified:
     - .planning/phases/05-visualizer-full-transparency/05-VALIDATION.md (filled Wave 0)
@@ -71,8 +71,8 @@ Phase 5 visibility requires deterministic schemas for the Python ↔ Swift IPC c
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
-| **Visualizer models** | `cua_overlay/visualizer/models.py` | 9 Pydantic schemas (GhostCursorCommand, HighlightBoxCommand, HUDCommand, HotKeyCommand, ReplayFrameMetadata, CounterfactualState, DiffLine + enums) |
-| **Observability** | `cua_overlay/observability/session_storage.py` | SessionWriter class (directory init, NDJSON append, state snapshots) |
+| **Visualizer models** | `basicctrl/visualizer/models.py` | 9 Pydantic schemas (GhostCursorCommand, HighlightBoxCommand, HUDCommand, HotKeyCommand, ReplayFrameMetadata, CounterfactualState, DiffLine + enums) |
+| **Observability** | `basicctrl/observability/session_storage.py` | SessionWriter class (directory init, NDJSON append, state snapshots) |
 | **Test scaffold** | `tests/test_visualizer.py` | 3 test classes + 12 skipped tests (one per requirement) |
 | **Validation plan** | `.planning/phases/05-visualizer-full-transparency/05-VALIDATION.md` | Test matrix + pitfall assertions + phase gate |
 
@@ -85,8 +85,8 @@ Phase 5 visibility requires deterministic schemas for the Python ↔ Swift IPC c
 **Status:** ✅ Complete
 
 **Deliverables:**
-- `cua_overlay/visualizer/__init__.py` — module init with pytest.importorskip gate
-- `cua_overlay/visualizer/models.py` — 9 Pydantic schemas covering all IPC message types
+- `basicctrl/visualizer/__init__.py` — module init with pytest.importorskip gate
+- `basicctrl/visualizer/models.py` — 9 Pydantic schemas covering all IPC message types
 
 **Schema inventory:**
 1. **ActionTier** enum (T1-T5)
@@ -113,8 +113,8 @@ Phase 5 visibility requires deterministic schemas for the Python ↔ Swift IPC c
 **Status:** ✅ Complete
 
 **Deliverables:**
-- `cua_overlay/observability/__init__.py` — module init with SessionWriter + PerformanceMetrics exports
-- `cua_overlay/observability/session_storage.py` — SessionWriter class with 6 methods
+- `basicctrl/observability/__init__.py` — module init with SessionWriter + PerformanceMetrics exports
+- `basicctrl/observability/session_storage.py` — SessionWriter class with 6 methods
 
 **SessionWriter API:**
 - `__init__(session_id: str)` — creates `~/.cua/sessions/<id>/` with subdirs:
@@ -191,7 +191,7 @@ Phase 5 visibility requires deterministic schemas for the Python ↔ Swift IPC c
 
 | From | To | Via | Pattern |
 |------|----|----|---------|
-| `visualizer/models.py` | `tests/test_visualizer.py` | Pydantic schema import + validation | `from cua_overlay.visualizer.models import ...` |
+| `visualizer/models.py` | `tests/test_visualizer.py` | Pydantic schema import + validation | `from basicctrl.visualizer.models import ...` |
 | `observability/session_storage.py` | `~/.cua/sessions/<id>/` | SessionWriter.write_* methods | Append-only NDJSON + JSON snapshots |
 | `05-VALIDATION.md` | `05-01-PLAN.md` | Test matrix rows | 12 requirements covered (VIS-01..OBS-06) |
 
@@ -279,10 +279,10 @@ pytest tests/test_visualizer.py::TestSessionWriter -v    # PASSED
 ## Self-Check
 
 ✅ **All created files exist and are valid Python:**
-- `cua_overlay/visualizer/__init__.py` — 88 lines, imports cleanly
-- `cua_overlay/visualizer/models.py` — 158 lines, 9 Pydantic models + enums
-- `cua_overlay/observability/__init__.py` — 10 lines, exports correct
-- `cua_overlay/observability/session_storage.py` — 97 lines, SessionWriter + PerformanceMetrics
+- `basicctrl/visualizer/__init__.py` — 88 lines, imports cleanly
+- `basicctrl/visualizer/models.py` — 158 lines, 9 Pydantic models + enums
+- `basicctrl/observability/__init__.py` — 10 lines, exports correct
+- `basicctrl/observability/session_storage.py` — 97 lines, SessionWriter + PerformanceMetrics
 - `tests/test_visualizer.py` — 274 lines, 8 tests passing + 12 skipped
 - `.planning/phases/05-visualizer-full-transparency/05-VALIDATION.md` — fully populated
 

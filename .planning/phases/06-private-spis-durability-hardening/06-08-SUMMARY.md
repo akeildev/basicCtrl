@@ -8,18 +8,18 @@ dependency_graph:
   provides: [C2_DYLDRenderer-channel, SPI-06]
   affects: [06-09-onwards, Electron-renderer-access]
 tech_stack:
-  added: [cua_overlay/spi/dyld_inject.py, libs/cua-driver/App/spi-dyld/]
+  added: [basicctrl/spi/dyld_inject.py, libs/cua-driver/App/spi-dyld/]
   patterns: [spi-bridge, capability-gating, graceful-fallback, singleton-async]
 key_files:
   created:
-    - cua_overlay/spi/dyld_inject.py (DYLDInjectBridge class, 220 LOC)
+    - basicctrl/spi/dyld_inject.py (DYLDInjectBridge class, 220 LOC)
     - tests/test_spi_dyld.py (13 unit + integration tests)
     - libs/cua-driver/App/spi-dyld/cua_inject.c (minimal dylib stub, 40 LOC)
     - libs/cua-driver/App/spi-dyld/arm64e.plist (PAC entitlements)
     - libs/cua-driver/App/spi-dyld/build.sh (build + sign automation)
     - libs/cua-driver/App/spi-dyld/cua_inject.dylib (built binary, 67KB)
   modified:
-    - cua_overlay/spi/probe.py (probe_dyld_inject() now returns True)
+    - basicctrl/spi/probe.py (probe_dyld_inject() now returns True)
 decisions:
   - "Spike GREEN outcome enables full wave 4 implementation"
   - "Minimal stub dylib exports identification markers only (cua_inject_marker, version)"
@@ -45,7 +45,7 @@ metrics:
 Wave 4 implementation of SPI-06 DYLD injection, enabled by Wave 3 spike GREEN outcome. All three tasks completed atomically:
 
 1. **DYLD Injection Wrapper** (Task 1)
-   - Python module: `cua_overlay/spi/dyld_inject.py`
+   - Python module: `basicctrl/spi/dyld_inject.py`
    - `DYLDInjectBridge` class with capability gating
    - Graceful fallback to T1 AX if injection unavailable
    - Async singleton pattern via `get_dyld_inject_bridge()`
@@ -67,7 +67,7 @@ Wave 4 implementation of SPI-06 DYLD injection, enabled by Wave 3 spike GREEN ou
 
 **Status:** ✅ COMPLETE
 
-**File:** `cua_overlay/spi/dyld_inject.py` (220 LOC)
+**File:** `basicctrl/spi/dyld_inject.py` (220 LOC)
 
 **Implementation:**
 
@@ -98,7 +98,7 @@ class DYLDInjectBridge:
 **Verification:**
 
 ```bash
-$ python -c "from cua_overlay.spi.dyld_inject import DYLDInjectBridge; b = DYLDInjectBridge(True); print(b.available)"
+$ python -c "from basicctrl.spi.dyld_inject import DYLDInjectBridge; b = DYLDInjectBridge(True); print(b.available)"
 True
 ```
 
@@ -196,7 +196,7 @@ tests/test_spi_dyld.py::TestDYLDInjectIntegration::test_inject_missing_dylib PAS
 
 ## Probe Update
 
-**File:** `cua_overlay/spi/probe.py`
+**File:** `basicctrl/spi/probe.py`
 
 Updated `probe_dyld_inject()` to return True, reflecting spike GREEN outcome:
 
@@ -230,7 +230,7 @@ None. All three tasks executed exactly as specified:
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| cua_overlay/spi/dyld_inject.py created | ✅ | DYLDInjectBridge class, 220 LOC |
+| basicctrl/spi/dyld_inject.py created | ✅ | DYLDInjectBridge class, 220 LOC |
 | If spike GREEN: full implementation | ✅ | Spike GREEN; full impl delivered |
 | dylib built (arm64e, signed) | ✅ | cua_inject.dylib, 67KB, architecture: arm64e |
 | PAC entitlements applied | ✅ | arm64e.plist + codesign -v validated |

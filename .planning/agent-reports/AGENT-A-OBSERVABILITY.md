@@ -57,7 +57,7 @@ Features:
 Location: `/scripts/cua-monitor` (executable, shebang `#!/usr/bin/env -S uv run python`)
 LOC: 205
 
-### A3. cua_overlay/observability/bus.py
+### A3. basicctrl/observability/bus.py
 **Status: COMPLETE**
 
 TraceBus socket server for best-effort event distribution.
@@ -81,14 +81,14 @@ Key classes:
   - Returns event_dict unchanged
   - Never raises
 
-Location: `/cua_overlay/observability/bus.py`
+Location: `/basicctrl/observability/bus.py`
 LOC: 167
 
 ### A4. Structured Events at Layer Boundaries
 **Status: COMPLETE**
 
 #### memory.* (episodic.py)
-Added to `cua_overlay/state/episodic.py`:
+Added to `basicctrl/state/episodic.py`:
 - `memory.lookup`: Called on `lookup()` start
   - Fields: app_bundle_id, task_class
 - `memory.hit`: Emitted when recipes found (similarity > 0.85)
@@ -103,7 +103,7 @@ Added to `cua_overlay/state/episodic.py`:
   - Fields: row_idx, failure_count
 
 #### viz.* (hud_driver.py)
-Added to `cua_overlay/visualizer/hud_driver.py`:
+Added to `basicctrl/visualizer/hud_driver.py`:
 - `viz.send_attempt`: Called on `send_hud_update()` start
   - Fields: num_entries
 - `viz.socket_connected`: Emitted after socket.connect() succeeds
@@ -114,7 +114,7 @@ Added to `cua_overlay/visualizer/hud_driver.py`:
   - Fields: error (exception type name), reason (socket_not_ready | string repr)
 
 #### ckpt.* (durable_step.py)
-Added to `cua_overlay/persist/durable_step.py`:
+Added to `basicctrl/persist/durable_step.py`:
 - `ckpt.commit_start`: Called on `checkpoint()` start
   - Fields: session_id, step_idx
 - `ckpt.commit_end`: Called after AsyncPostgresSaver.aput() completes
@@ -125,7 +125,7 @@ Added to `cua_overlay/persist/durable_step.py`:
 ### A5. CUA_DEBUG=1 Mode
 **Status: COMPLETE**
 
-Updated `cua_overlay/log.py`:
+Updated `basicctrl/log.py`:
 - When `CUA_DEBUG=1`: log level = DEBUG + TraceBus processor enabled
 - When unset: log level = INFO, bus processor disabled
 - All memory.*, viz.*, ckpt.* events fire at INFO (always visible in normal logs)
@@ -204,7 +204,7 @@ $ uv run pytest tests/unit/ -q
 
 3. **Unix socket non-blocking**: The socket server uses `setblocking(False)` and `SOL_SOCKET.SO_REUSEADDR` to avoid "Address already in use" on quick restarts. Critical for daemon scenarios.
 
-4. **CUA_DEBUG import order**: The bus processor is imported inside `configure()` at runtime (not at module level) to avoid circular imports. `cua_overlay/log.py` → `cua_overlay/observability/bus.py` is only created when needed.
+4. **CUA_DEBUG import order**: The bus processor is imported inside `configure()` at runtime (not at module level) to avoid circular imports. `basicctrl/log.py` → `basicctrl/observability/bus.py` is only created when needed.
 
 5. **Gap detection threshold**: 10ms threshold is empirically tuned. Sub-10ms variance is noise; >10ms is worth flagging (per architecture doc L5 timing budgets).
 
@@ -215,17 +215,17 @@ $ uv run pytest tests/unit/ -q
 ### Created
 - `/scripts/cua-trace` (209 LOC)
 - `/scripts/cua-monitor` (205 LOC)
-- `/cua_overlay/observability/bus.py` (167 LOC)
+- `/basicctrl/observability/bus.py` (167 LOC)
 - `/tests/unit/observability/__init__.py`
 - `/tests/unit/observability/test_bus.py` (214 LOC)
 - `/tests/unit/scripts/__init__.py`
 - `/tests/unit/scripts/test_cua_trace_parser.py` (413 LOC)
 
 ### Modified
-- `/cua_overlay/log.py` (+40 LOC) — CUA_DEBUG, bus processor hookup
-- `/cua_overlay/state/episodic.py` (+80 LOC) — memory.* events
-- `/cua_overlay/visualizer/hud_driver.py` (+35 LOC) — viz.* events
-- `/cua_overlay/persist/durable_step.py` (+50 LOC) — ckpt.* events
+- `/basicctrl/log.py` (+40 LOC) — CUA_DEBUG, bus processor hookup
+- `/basicctrl/state/episodic.py` (+80 LOC) — memory.* events
+- `/basicctrl/visualizer/hud_driver.py` (+35 LOC) — viz.* events
+- `/basicctrl/persist/durable_step.py` (+50 LOC) — ckpt.* events
 
 **Total additions: ~1,400 LOC (scripts, tests, events, bus)**
 
@@ -285,13 +285,13 @@ Step 2 (same session):
 |-----------|------|-----|------|
 | **Scripts** | scripts/cua-trace | 209 | CLI |
 | | scripts/cua-monitor | 205 | TUI |
-| **Bus** | cua_overlay/observability/bus.py | 167 | Library |
+| **Bus** | basicctrl/observability/bus.py | 167 | Library |
 | **Tests** | tests/unit/observability/test_bus.py | 214 | Tests |
 | | tests/unit/scripts/test_cua_trace_parser.py | 413 | Tests |
-| **Events** | cua_overlay/state/episodic.py (additions) | 80 | Logging |
-| | cua_overlay/visualizer/hud_driver.py (additions) | 35 | Logging |
-| | cua_overlay/persist/durable_step.py (additions) | 50 | Logging |
-| **Config** | cua_overlay/log.py (additions) | 40 | Config |
+| **Events** | basicctrl/state/episodic.py (additions) | 80 | Logging |
+| | basicctrl/visualizer/hud_driver.py (additions) | 35 | Logging |
+| | basicctrl/persist/durable_step.py (additions) | 50 | Logging |
+| **Config** | basicctrl/log.py (additions) | 40 | Config |
 | | | | |
 | **TOTAL** | | ~1,413 | |
 

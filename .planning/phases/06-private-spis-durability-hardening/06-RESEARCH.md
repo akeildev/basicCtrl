@@ -183,7 +183,7 @@ func probeIMUAvailable() -> IOService? {
 Every SPI needs a probe that runs at session start and caches the result. Pattern:
 
 ```python
-# cua_overlay/spi/capability.py
+# basicctrl/spi/capability.py
 from dataclasses import dataclass
 
 @dataclass
@@ -246,13 +246,13 @@ Let user decide if upgrade is worth it. Never silently disable features based on
 
 **Wrap pattern (from ARCHITECTURE.md L8):**
 ```python
-# cua_overlay/persist/durable_step.py
+# basicctrl/persist/durable_step.py
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 async def wrapped_translator_call(translator, target, action):
     """Each translator call becomes one LangGraph node."""
     checkpointer = await AsyncPostgresSaver.from_conn_string(
-        "postgresql://localhost:5432/cua_maximalist"
+        "postgresql://localhost:5432/basicctrl"
     ).__aenter__()
     await checkpointer.setup()  # Creates checkpoint tables
     
@@ -275,7 +275,7 @@ async def wrapped_translator_call(translator, target, action):
 
 **Resume logic:**
 ```python
-# cua_overlay/persist/resume.py
+# basicctrl/persist/resume.py
 async def resume_from_crash(session_id):
     """Load last checkpoint, resume from verified state."""
     checkpointer = ...
@@ -339,7 +339,7 @@ async def resume_from_crash(session_id):
 - [ ] `tests/test_spi_integration.py` — integration tests for registered SPI channels (requires helper app mocks)
 - [ ] `tests/test_durability.py` — Postgres checkpoint + resume-from-crash tests
 - [ ] `tests/fixtures/mock_electron_app.py` — test Electron app for SPI-06 DYLD spike
-- [ ] Setup: `brew install postgresql@16; createdb cua_maximalist_test` (one-time)
+- [ ] Setup: `brew install postgresql@16; createdb basicctrl_test` (one-time)
 
 ---
 
@@ -403,7 +403,7 @@ async def resume_from_crash(session_id):
 ### Pattern: Capability-Based Channel Registration
 
 ```python
-# cua_overlay/actions/channel_registry.py — extended from Phase 2
+# basicctrl/actions/channel_registry.py — extended from Phase 2
 
 class ChannelRegistry:
     def __init__(self):
@@ -430,7 +430,7 @@ class ChannelRegistry:
 ### Pattern: Graceful SPI Fallback in Channels
 
 ```python
-# cua_overlay/actions/channels/c1_skylight.py
+# basicctrl/actions/channels/c1_skylight.py
 
 async def fire(self, target, action):
     """Try SkyLight; fall back to public API if unavailable."""
@@ -500,9 +500,9 @@ async def fire(self, target, action):
 ### Primary (HIGH confidence)
 - [GitHub: lelegard arm64e on macOS docs](https://github.com/lelegard/arm-cpusysregs/blob/main/docs/arm64e-on-macos.md) — arm64e ABI + PAC + DYLD signing details
 - [GitHub: olvvier apple-silicon-accelerometer](https://github.com/olvvier/apple-silicon-accelerometer) — AppleSPUHIDDevice IMU confirmed on M-series
-- [STACK.md](file:///Users/akeilsmith/dev/cua-maximalist/.planning/research/STACK.md) — LangGraph PostgresSaver 3.0.5 locked
-- [ARCHITECTURE.md L8](file:///Users/akeilsmith/dev/cua-maximalist/.planning/research/ARCHITECTURE.md) — Durable Execution pattern
-- [PITFALLS.md P17, P18, P19](file:///Users/akeilsmith/dev/cua-maximalist/.planning/research/PITFALLS.md) — SPI stability, SIP tiers, hardware risk
+- [STACK.md](file:///Users/akeilsmith/dev/basicCtrl/.planning/research/STACK.md) — LangGraph PostgresSaver 3.0.5 locked
+- [ARCHITECTURE.md L8](file:///Users/akeilsmith/dev/basicCtrl/.planning/research/ARCHITECTURE.md) — Durable Execution pattern
+- [PITFALLS.md P17, P18, P19](file:///Users/akeilsmith/dev/basicCtrl/.planning/research/PITFALLS.md) — SPI stability, SIP tiers, hardware risk
 
 ### Secondary (MEDIUM confidence)
 - [Apple: Preparing your app to work with pointer authentication](https://developer.apple.com/documentation/security/preparing-your-app-to-work-with-pointer-authentication) — Official PAC guidance

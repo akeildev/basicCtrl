@@ -7,11 +7,11 @@ tags: [known-apps, app-classifier, top-12, association-map, version-drift, D-20,
 # Dependency graph
 requires:
   - phase: 01-foundation
-    provides: cua_overlay.profile.classifier.AppProfile + classify() + _CACHE_DIR_OVERRIDE + _derive_translator_priority
+    provides: basicctrl.profile.classifier.AppProfile + classify() + _CACHE_DIR_OVERRIDE + _derive_translator_priority
   - phase: 02-translators-racing
     provides: Wave-0 stub test_top_12_priority.py (Plan 02-01)
 provides:
-  - cua_overlay.profile.known_apps module — 17-entry KNOWN_APPS dict + KnownApp NamedTuple
+  - basicctrl.profile.known_apps module — 17-entry KNOWN_APPS dict + KnownApp NamedTuple
   - classify() short-circuit (D-20) — bundled priority + cdp_after_relaunch flag override before live probes
   - _is_version_newer() dotted-decimal version compare (drift detection)
   - structlog event 'known_app.short_circuit' (info) and 'known_app.version_drift' (warning)
@@ -30,9 +30,9 @@ tech-stack:
 
 key-files:
   created:
-    - "cua_overlay/profile/known_apps.py — 17-entry KNOWN_APPS static dict + KnownApp NamedTuple + get() helper"
+    - "basicctrl/profile/known_apps.py — 17-entry KNOWN_APPS static dict + KnownApp NamedTuple + get() helper"
   modified:
-    - "cua_overlay/profile/classifier.py — added KNOWN_APPS import, _is_version_newer helper, bundled short-circuit block in classify(), conditional translator_priority + cdp_available_after_relaunch construction"
+    - "basicctrl/profile/classifier.py — added KNOWN_APPS import, _is_version_newer helper, bundled short-circuit block in classify(), conditional translator_priority + cdp_available_after_relaunch construction"
     - "tests/unit/profile/test_top_12_priority.py — replaced importorskip stub with 8 hermetic tests (D-21 priorities, D-23 fallthrough, D-24 cdp flag, version drift fallthrough)"
 
 key-decisions:
@@ -76,7 +76,7 @@ completed: 2026-04-30
 - **Started:** 2026-04-30T06:42:17Z
 - **Completed:** 2026-04-30T06:45:54Z
 - **Tasks:** 2 (Task 1 `type=auto`, Task 2 `type=auto tdd=true`)
-- **Files modified:** 3 (1 created in `cua_overlay/profile/`, 1 modified in `cua_overlay/profile/`, 1 stub test rewritten with real assertions)
+- **Files modified:** 3 (1 created in `basicctrl/profile/`, 1 modified in `basicctrl/profile/`, 1 stub test rewritten with real assertions)
 
 ## Accomplishments
 
@@ -91,7 +91,7 @@ completed: 2026-04-30
 
 Two tasks; Task 2 followed strict TDD with separate RED + GREEN commits:
 
-1. **Task 1: Create cua_overlay/profile/known_apps.py with the D-21..D-22 association map**
+1. **Task 1: Create basicctrl/profile/known_apps.py with the D-21..D-22 association map**
    - `cbab26e` (feat) — KNOWN_APPS 17-entry dict + KnownApp NamedTuple + get() helper
 2. **Task 2: Extend classify() with KNOWN_APPS short-circuit (D-20) + version drift fallthrough**
    - `77ee946` (test) — 8 failing tests added (RED) — calculator returned `['T4','T5']` instead of bundled `['T1','T4']`
@@ -153,10 +153,10 @@ classify(bundle_id, pid):
 ## Files Created/Modified
 
 ### Created
-- `cua_overlay/profile/known_apps.py` — `KNOWN_APPS: dict[str, KnownApp]` (17 entries) + `KnownApp(NamedTuple)` with 8 fields + `get(bundle_id) -> Optional[KnownApp]` helper
+- `basicctrl/profile/known_apps.py` — `KNOWN_APPS: dict[str, KnownApp]` (17 entries) + `KnownApp(NamedTuple)` with 8 fields + `get(bundle_id) -> Optional[KnownApp]` helper
 
 ### Modified
-- `cua_overlay/profile/classifier.py` — added `from cua_overlay.profile.known_apps import KNOWN_APPS, KnownApp`, new `_is_version_newer(live, known) -> bool` helper, Stage 3.5 short-circuit block (28 lines) inserted between cache-miss and parallel-probes, AppProfile construction now conditionally selects bundled vs live priority + cdp_available_after_relaunch
+- `basicctrl/profile/classifier.py` — added `from basicctrl.profile.known_apps import KNOWN_APPS, KnownApp`, new `_is_version_newer(live, known) -> bool` helper, Stage 3.5 short-circuit block (28 lines) inserted between cache-miss and parallel-probes, AppProfile construction now conditionally selects bundled vs live priority + cdp_available_after_relaunch
 - `tests/unit/profile/test_top_12_priority.py` — Wave-0 stub (`pytest.importorskip` + 1 trivial assertion) replaced with 8 hermetic tests + 4 fixtures (tmp_cache, fake_meta, fake_probes, fake_tcc, stubbed_classify composer)
 
 ## Decisions Made
@@ -173,7 +173,7 @@ See `key-decisions` in frontmatter for the full list. Brief rationale highlights
 
 **1. [Rule 1 — Bug] Test fixture monkeypatch leaked across test files**
 - **Found during:** Task 2 GREEN (running full unit suite for regression check after RED/GREEN of test_top_12_priority.py passed)
-- **Issue:** Plan's `<action>` Step 3 specified the `fake_tcc` fixture as `monkeypatch.setattr("cua_overlay.profile.classifier._tcc.check", _check.__get__(None))`. I implemented the equivalent `monkeypatch.setattr(_classifier_module._tcc, "check", _granted)`. Both approaches set an **instance attribute** on the module-level `_tcc` singleton, which permanently shadows the class method. When `monkeypatch` unwound, it restored the *bound* method as an instance attribute (not the class method). Sibling test `tests/unit/test_tcc.py::test_classify_calls_tcc_check_at_start` then patched `TCCMonitor.check` (the **class** method) — but `_tcc.check` resolved to the leftover instance attribute first, bypassing the class patch. Result: `_fake_check` was never called, `call_log[0]` was `'probe.bundle_metadata'` not `'tcc.check'`, regression.
+- **Issue:** Plan's `<action>` Step 3 specified the `fake_tcc` fixture as `monkeypatch.setattr("basicctrl.profile.classifier._tcc.check", _check.__get__(None))`. I implemented the equivalent `monkeypatch.setattr(_classifier_module._tcc, "check", _granted)`. Both approaches set an **instance attribute** on the module-level `_tcc` singleton, which permanently shadows the class method. When `monkeypatch` unwound, it restored the *bound* method as an instance attribute (not the class method). Sibling test `tests/unit/test_tcc.py::test_classify_calls_tcc_check_at_start` then patched `TCCMonitor.check` (the **class** method) — but `_tcc.check` resolved to the leftover instance attribute first, bypassing the class patch. Result: `_fake_check` was never called, `call_log[0]` was `'probe.bundle_metadata'` not `'tcc.check'`, regression.
 - **Fix:** Switched the fixture to `monkeypatch.setattr(TCCMonitor, "check", _granted)` (patch the **class**, not the instance). Added a docstring comment documenting the leak so future fixture additions don't regress.
 - **Files modified:** `tests/unit/profile/test_top_12_priority.py` (only the `fake_tcc` fixture; tests themselves unchanged)
 - **Verification:**
@@ -204,10 +204,10 @@ None. Pure Python (stdlib `typing.NamedTuple`); no new dependencies.
 ## Self-Check: PASSED
 
 Files created (1 verified):
-- FOUND: cua_overlay/profile/known_apps.py
+- FOUND: basicctrl/profile/known_apps.py
 
 Files modified (2 verified):
-- FOUND: cua_overlay/profile/classifier.py
+- FOUND: basicctrl/profile/classifier.py
 - FOUND: tests/unit/profile/test_top_12_priority.py (replaced Wave-0 stub)
 
 Commits verified (all 3 in git log):
@@ -217,11 +217,11 @@ Commits verified (all 3 in git log):
 
 Acceptance criteria literals (all greppable):
 - FOUND: `KNOWN_APPS: dict[str, KnownApp]`, `class KnownApp(NamedTuple)`, all 17 bundleIDs in known_apps.py
-- FOUND: `from cua_overlay.profile.known_apps import KNOWN_APPS`, `_is_version_newer`, `known_app.short_circuit` (×1), `known_app.version_drift` (×1), `bundled_priority` (×5) in classifier.py
+- FOUND: `from basicctrl.profile.known_apps import KNOWN_APPS`, `_is_version_newer`, `known_app.short_circuit` (×1), `known_app.version_drift` (×1), `bundled_priority` (×5) in classifier.py
 - FOUND: 8 test functions in test_top_12_priority.py (no `pytest.importorskip`)
 
 Verification commands (all pass):
-- `uv run python -c "from cua_overlay.profile.known_apps import KNOWN_APPS; assert len(KNOWN_APPS) == 17; print('ok')"` → `ok`
+- `uv run python -c "from basicctrl.profile.known_apps import KNOWN_APPS; assert len(KNOWN_APPS) == 17; print('ok')"` → `ok`
 - `uv run pytest -q tests/unit/profile/test_top_12_priority.py` → 8 passed in 0.03s
 - `uv run pytest -q tests/ -m "not integration and not manual"` → 153 passed, 12 skipped, 0 errors in 1.03s
 
