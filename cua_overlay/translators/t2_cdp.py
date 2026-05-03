@@ -62,19 +62,28 @@ class T2CDPTranslator:
     tier: Literal["T1", "T2", "T3", "T4", "T5"] = "T2"
 
     async def _discover_ws_url(self, pid: int) -> Optional[str]:
-        """Probe localhost:9222..9225 for /json/version → ws URL.
+        """Resolve the live CDP WebSocket URL for the user's browser.
 
-        Returns the ``webSocketDebuggerUrl`` from the first 200-OK response,
-        or None if all probes fail. The 0.5s per-port timeout keeps total
-        worst-case latency under 2s when nothing is listening (P8 path).
+        Discovery order (mirrors cua_overlay.browser.daemon.get_ws_url, which
+        was vendored from browser-use/browser-harness 2026-05-03):
 
-        Test override: ``CUA_T2_CDP_PORT_OVERRIDE`` env var pins the probe
-        to a single port. Used by tests to coexist with the user's other
-        running CDP instances (browser-harness daemon on port 9223 etc.)
-        — without this, T2 attaches to whatever CDP listens first, which
-        in a dev environment is usually NOT the test's Chrome.
+        1. ``CUA_T2_CDP_PORT_OVERRIDE`` env var → single probe port (test hook).
+        2. Probe localhost:9222..9225 GET /json/version. 200 OK with a
+           ``webSocketDebuggerUrl`` wins. This catches Electron apps and
+           dedicated automation Chrome launched with ``--remote-debugging-port``.
+        3. Walk every Chromium-class user-profile dir for ``DevToolsActivePort``.
+           When the user has ticked ``chrome://inspect/#remote-debugging``'s
+           "Allow remote debugging for this browser instance" on a normal Chrome
+           profile, Chrome writes ``port\\nws_path`` to that file. Chrome 144+
+           silently disables ``/json/version`` on the default profile, so step
+           2 returns 404 even though CDP works — DevToolsActivePort is the
+           only reliable path for the user's everyday Chrome.
+
+        Returns the resolved ws URL (str) or None if nothing was reachable.
         """
         import os
+        from pathlib import Path
+
         override = os.environ.get("CUA_T2_CDP_PORT_OVERRIDE")
         ports: tuple[int, ...]
         if override:
@@ -84,6 +93,8 @@ class T2CDPTranslator:
                 ports = CDP_PROBE_PORTS
         else:
             ports = CDP_PROBE_PORTS
+
+        # Step 2: HTTP /json/version probe
         for port in ports:
             try:
                 async with httpx.AsyncClient(timeout=0.5) as client:
@@ -96,6 +107,53 @@ class T2CDPTranslator:
             except Exception as exc:  # noqa: BLE001 — every failure is "skip and try next"
                 _log.debug("t2.cdp_probe_skip", port=port, error=str(exc))
                 continue
+
+        # Step 3: DevToolsActivePort fallback for the user's real Chrome
+        # profile (Chrome 144+ workaround).
+        profiles = (
+            Path.home() / "Library/Application Support/Google/Chrome",
+            Path.home() / "Library/Application Support/BraveSoftware/Brave-Browser",
+            Path.home() / "Library/Application Support/Microsoft Edge",
+            Path.home() / "Library/Application Support/Microsoft Edge Beta",
+            Path.home() / "Library/Application Support/Microsoft Edge Dev",
+            Path.home() / "Library/Application Support/Microsoft Edge Canary",
+            Path.home() / "Library/Application Support/Arc/User Data",
+            Path.home() / "Library/Application Support/Comet",
+            Path.home() / "Library/Application Support/Dia/User Data",
+            Path.home() / ".config/google-chrome",
+            Path.home() / ".config/chromium",
+            Path.home() / ".config/chromium-browser",
+            Path.home() / ".config/microsoft-edge",
+        )
+        for base in profiles:
+            try:
+                lines = (base / "DevToolsActivePort").read_text().splitlines()
+            except (FileNotFoundError, NotADirectoryError, PermissionError):
+                continue
+            if not lines or not lines[0].strip().isdigit():
+                continue
+            port = int(lines[0].strip())
+            ws_path = lines[1].strip() if len(lines) > 1 else ""
+            # Try /json/version first; on 404 fall back to the path Chrome wrote.
+            try:
+                async with httpx.AsyncClient(timeout=1.0) as client:
+                    r = await client.get(f"http://127.0.0.1:{port}/json/version")
+                    if r.status_code == 200:
+                        ws = r.json().get("webSocketDebuggerUrl")
+                        if ws:
+                            _log.debug("t2.cdp_devtoolsactiveport_resolved",
+                                       profile=str(base.name), port=port, ws_url=ws)
+                            return ws
+                    if r.status_code == 404 and ws_path:
+                        ws = f"ws://127.0.0.1:{port}{ws_path}"
+                        _log.debug("t2.cdp_devtoolsactiveport_path_fallback",
+                                   profile=str(base.name), port=port, ws_url=ws)
+                        return ws
+            except Exception as exc:  # noqa: BLE001
+                _log.debug("t2.cdp_devtoolsactiveport_skip",
+                           profile=str(base.name), error=str(exc))
+                continue
+
         _log.info("t2.cdp_unavailable", pid=pid, ports=list(CDP_PROBE_PORTS))
         return None
 

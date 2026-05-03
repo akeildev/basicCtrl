@@ -404,6 +404,13 @@ async def main() -> None:
             learning_loop=learning_loop,
         )
 
+        # Browser tool (mcp__cua-maximalist__browser) — CDP-driven, vendored
+        # from browser-use/browser-harness. Routing rule: Chromium-class
+        # targets prefer this over T1 AX (faster, sees iframes/shadow DOM).
+        from cua_overlay.mcp_server.browser_tool import register_browser_tool
+
+        register_browser_tool(proxy_server)
+
         log.info(
             "proxy.ready",
             session_id=session.session_id,
