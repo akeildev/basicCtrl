@@ -75,32 +75,44 @@ basicCtrl picks the fastest, most reliable route for each app. You don't have to
 
 ```bash
 git clone https://github.com/akeildev/basicCtrl.git
-cd basicCtrl
+cd basicCtrl && bash scripts/install.sh
+# restart Claude Code, done
+```
+
+`scripts/install.sh` is idempotent — re-running reports "already configured" for each step. It:
+
+1. checks macOS + `uv`
+2. runs `uv sync` + `uv pip install -e .`
+3. verifies the 6 MCP modules import
+4. merges the basicCtrl MCP entry into `~/.claude.json` (under `projects[<repo>].mcpServers.basicCtrl`)
+5. merges the Stop-hook reminder into `~/.claude/settings.json` (tagged `_basicCtrl: learn-reminder` for safe re-detection)
+6. prompts (y/N) for two optional installs: `stockfish` (Chess.app autoplay) and `postgresql@16` (LangGraph durability)
+7. probes Chrome `127.0.0.1:9222`; if dead, opens `chrome://inspect` for the one-time tick
+8. smoke-tests the 5 framework tools register cleanly into a FastMCP
+
+Both config files are read → merged → written, with a `.bak` next to the original before any mutation. Other MCP servers + projects you have configured are untouched.
+
+If you'd rather wire it manually, the schema and Chrome step are below.
+
+<details>
+<summary><b>Manual install (skip if you ran the script)</b></summary>
+
+```bash
 uv sync                          # creates .venv from uv.lock
 uv pip install -e .              # installs the basicctrl package
 ```
 
-**Optional — durable runs (Postgres).** Only needed if you want the framework to survive a crash mid-task and pick up where it left off. The MCP server starts fine without it (`main.py:146` logs `durable.setup_failed_continuing_without_postgres` and continues). Skip unless you specifically want this.
-
-```bash
-brew install postgresql@16
-brew services start postgresql@16
-bash scripts/init_postgres.sh    # provisions the basicctrl DB
-```
-
----
-
-## Wire it into Claude Code (or any MCP host)
-
-Add to `~/.claude.json` (or your MCP host's config):
+Add to `~/.claude.json` under `projects.<absolute repo path>`:
 
 ```json
 {
   "mcpServers": {
     "basicCtrl": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "basicctrl.mcp_server"],
-      "cwd": "/absolute/path/to/basicCtrl"
+      "type": "stdio",
+      "command": "/absolute/path/to/basicCtrl/.venv/bin/python",
+      "args": ["-m", "basicctrl.mcp_server"],
+      "cwd": "/absolute/path/to/basicCtrl",
+      "env": {}
     }
   }
 }
@@ -108,17 +120,23 @@ Add to `~/.claude.json` (or your MCP host's config):
 
 Restart your MCP host. The tool surface appears as `mcp__basicCtrl__*`.
 
----
+**Optional — durable runs (Postgres).** Only needed if you want the framework to survive a crash mid-task and pick up where it left off. The MCP server starts fine without it (`main.py:146` logs `durable.setup_failed_continuing_without_postgres` and continues).
 
-## One-time Chrome setup (browser bucket only)
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+bash scripts/init_postgres.sh    # provisions the basicctrl DB
+```
 
-For browser automation against your real Chrome profile (with your cookies + extensions), Chrome needs remote-debugging enabled — per-profile sticky:
+**Chrome remote-debug (browser bucket only).** Per-profile, sticky after one tick:
 
 1. In your Chrome, navigate to `chrome://inspect/#remote-debugging`.
 2. Tick "Allow remote debugging for this browser instance".
 3. On Chrome 144+, click "Allow" on the in-browser popup that appears the first time the daemon attaches.
 
 After that, browser automation auto-discovers the connection. No relaunch flags. No re-ticking.
+
+</details>
 
 ---
 
