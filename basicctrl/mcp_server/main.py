@@ -427,6 +427,16 @@ async def main() -> None:
 
         register_keystroke_tool(proxy_server)
 
+        # Form-fill tool (mcp__basicCtrl__fill_form) — cross-app web
+        # form RSVP/signup/contact flow. Codifies React-friendly
+        # value setter + combobox click-and-pick + validation-retry +
+        # strict-verify (confirmation phrase, NOT body substring).
+        # See basicctrl/skills/_generic/web-form-fill.md for the
+        # full pattern + per-platform quirks.
+        from basicctrl.mcp_server.form_fill_tool import register_form_fill_tool
+
+        register_form_fill_tool(proxy_server)
+
         log.info(
             "proxy.ready",
             session_id=session.session_id,
