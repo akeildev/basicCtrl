@@ -42,10 +42,10 @@ def _visualizer_binary_path() -> Path | None:
     """Return path to cua-driver binary (contains visualizer) if it exists."""
     # Primary location from architecture doc
     candidates = [
-        Path("/Users/akeilsmith/dev/cua-maximalist/libs/cua-driver/.build/arm64-apple-macosx/debug/cua-driver"),
-        Path("/Users/akeilsmith/dev/cua-maximalist/libs/cua-driver/.build/arm64-apple-macosx/release/cua-driver"),
-        Path("/Users/akeilsmith/dev/cua-maximalist/libs/cua-driver/.build/x86_64-apple-macosx/debug/cua-driver"),
-        Path("/Users/akeilsmith/dev/cua-maximalist/libs/cua-driver/.build/x86_64-apple-macosx/release/cua-driver"),
+        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/arm64-apple-macosx/debug/cua-driver"),
+        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/arm64-apple-macosx/release/cua-driver"),
+        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/x86_64-apple-macosx/debug/cua-driver"),
+        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/x86_64-apple-macosx/release/cua-driver"),
     ]
     for candidate in candidates:
         if candidate.exists():
@@ -104,8 +104,8 @@ async def test_visualizer_socket_connection_and_hud_send(
     visualizer_running,
 ) -> None:
     """Send HUDCommand to visualizer socket and verify connection."""
-    from cua_overlay.visualizer.hud_driver import HUDDriver
-    from cua_overlay.visualizer.models import ActionTier, ActionChannel, VerificationStatus
+    from basicctrl.visualizer.hud_driver import HUDDriver
+    from basicctrl.visualizer.models import ActionTier, ActionChannel, VerificationStatus
 
     socket_path = Path("/tmp/cua-visualizer.sock")
 

@@ -8,8 +8,8 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
 
-from cua_overlay.spi import probe_spi_capabilities, SPICapabilities
-from cua_overlay.spi.probe import (
+from basicctrl.spi import probe_spi_capabilities, SPICapabilities
+from basicctrl.spi.probe import (
     probe_skylight,
     probe_ax_remote,
     probe_cgs_display_space,

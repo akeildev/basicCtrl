@@ -3,8 +3,8 @@ import pytest
 from unittest.mock import Mock
 from pydantic import ValidationError
 
-from cua_overlay.cognition.speculative import Speculator, SpeculationMutationGate
-from cua_overlay.cognition.schemas import SpeculativeDraft
+from basicctrl.cognition.speculative import Speculator, SpeculationMutationGate
+from basicctrl.cognition.schemas import SpeculativeDraft
 
 
 @pytest.mark.unit
@@ -33,7 +33,7 @@ class TestSpeculator:
     ):
         """Test: predict_n_plus_k(k=2) returns 2 SpeculativeDraft."""
         # Create a proper mock that can pass Pydantic validation
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         action = Mock(spec=ActionCanonical)
         action.tier = "T1"
         action.target_bbox = (100.0, 100.0, 150.0, 150.0)
@@ -51,7 +51,7 @@ class TestSpeculator:
         self, speculator, mock_state
     ):
         """Test: All speculative drafts have kind='READ' (P22 type gate)."""
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         action = Mock(spec=ActionCanonical)
         action.tier = "T1"
         action.target_bbox = (100.0, 100.0, 150.0, 150.0)
@@ -84,7 +84,7 @@ class TestSpeculator:
         self, speculator, mock_state
     ):
         """Test: Draft step_index values are N+1, N+2, etc."""
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         action = Mock(spec=ActionCanonical)
         action.tier = "T1"
         action.target_bbox = (100.0, 100.0, 150.0, 150.0)
@@ -137,7 +137,7 @@ class TestSpeculator:
         self, speculator, mock_state
     ):
         """Test: Draft confidence_estimate is in [0, 1]."""
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         action = Mock(spec=ActionCanonical)
         action.tier = "T1"
         action.target_bbox = (100.0, 100.0, 150.0, 150.0)
@@ -162,7 +162,7 @@ class TestSpeculationMutationGate:
     @pytest.mark.asyncio
     async def test_read_only_draft_can_fire(self, gate):
         """Test: READ-only draft can fire regardless of current_verified_step."""
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         mock_action = Mock(spec=ActionCanonical)
         mock_action.tier = "T1"
         mock_action.target_bbox = (100.0, 100.0, 150.0, 150.0)
@@ -187,7 +187,7 @@ class TestSpeculationMutationGate:
         """
         # We can't construct kind="MUTATE" normally, so this is a conceptual test
         # documenting the runtime gate behavior if somehow a MUTATE reached it
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         mock_action = Mock(spec=ActionCanonical)
         mock_action.tier = "T1"
         mock_action.target_bbox = (100.0, 100.0, 150.0, 150.0)

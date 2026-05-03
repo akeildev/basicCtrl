@@ -18,9 +18,9 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.persist.durable_step import DurableExecutor
-from cua_overlay.persist.resume import ResumeContext, resume_from_checkpoint
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.persist.durable_step import DurableExecutor
+from basicctrl.persist.resume import ResumeContext, resume_from_checkpoint
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
 pytestmark = pytest.mark.integration
 
@@ -34,18 +34,18 @@ def _try_connect_or_skip() -> None:
     """Try to open a connection; pytest.skip if Postgres is unreachable.
 
     Avoids confusing failures on dev machines without ``brew services start
-    postgresql@16 && createdb cua_maximalist``.
+    postgresql@16 && createdb basicctrl``.
     """
     import psycopg
 
     try:
         with psycopg.connect(
-            "postgresql://localhost:5432/cua_maximalist", connect_timeout=2
+            "postgresql://localhost:5432/basicctrl", connect_timeout=2
         ) as _conn:
             pass
     except Exception as e:
         pytest.skip(
-            f"Postgres not reachable on localhost:5432/cua_maximalist — run "
+            f"Postgres not reachable on localhost:5432/basicctrl — run "
             f"`bash scripts/init_postgres.sh` first. ({type(e).__name__}: {e})"
         )
 
@@ -116,7 +116,7 @@ class TestDurabilityHarnessSetup:
             await durable.aclose()
 
         # Now query directly.
-        with psycopg.connect("postgresql://localhost:5432/cua_maximalist") as conn:
+        with psycopg.connect("postgresql://localhost:5432/basicctrl") as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT tablename FROM pg_tables WHERE schemaname='public'")
                 tables = {row[0] for row in cur.fetchall()}
@@ -173,7 +173,7 @@ class TestDurableCheckpointing:
         finally:
             await durable.aclose()
 
-        with psycopg.connect("postgresql://localhost:5432/cua_maximalist") as conn:
+        with psycopg.connect("postgresql://localhost:5432/basicctrl") as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     "SELECT COUNT(*) FROM checkpoints WHERE thread_id = %s", (session_id,)
@@ -332,9 +332,9 @@ class TestDurableExecutorConnLifecycle:
         password (peer auth), a future caller passing one explicitly must still
         have it stripped before any structlog event.
         """
-        safe = DurableExecutor("postgresql://localhost:5432/cua_maximalist")
-        assert safe._mask_conn() == "postgresql://localhost:5432/cua_maximalist"
-        risky = DurableExecutor("postgresql://user:s3cret@localhost:5432/cua_maximalist")
+        safe = DurableExecutor("postgresql://localhost:5432/basicctrl")
+        assert safe._mask_conn() == "postgresql://localhost:5432/basicctrl"
+        risky = DurableExecutor("postgresql://user:s3cret@localhost:5432/basicctrl")
         masked = risky._mask_conn()
         assert "s3cret" not in masked
         assert "user" not in masked

@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from cua_overlay.state.causal_dag import ActionCanonical, CausalDAG, HoarePost, HoarePre
-from cua_overlay.state.graph import (
+from basicctrl.state.causal_dag import ActionCanonical, CausalDAG, HoarePost, HoarePre
+from basicctrl.state.graph import (
     Bbox,
     Capability,
     EdgeKind,

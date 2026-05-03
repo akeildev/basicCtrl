@@ -1,4 +1,4 @@
-"""Unit tests for cua_overlay.ax.walker.walk_subtree.
+"""Unit tests for basicctrl.ax.walker.walk_subtree.
 
 Pitfall P3 (full recursive AX walk = 15-20s on Safari) mitigation: walker
 hard-caps at depth=3, children=50, total=500 nodes; emits truncated flag +
@@ -14,9 +14,9 @@ from typing import Any
 
 import pytest
 
-from cua_overlay.ax import walker as walker_module
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.ax.walker import WalkResult, walk_subtree
+from basicctrl.ax import walker as walker_module
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.ax.walker import WalkResult, walk_subtree
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ async def test_uses_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:
 
     bucket = TokenBucket(rate_per_sec=2.0, capacity=2)
     # Freeze the clock so refill never hides the cap.
-    import cua_overlay.ax.rate_limit as rl
+    import basicctrl.ax.rate_limit as rl
 
     frozen = [9000.0]
     monkeypatch.setattr(rl.time, "monotonic", lambda: frozen[0])

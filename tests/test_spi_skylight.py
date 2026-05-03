@@ -9,14 +9,14 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock, patch, ANY
 import anyio
 
-from cua_overlay.spi.skylight import (
+from basicctrl.spi.skylight import (
     SkyLightBridge,
     get_skylight_bridge,
     is_skylight_available,
 )
-from cua_overlay.actions.channels.c1_skylight_spi import C1SkyLightSPI
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.spi.probe import SPICapabilities
+from basicctrl.actions.channels.c1_skylight_spi import C1SkyLightSPI
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.spi.probe import SPICapabilities
 
 
 @pytest.fixture
@@ -91,7 +91,7 @@ async def test_get_skylight_bridge_caches():
     )
 
     # Reset module singleton for this test
-    import cua_overlay.spi.skylight as skylight_module
+    import basicctrl.spi.skylight as skylight_module
     skylight_module._bridge = None
 
     bridge1 = await get_skylight_bridge(caps)
@@ -103,7 +103,7 @@ async def test_get_skylight_bridge_caches():
 async def test_is_skylight_available(mock_capabilities):
     """is_skylight_available() reflects bridge status."""
     # Reset singleton
-    import cua_overlay.spi.skylight as skylight_module
+    import basicctrl.spi.skylight as skylight_module
     skylight_module._bridge = None
 
     result = await is_skylight_available(mock_capabilities)

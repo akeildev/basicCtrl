@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Browser-harness is a ultra-thin (~592 lines Python) self-healing browser control framework that connects directly to Chrome's Developer Protocol (CDP) over WebSocket and exposes a minimal surface (`helpers.py` ~195 lines) for agents to extend. It solves the core self-healing problem for browser automation: **coordinate clicks over TCP/IP compositor are bulletproof, deterministic verification (screenshot + state checks) is cheaper than LLM recovery, and the framework must stay small enough that agents edit it mid-task to add missing capabilities.** No retry loops, no supervision layer, no manager abstraction—just a Unix socket relay daemon, raw CDP, and an event buffer. It is the single best implementation of browser automation self-healing that exists, and cua-maximalist should adopt its entire architecture for native-app paths (AX, AppleScript, Vision, Pixel).
+Browser-harness is a ultra-thin (~592 lines Python) self-healing browser control framework that connects directly to Chrome's Developer Protocol (CDP) over WebSocket and exposes a minimal surface (`helpers.py` ~195 lines) for agents to extend. It solves the core self-healing problem for browser automation: **coordinate clicks over TCP/IP compositor are bulletproof, deterministic verification (screenshot + state checks) is cheaper than LLM recovery, and the framework must stay small enough that agents edit it mid-task to add missing capabilities.** No retry loops, no supervision layer, no manager abstraction—just a Unix socket relay daemon, raw CDP, and an event buffer. It is the single best implementation of browser automation self-healing that exists, and basicCtrl should adopt its entire architecture for native-app paths (AX, AppleScript, Vision, Pixel).
 
 ---
 
@@ -273,7 +273,7 @@ def _send(req):
 
 **Why:** **One request per connection.** No persistent TCP connection, no state on the client side, no connection pooling bugs. Just: open socket, send JSON line, read JSON line, close. Trades latency (~1ms per call) for total simplicity—no framing errors, no lingering data, no backpressure handling.
 
-**CUA Lesson:** For cua-maximalist, the Python overlay talks to Swift sidecars over Unix domain sockets the same way. Keep IPC **dumb and stateless**.
+**CUA Lesson:** For basicCtrl, the Python overlay talks to Swift sidecars over Unix domain sockets the same way. Keep IPC **dumb and stateless**.
 
 ---
 
@@ -296,7 +296,7 @@ def _send(req):
 2. **Retries belong in domain logic.** Amazon skill calls `wait_for_load(); wait(2)` because Amazon needs it—not a generic retry loop.
 3. **Logging is simple.** Daemon logs to `/tmp/bu-{NAME}.log`. Helpers raise exceptions. Agent handles them.
 
-**CUA Lesson:** cua-maximalist's Python overlay should be **<2500 LOC**. All the heavy lifting (racing, ensemble, recovery branches B1–B5) lives in LangGraph nodes, not in a supervisor. The overlay routes action → channel, gets result → verifier, handles exception → next branch. That's it. No manager trying to be smart.
+**CUA Lesson:** basicCtrl's Python overlay should be **<2500 LOC**. All the heavy lifting (racing, ensemble, recovery branches B1–B5) lives in LangGraph nodes, not in a supervisor. The overlay routes action → channel, gets result → verifier, handles exception → next branch. That's it. No manager trying to be smart.
 
 ---
 
@@ -348,7 +348,7 @@ Then **4 paths**:
 
 ### CUA Lesson: Episodic Memory + Recipe Synthesis
 
-cua-maximalist has the same opportunity:
+basicCtrl has the same opportunity:
 
 - **T1 (AX), T3 (AppleScript), T4 (Vision), T5 (Pixel)** each produce a **cassette** (JSON Lines: `{step_idx, hoare_pre, action, hoare_post, screenshot_pHash, ax_tree_hash, healed_selectors[]}`).
 - **Synthesis engine** (like agents authoring domain skills) analyzes cassettes: "This button always appears at `x,y = 500, 400` relative to window origin. Selector is `.dialog button.primary`. Tier 0 (Apple FM 3B) correctly IDs it 99% of the time when dialog is open."
@@ -365,7 +365,7 @@ cua-maximalist has the same opportunity:
 
 **Adopt from browser-harness:**
 
-1. **Use coordinate clicks exclusively (C5 Input.dispatchMouseEvent)** rather than DOM clicks via Runtime.evaluate. File: `/cua-maximalist/overlay/translators/t2_cdp.py` should emit `C5_CDP_INPUT` actions, not `C4_APPLESCRIPT` DOM-based alternatives for web targets.
+1. **Use coordinate clicks exclusively (C5 Input.dispatchMouseEvent)** rather than DOM clicks via Runtime.evaluate. File: `/basicCtrl/overlay/translators/t2_cdp.py` should emit `C5_CDP_INPUT` actions, not `C4_APPLESCRIPT` DOM-based alternatives for web targets.
 
 2. **Screenshot-then-verify loop in T2 verifier** before invoking L3 LLM. Current verifier (likely in `overlay/verifiers/`) should:
    - Post-action: screenshot + dHash via ImageHash
@@ -391,7 +391,7 @@ cua-maximalist has the same opportunity:
 
 **Pattern 1: Coordinate Acts Default → Per-Tier Coordinates**
 
-Browser-harness uses **compositor-level `Input.dispatchMouseEvent`** because it passes through all DOM layers. cua-maximalist equivalents:
+Browser-harness uses **compositor-level `Input.dispatchMouseEvent`** because it passes through all DOM layers. basicCtrl equivalents:
 
 - **T1 (AX):** `AXUIElement.performAction(kAXPress)` on element = DOM click equivalent. For reliable clicks: use **C1 SLEventPostToPid** (HID-level, passes SIP) to post `CGEvent.createMouseEvent(pos, kCGEventLeftMouseDown/Up)` to target app PID. This is the AX analogue of "compositor click"—happens at the OS event queue level, no app-level interception.
   
@@ -403,7 +403,7 @@ Browser-harness uses **compositor-level `Input.dispatchMouseEvent`** because it 
 
 **Pattern 2: Screenshot + Deterministic Verification First**
 
-Like browser-harness (SKILL.md:128–129), every cua-maximalist action should:
+Like browser-harness (SKILL.md:128–129), every basicCtrl action should:
 
 ```
 Pre-action:  snapshot AX tree + screenshot + compute hashes
@@ -435,7 +435,7 @@ Browser-harness routes `Target.*` (browser-level) vs. session-scoped calls. Nati
 
 - **T3 (AppleScript):** App-level (`tell application "Slack"`) vs. window/element-level (`tell window 1 of application "Slack"` → `click button "Send"`).
 
-File structure in cua-maximalist:
+File structure in basicCtrl:
 ```
 overlay/ipc/  — per-translator protocol routing (like daemon.py's meta="..."/"method" split)
 overlay/verifiers/  — L0-L2 ensemble
@@ -455,7 +455,7 @@ overlay/recipes/  — site/app-specific patterns (domain-skills equivalent)
 
 3. ❌ **LLM as verifier default.** Intrinsic self-correction is 16–27% accurate (papers 2601.00828, 2412.14959). Use **external oracle:** deterministic ensemble first, LLM only when confidence < 0.30.
 
-4. ❌ **Destructive actions on multiple channels simultaneously.** Send/submit/delete should be **single-channel only**. Race them for selection/navigation, never for finality. Browser-harness doesn't race `goto()`, neither should cua-maximalist race `click_delete_button()`.
+4. ❌ **Destructive actions on multiple channels simultaneously.** Send/submit/delete should be **single-channel only**. Race them for selection/navigation, never for finality. Browser-harness doesn't race `goto()`, neither should basicCtrl race `click_delete_button()`.
 
 5. ❌ **Per-action retry loops in the overlay.** Retry logic belongs in **LangGraph nodes** (langgraph-checkpoint-postgres state). The overlay is stateless; the graph is durable.
 
@@ -465,7 +465,7 @@ overlay/recipes/  — site/app-specific patterns (domain-skills equivalent)
 
 ### 1. **New: Coordinate Click Abstraction**
 
-**File:** `/cua-maximalist/overlay/actions/coordinate_click.py` (new)
+**File:** `/basicCtrl/overlay/actions/coordinate_click.py` (new)
 
 ```python
 # All translators should emit this canonical action for click, scroll, type
@@ -481,7 +481,7 @@ class CoordinateAction(Pydantic BaseModel):
 
 ### 2. **Enhance: Verifier Ensemble (L0-L2)**
 
-**File:** `/cua-maximalist/overlay/verifiers/ensemble.py` (expand)
+**File:** `/basicCtrl/overlay/verifiers/ensemble.py` (expand)
 
 ```python
 # Current: likely only L3 (Opus LLM)
@@ -501,7 +501,7 @@ class L1Verifier:  # Ensemble rules (AX subtree hash + pixel dHash + L0 agree)
 
 ### 3. **New: AXObserver Push Event Subscription**
 
-**File:** `/cua-maximalist/overlay/ax/observer.py` (new)
+**File:** `/basicCtrl/overlay/ax/observer.py` (new)
 
 ```python
 # Replaces AX polling with push events (like daemon.py event tap)
@@ -523,7 +523,7 @@ class AXObserverManager:
 
 ### 4. **Refactor: Verifier Integration Point**
 
-**File:** `/cua-maximalist/overlay/orchestrator/race_verifier.py` (modify)
+**File:** `/basicCtrl/overlay/orchestrator/race_verifier.py` (modify)
 
 Current flow (assumed):
 ```
@@ -545,7 +545,7 @@ translator → action →
 
 ### 5. **New: Recipe Capture**
 
-**File:** `/cua-maximalist/.planning/recipes/<app_name>/<action>.md` (populate after B1-B5 v1 ships)
+**File:** `/basicCtrl/.planning/recipes/<app_name>/<action>.md` (populate after B1-B5 v1 ships)
 
 Template:
 ```markdown
@@ -580,7 +580,7 @@ Template:
 
 ### 6. **Modify: Cassette Schema**
 
-**File:** `/cua-maximalist/overlay/cassettes/schema.py` (ensure captures all B-branch info)
+**File:** `/basicCtrl/overlay/cassettes/schema.py` (ensure captures all B-branch info)
 
 ```python
 class CassetteStep(BaseModel):
@@ -603,7 +603,7 @@ class CassetteStep(BaseModel):
 
 ### 7. **Modify: DragGraph State Node**
 
-**File:** `/cua-maximalist/overlay/graph/nodes.py` or `/cua-maximalist/schema/action_node.py` (expand)
+**File:** `/basicCtrl/overlay/graph/nodes.py` or `/basicCtrl/schema/action_node.py` (expand)
 
 Currently (assumed): LangGraph node for each translator.
 
@@ -652,5 +652,5 @@ async def execute_action(state: State) -> State:
 | **No manager layer** | ~600 lines, agents edit mid-task | <2500 LOC overlay, LangGraph owns orchestration | Simplicity + extensibility |
 | **Domain skills (recipes)** | Agents author, PR back | Agents author via cassette synthesis, PR recipes | Self-improving ecosystem |
 
-Browser-harness is the **reference implementation for deterministic browser healing**. cua-maximalist should copy its core philosophy—**coordinate acts, verify deterministically, buffer events, no manager framework**—and apply it uniformly across all 5 translators and 5 channels. The result: a computer-use system that is as reliable for native macOS apps as browser-harness is for web automation.
+Browser-harness is the **reference implementation for deterministic browser healing**. basicCtrl should copy its core philosophy—**coordinate acts, verify deterministically, buffer events, no manager framework**—and apply it uniformly across all 5 translators and 5 channels. The result: a computer-use system that is as reliable for native macOS apps as browser-harness is for web automation.
 

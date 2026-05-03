@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from cua_overlay.state.graph import UIElement
+    from basicctrl.state.graph import UIElement
 
 
 def compute_composite_key(elem: "UIElement") -> str:

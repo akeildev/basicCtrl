@@ -13,8 +13,8 @@ from typing import Optional
 import structlog
 from pydantic import BaseModel, ConfigDict
 
-from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.profile.classifier import AppProfile
+from basicctrl.persist.session_writer import SessionWriter
+from basicctrl.profile.classifier import AppProfile
 
 _log = structlog.get_logger()
 

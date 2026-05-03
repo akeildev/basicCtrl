@@ -9,7 +9,7 @@ import subprocess
 from typing import Optional
 import structlog
 
-from cua_overlay.spi.probe import is_sip_partial_off
+from basicctrl.spi.probe import is_sip_partial_off
 
 log = structlog.get_logger(__name__)
 

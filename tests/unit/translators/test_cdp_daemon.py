@@ -17,8 +17,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cua_overlay.translators import cdp_daemon
-from cua_overlay.translators.cdp_daemon import CDPDaemon, get_or_create
+from basicctrl.translators import cdp_daemon
+from basicctrl.translators.cdp_daemon import CDPDaemon, get_or_create
 
 
 # ─── fake CDPClient ─────────────────────────────────────────────────────────

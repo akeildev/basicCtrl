@@ -20,8 +20,8 @@ from unittest.mock import patch
 
 import pytest
 
-from cua_overlay.translators.base import TargetSpec
-from cua_overlay.translators.t3_applescript import (
+from basicctrl.translators.base import TargetSpec
+from basicctrl.translators.t3_applescript import (
     T3AppleScriptTranslator,
     _compiled_cache,
 )

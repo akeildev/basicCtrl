@@ -24,10 +24,10 @@ from typing import Optional
 
 import pytest
 
-from cua_overlay.cognition.grounder import Grounder
-from cua_overlay.cognition.speculative import Speculator
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.state.graph import StateGraph
+from basicctrl.cognition.grounder import Grounder
+from basicctrl.cognition.speculative import Speculator
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.state.graph import StateGraph
 
 pytestmark = pytest.mark.integration
 
@@ -181,7 +181,7 @@ async def test_speculative_read_only_type_gate() -> None:
     Per P22 mitigation: The type system enforces SpeculativeDraft.kind to
     Literal["READ"]. Test that constructing a MUTATE speculative action fails.
     """
-    from cua_overlay.cognition.schemas import SpeculativeDraft
+    from basicctrl.cognition.schemas import SpeculativeDraft
     from pydantic import ValidationError
 
     # Create a READ-only action (should succeed)

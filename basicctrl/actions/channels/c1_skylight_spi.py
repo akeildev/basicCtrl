@@ -16,11 +16,11 @@ from typing import Literal, Optional
 import anyio
 import structlog
 
-from cua_overlay.actions.channels.base import Channel, ChannelOutcome
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.spi.skylight import get_skylight_bridge
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TranslatorTarget
+from basicctrl.actions.channels.base import Channel, ChannelOutcome
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.spi.skylight import get_skylight_bridge
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TranslatorTarget
 
 log = structlog.get_logger(__name__)
 

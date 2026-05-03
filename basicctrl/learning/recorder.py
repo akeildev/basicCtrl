@@ -20,9 +20,9 @@ import os
 import time
 from typing import AsyncIterator, Optional
 
-from cua_overlay.learning.coalesce import KeystrokeCoalescer
-from cua_overlay.learning.schemas import ObservedAction
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.learning.coalesce import KeystrokeCoalescer
+from basicctrl.learning.schemas import ObservedAction
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 class LearningRecorder:

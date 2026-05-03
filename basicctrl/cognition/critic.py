@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 import structlog
 
 if TYPE_CHECKING:
-    from cua_overlay.state.causal_dag import ActionCanonical, StateGraph
+    from basicctrl.state.causal_dag import ActionCanonical, StateGraph
 
 logger = structlog.get_logger(__name__)
 

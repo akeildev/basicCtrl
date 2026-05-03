@@ -19,8 +19,8 @@ import pytest
 
 from datetime import datetime, timezone
 
-from cua_overlay.actions.channels.base import ChannelOutcome
-from cua_overlay.recovery.branches import (
+from basicctrl.actions.channels.base import ChannelOutcome
+from basicctrl.recovery.branches import (
     B1_Rescroll,
     B2_OCRRegrounding,
     B3_WorldReplan_Stub as B3_WorldReplan,
@@ -28,8 +28,8 @@ from cua_overlay.recovery.branches import (
     B5_AppleScriptFallback,
     RecoveryBranch,
 )
-from cua_overlay.recovery.classifier import FailureCtx
-from cua_overlay.state.graph import Bbox, UIElement
+from basicctrl.recovery.classifier import FailureCtx
+from basicctrl.state.graph import Bbox, UIElement
 
 
 def _ui_element(label: str = "button") -> UIElement:
@@ -853,7 +853,7 @@ async def test_all_branches_runnable() -> None:
 @pytest.mark.asyncio
 async def test_branches_re_export() -> None:
     """Branches are re-exported from recovery module."""
-    from cua_overlay.recovery import (
+    from basicctrl.recovery import (
         B1_Rescroll,
         B2_OCRRegrounding,
         B3_WorldReplan,

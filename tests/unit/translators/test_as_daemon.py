@@ -16,7 +16,7 @@ from typing import Optional, Tuple
 
 import pytest
 
-from cua_overlay.translators.as_daemon import (
+from basicctrl.translators.as_daemon import (
     _extract_ae_error_code,
     run_with_resilience,
 )

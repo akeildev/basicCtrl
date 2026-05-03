@@ -22,10 +22,10 @@ from typing import Any, Optional
 
 import pytest
 
-from cua_overlay.ax.observer import AXEvent
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.verifier.ensemble.l0_push import L0Push
-from cua_overlay.verifier.ensemble.weighted_vote import (
+from basicctrl.ax.observer import AXEvent
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.verifier.ensemble.l0_push import L0Push
+from basicctrl.verifier.ensemble.weighted_vote import (
     L3_ESCALATE_THRESHOLD,
     VERIFIED_THRESHOLD,
     WeightedVote,

@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import pytest
 
-from cua_overlay.recovery.classifier import (
+from basicctrl.recovery.classifier import (
     FailureClass,
     FailureClassifier,
     FAILURE_CLASS_TO_BRANCHES,
 )
-from cua_overlay.state.causal_dag import HoarePost
+from basicctrl.state.causal_dag import HoarePost
 
 
 @pytest.fixture

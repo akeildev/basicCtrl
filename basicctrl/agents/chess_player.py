@@ -1,4 +1,4 @@
-"""Chess game-state tracker + move picker for cua-maximalist autoplayer.
+"""Chess game-state tracker + move picker for basicCtrl autoplayer.
 
 Wraps `python-chess.Board` to:
   - Drive an internal board (push moves, generate legal moves)

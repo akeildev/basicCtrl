@@ -16,8 +16,8 @@ Modules:
 """
 from __future__ import annotations
 
-from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.persist.snapshot_io import atomic_write_json, read_json
+from basicctrl.persist.session_writer import SessionWriter
+from basicctrl.persist.snapshot_io import atomic_write_json, read_json
 
 __all__ = [
     "SessionWriter",
@@ -29,14 +29,14 @@ __all__ = [
 # Deferred imports — durable_step (Task 2) and resume (Task 3) land separately.
 # Each is wrapped independently so partial state during plan execution is OK.
 try:
-    from cua_overlay.persist.durable_step import DurableExecutor  # noqa: F401
+    from basicctrl.persist.durable_step import DurableExecutor  # noqa: F401
 
     __all__.append("DurableExecutor")
 except ImportError:
     pass
 
 try:
-    from cua_overlay.persist.resume import (  # noqa: F401
+    from basicctrl.persist.resume import (  # noqa: F401
         ResumeContext,
         resume_from_checkpoint,
     )

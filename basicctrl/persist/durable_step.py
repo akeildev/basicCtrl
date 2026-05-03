@@ -15,7 +15,7 @@ test in ``tests/integration/test_session_persistence.py``.
 Threat model
 ------------
 T-1-02 (LOW, Information Disclosure): The default connection string is
-``postgresql://localhost:5432/cua_maximalist`` — no embedded credentials.
+``postgresql://localhost:5432/basicctrl`` — no embedded credentials.
 Local Postgres uses peer authentication for the local user. ``_mask_conn()``
 defensively redacts ``user:password@host`` shaped strings should a future
 caller pass one explicitly, so structlog events can never leak credentials.
@@ -26,9 +26,9 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
-_DEFAULT_CONN = "postgresql://localhost:5432/cua_maximalist"
+_DEFAULT_CONN = "postgresql://localhost:5432/basicctrl"
 
 
 class DurableExecutor:

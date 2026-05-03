@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/smoke.sh — single-command health check for cua-maximalist v1.0.
+# scripts/smoke.sh — single-command health check for basicCtrl v1.0.
 #
 # Verifies:
 #   1. Swift sidecar build is clean (libs/cua-driver/)
@@ -24,7 +24,7 @@ hr()     { printf "\n%s\n" "----------------------------------------------------
 EXIT_CODE=0
 
 hr
-echo "cua-maximalist v1.0 smoke test"
+echo "basicCtrl v1.0 smoke test"
 echo "Repo: $REPO_ROOT"
 hr
 
@@ -174,7 +174,7 @@ run_gate() {
 }
 
 run_gate "5/CDP-CHROMIUM" "CUA_RUN_E2E_CDP_CHROMIUM" "tests/integration/test_cdp_chromium_e2e.py" "command -v chromium || command -v Chromium"
-run_gate "6/DURABILITY"   "CUA_RUN_E2E_DURABILITY"   "tests/integration/test_durability_sigkill_resume_e2e.py" "psql -d postgresql://localhost:5432/cua_maximalist -c 'SELECT 1'"
+run_gate "6/DURABILITY"   "CUA_RUN_E2E_DURABILITY"   "tests/integration/test_durability_sigkill_resume_e2e.py" "psql -d postgresql://localhost:5432/basicctrl -c 'SELECT 1'"
 run_gate "7/VISUALIZER"   "CUA_RUN_E2E_VISUALIZER"   "tests/integration/test_visualizer_socket_e2e.py" "test -x libs/cua-driver/.build/arm64-apple-macosx/debug/cua-driver"
 run_gate "8/MEMORY"       "CUA_RUN_E2E_MEMORY"       "tests/integration/test_memory_recall_e2e.py" ""
 run_gate "9/RECOVERY-REAL" "CUA_RUN_E2E_RECOVERY_REAL" "tests/integration/test_recovery_b3_b4_e2e.py" "test -n \"\$ANTHROPIC_API_KEY\""

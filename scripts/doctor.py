@@ -1,10 +1,10 @@
-"""Environment doctor for cua-maximalist.
+"""Environment doctor for basicCtrl.
 
 Prints OK / WARN / FAIL status for each dependency the overlay needs:
 
   * Python 3.12.x (FAIL otherwise — strictly pinned in pyproject.toml)
   * uv installed and on PATH
-  * Postgres 16 listening on localhost:5432 / database "cua_maximalist"
+  * Postgres 16 listening on localhost:5432 / database "basicctrl"
     (WARN if not — Plan 07 wires this; not required for Plan 01-01 tests)
   * AXIsProcessTrusted() — TCC Accessibility grant for the Python interpreter
   * /System/Applications/Calculator.app exists (the Phase 1 demo target)
@@ -52,7 +52,7 @@ def _check_postgres() -> tuple[str, str]:
             [
                 "psql",
                 "-d",
-                "postgresql://localhost:5432/cua_maximalist",
+                "postgresql://localhost:5432/basicctrl",
                 "-c",
                 "SELECT 1",
             ],
@@ -63,10 +63,10 @@ def _check_postgres() -> tuple[str, str]:
     except subprocess.SubprocessError as exc:
         return "WARN", f"psql invocation failed: {exc}"
     if out.returncode == 0:
-        return "OK", "postgres reachable on localhost:5432/cua_maximalist"
+        return "OK", "postgres reachable on localhost:5432/basicctrl"
     return (
         "WARN",
-        "postgres unreachable (run: brew services start postgresql@16 && createdb cua_maximalist)",
+        "postgres unreachable (run: brew services start postgresql@16 && createdb basicctrl)",
     )
 
 
@@ -99,7 +99,7 @@ def _check_calculator() -> tuple[str, str]:
 
 def main() -> int:
     console = Console()
-    table = Table(title="cua-maximalist doctor", show_lines=False)
+    table = Table(title="basicCtrl doctor", show_lines=False)
     table.add_column("Check", style="bold")
     table.add_column("Status")
     table.add_column("Detail")

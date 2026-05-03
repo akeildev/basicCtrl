@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cua_overlay.observability.bus import TraceBus, bus_processor
+from basicctrl.observability.bus import TraceBus, bus_processor
 
 
 @pytest.fixture

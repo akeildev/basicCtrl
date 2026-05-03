@@ -14,8 +14,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from cua_overlay.cache.cassette import Cassette
-from cua_overlay.cache.key import compute_cache_key
+from basicctrl.cache.cassette import Cassette
+from basicctrl.cache.key import compute_cache_key
 
 
 log = logging.getLogger(__name__)

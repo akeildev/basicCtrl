@@ -16,7 +16,7 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.visualizer.models import (
+from basicctrl.visualizer.models import (
     GhostCursorCommand,
     HighlightBoxCommand,
 )

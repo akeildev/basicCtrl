@@ -1,4 +1,4 @@
-"""Drive Chess.app via cua-maximalist's MCP server (J2).
+"""Drive Chess.app via basicCtrl's MCP server (J2).
 
 MODE A (default, no LLM): python-chess generates random legal moves; the
 autoplayer drives Chess.app by clicking source square then destination
@@ -39,7 +39,7 @@ import chess
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from cua_overlay.agents.chess_player import ChessAgent
+from basicctrl.agents.chess_player import ChessAgent
 
 CHESS_BUNDLE_ID = "com.apple.Chess"
 
@@ -183,7 +183,7 @@ async def run_autoplayer(
     inter_click_delay_s: float = 0.5,
     inter_move_delay_s: float = 0.4,
 ) -> AutoplayResult:
-    """Drive Chess.app for `num_moves` plies. Spawns cua-maximalist MCP
+    """Drive Chess.app for `num_moves` plies. Spawns basicCtrl MCP
     over stdio and calls click_with_healing twice per move."""
     result = AutoplayResult()
 
@@ -204,7 +204,7 @@ async def run_autoplayer(
 
     server_params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "cua_overlay.mcp_server"],
+        args=["-m", "basicctrl.mcp_server"],
         env=env_for_subprocess,
     )
 

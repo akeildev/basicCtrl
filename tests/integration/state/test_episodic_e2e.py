@@ -22,17 +22,17 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cua_overlay.learning.recipe_synth import RecipeSynthesizer
-from cua_overlay.learning.schemas import (
+from basicctrl.learning.recipe_synth import RecipeSynthesizer
+from basicctrl.learning.schemas import (
     ObservedAction,
     Recipe,
     RecipeParam,
     RecipePrecondition,
     RecipeStep,
 )
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.state.episodic import EpisodicHit, EpisodicMemory, EpisodicQuery
-from cua_overlay.state.graph import StateGraph
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.state.episodic import EpisodicHit, EpisodicMemory, EpisodicQuery
+from basicctrl.state.graph import StateGraph
 
 pytestmark = pytest.mark.integration
 
@@ -135,7 +135,7 @@ async def test_episodic_lookup_before_planner_call() -> None:
     assert hasattr(episodic, "mark_recipe_success"), "EpisodicMemory missing mark_recipe_success() method"
 
     # Mock a planner to verify episodic is called first
-    from cua_overlay.cognition.planner import Planner
+    from basicctrl.cognition.planner import Planner
 
     planner_called = False
 

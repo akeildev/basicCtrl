@@ -18,10 +18,10 @@ from typing import Optional
 
 import pytest
 
-from cua_overlay.recovery.circuit_breaker import CircuitBreaker
-from cua_overlay.recovery.classifier import FailureClass, FailureClassifier
-from cua_overlay.recovery.orchestrator import RecoveryOrchestrator
-from cua_overlay.actions.channels.base import ChannelOutcome
+from basicctrl.recovery.circuit_breaker import CircuitBreaker
+from basicctrl.recovery.classifier import FailureClass, FailureClassifier
+from basicctrl.recovery.orchestrator import RecoveryOrchestrator
+from basicctrl.actions.channels.base import ChannelOutcome
 
 
 @pytest.fixture
@@ -241,7 +241,7 @@ class TestBranchRouting:
         failure_ctx_factory,
     ) -> None:
         """Test PERCEPTUAL class routes to [B1, B2, B4]."""
-        from cua_overlay.recovery.classifier import FAILURE_CLASS_TO_BRANCHES
+        from basicctrl.recovery.classifier import FAILURE_CLASS_TO_BRANCHES
 
         # Setup branches
         b1 = branch_mock(name="B1_RESCROLL")

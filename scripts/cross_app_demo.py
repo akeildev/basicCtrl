@@ -194,7 +194,7 @@ async def run_demo(
     fail_after_step: Optional[int] = None,
     inter_click_delay_s: float = 0.25,
 ) -> DemoResult:
-    """End-to-end cross-app driver. Spawns cua-maximalist MCP over stdio."""
+    """End-to-end cross-app driver. Spawns basicCtrl MCP over stdio."""
     result = DemoResult(failure_injected_at=fail_after_step)
 
     # Step 1: clean Calculator state (F14 mitigation)
@@ -216,7 +216,7 @@ async def run_demo(
 
     server_params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "cua_overlay.mcp_server"],
+        args=["-m", "basicctrl.mcp_server"],
         env=dict(os.environ),
     )
 

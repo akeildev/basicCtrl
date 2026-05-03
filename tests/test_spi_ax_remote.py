@@ -1,9 +1,9 @@
 """Tests for SPI-02 AX remote bridge (formalization from Phase 2)."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from cua_overlay.spi.ax_remote import AXRemoteBridge, get_ax_remote_bridge, is_ax_remote_available
-from cua_overlay.spi.probe import SPICapabilities
-from cua_overlay.ax.observer import Subscription
+from basicctrl.spi.ax_remote import AXRemoteBridge, get_ax_remote_bridge, is_ax_remote_available
+from basicctrl.spi.probe import SPICapabilities
+from basicctrl.ax.observer import Subscription
 
 
 @pytest.mark.asyncio
@@ -92,7 +92,7 @@ async def test_get_ax_remote_bridge_caches_singleton():
     )
 
     # Reset global to ensure fresh singleton
-    import cua_overlay.spi.ax_remote as ax_remote_module
+    import basicctrl.spi.ax_remote as ax_remote_module
     ax_remote_module._bridge = None
 
     bridge1 = await get_ax_remote_bridge(caps_available)
@@ -118,7 +118,7 @@ async def test_get_ax_remote_bridge_respects_capability():
     )
 
     # Reset global
-    import cua_overlay.spi.ax_remote as ax_remote_module
+    import basicctrl.spi.ax_remote as ax_remote_module
     ax_remote_module._bridge = None
 
     bridge = await get_ax_remote_bridge(caps_unavailable)

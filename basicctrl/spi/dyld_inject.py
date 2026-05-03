@@ -57,9 +57,9 @@ class DYLDInjectBridge:
         By convention, built dylib lives in:
         libs/cua-driver/App/spi-dyld/cua_inject.dylib
         """
-        import cua_overlay  # type: ignore[import-not-found]
+        import basicctrl  # type: ignore[import-not-found]
 
-        cua_root = Path(cua_overlay.__file__).parent.parent.parent
+        cua_root = Path(basicctrl.__file__).parent.parent.parent
         default = cua_root / "libs" / "cua-driver" / "App" / "spi-dyld" / "cua_inject.dylib"
         return str(default)
 

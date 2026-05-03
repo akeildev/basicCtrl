@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.actions.race_policy import RacePolicy
+from basicctrl.actions.race_policy import RacePolicy
 
 pytestmark = [
     pytest.mark.integration,
@@ -46,18 +46,18 @@ async def test_t3_wins_on_pages_format_toolbar_click(pages_running) -> None:
         )
 
     # Inline orchestrator setup (same shape as test_slack_t2_wins).
-    from cua_overlay.actions import (
+    from basicctrl.actions import (
         DuplicateReceipt,
         IdempotencyTokenStore,
         RaceOrchestrator,
     )
-    from cua_overlay.actions.channel_registry import ChannelRegistry
-    from cua_overlay.ax.observer import AXEventBridge
-    from cua_overlay.persist import SessionWriter
-    from cua_overlay.profile.classifier import classify
-    from cua_overlay.translators.base import TargetSpec
-    from cua_overlay.translators.registry import TranslatorRegistry
-    from cua_overlay.verifier import (
+    from basicctrl.actions.channel_registry import ChannelRegistry
+    from basicctrl.ax.observer import AXEventBridge
+    from basicctrl.persist import SessionWriter
+    from basicctrl.profile.classifier import classify
+    from basicctrl.translators.base import TargetSpec
+    from basicctrl.translators.registry import TranslatorRegistry
+    from basicctrl.verifier import (
         Aggregator,
         AXObserverManager,
         L0Push,
@@ -67,8 +67,8 @@ async def test_t3_wins_on_pages_format_toolbar_click(pages_running) -> None:
         NSWorkspaceObserver,
         WeightedVote,
     )
-    import cua_overlay.translators  # noqa: F401 — register on import
-    import cua_overlay.actions.channels  # noqa: F401 — register on import
+    import basicctrl.translators  # noqa: F401 — register on import
+    import basicctrl.actions.channels  # noqa: F401 — register on import
 
     loop = asyncio.get_running_loop()
     bridge = AXEventBridge(loop=loop)

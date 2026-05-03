@@ -1,6 +1,6 @@
 """Wave 0 scaffold tests.
 
-Verifies the cua_overlay package + libs/cua-driver vendoring + pytest
+Verifies the basicctrl package + libs/cua-driver vendoring + pytest
 asyncio_mode=auto are all wired correctly. No real Mac integration here.
 """
 from __future__ import annotations
@@ -9,12 +9,12 @@ from pathlib import Path
 
 
 def test_package_imports() -> None:
-    """cua_overlay and cua_overlay.state must import without raising."""
-    import cua_overlay  # noqa: F401
-    import cua_overlay.state  # noqa: F401
+    """basicctrl and basicctrl.state must import without raising."""
+    import basicctrl  # noqa: F401
+    import basicctrl.state  # noqa: F401
 
-    assert hasattr(cua_overlay, "__version__")
-    assert isinstance(cua_overlay.__version__, str)
+    assert hasattr(basicctrl, "__version__")
+    assert isinstance(basicctrl.__version__, str)
 
 
 def test_pyobjc_importable() -> None:

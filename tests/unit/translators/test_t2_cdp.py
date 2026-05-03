@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.translators.t2_cdp import T2CDPTranslator
+from basicctrl.translators.t2_cdp import T2CDPTranslator
 
 
 def test_tier_is_T2() -> None:
@@ -82,12 +82,12 @@ def test_pick_default_picks_first_page() -> None:
 def test_no_browser_harness_import() -> None:
     """D-03 hard rule — module source contains no browser_harness reference.
 
-    cua-maximalist must coexist with browser-harness (Akeil uses both daily);
+    basicCtrl must coexist with browser-harness (Akeil uses both daily);
     neither owns the other; both call cdp-use directly.
     """
-    src_path = Path(__file__).parents[3] / "cua_overlay" / "translators" / "t2_cdp.py"
+    src_path = Path(__file__).parents[3] / "basicctrl" / "translators" / "t2_cdp.py"
     src = src_path.read_text()
-    assert "browser_harness" not in src, "D-03: cua-maximalist must not import browser_harness"
+    assert "browser_harness" not in src, "D-03: basicCtrl must not import browser_harness"
     assert "import browser_harness" not in src
     assert "from browser_harness" not in src
 
@@ -105,7 +105,7 @@ async def test_discover_ws_url_returns_none_on_all_ports_unreachable(monkeypatch
         async def __aexit__(self, *a): return False
         async def get(self, url): raise OSError("connect refused")
 
-    monkeypatch.setattr("cua_overlay.translators.t2_cdp.httpx.AsyncClient", _BadClient)
+    monkeypatch.setattr("basicctrl.translators.t2_cdp.httpx.AsyncClient", _BadClient)
     assert await t._discover_ws_url(1234) is None
 
 
@@ -124,6 +124,6 @@ async def test_discover_ws_url_returns_first_reachable(monkeypatch) -> None:
         async def __aexit__(self, *a): return False
         async def get(self, url): return _Resp()
 
-    monkeypatch.setattr("cua_overlay.translators.t2_cdp.httpx.AsyncClient", _GoodClient)
+    monkeypatch.setattr("basicctrl.translators.t2_cdp.httpx.AsyncClient", _GoodClient)
     url = await t._discover_ws_url(1234)
     assert url == "ws://localhost:9222/devtools/browser/abc"

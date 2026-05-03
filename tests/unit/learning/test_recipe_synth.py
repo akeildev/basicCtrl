@@ -12,9 +12,9 @@ import json
 
 import pytest
 
-from cua_overlay.learning.recipe_synth import RecipeSynthesizer
-from cua_overlay.learning.schemas import ObservedAction, RecipeParam, RecipeStep
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.learning.recipe_synth import RecipeSynthesizer
+from basicctrl.learning.schemas import ObservedAction, RecipeParam, RecipeStep
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 @pytest.fixture
@@ -205,7 +205,7 @@ async def test_recipe_synth_serialization_roundtrip(
     parsed_dict = json.loads(json_str)
 
     # Rebuild Recipe from parsed dict
-    from cua_overlay.learning.schemas import Recipe
+    from basicctrl.learning.schemas import Recipe
 
     recipe_restored = Recipe(**parsed_dict)
 

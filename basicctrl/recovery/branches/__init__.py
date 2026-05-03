@@ -25,10 +25,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from cua_overlay.actions.channels.base import ChannelOutcome
-    from cua_overlay.actions.idempotency import IdempotencyTokenStore
-    from cua_overlay.persist.session_writer import SessionWriter
-    from cua_overlay.recovery.classifier import FailureCtx
+    from basicctrl.actions.channels.base import ChannelOutcome
+    from basicctrl.actions.idempotency import IdempotencyTokenStore
+    from basicctrl.persist.session_writer import SessionWriter
+    from basicctrl.recovery.classifier import FailureCtx
 
 
 @runtime_checkable

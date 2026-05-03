@@ -471,7 +471,7 @@ def _load_agent_helpers():
     p = AGENT_WORKSPACE / "agent_helpers.py"
     if not p.exists():
         return
-    spec = importlib.util.spec_from_file_location("cua_overlay.browser_agent_helpers", p)
+    spec = importlib.util.spec_from_file_location("basicctrl.browser_agent_helpers", p)
     if not spec or not spec.loader:
         return
     module = importlib.util.module_from_spec(spec)

@@ -1,4 +1,4 @@
-"""Unit tests for ``cua_overlay.persist.session_writer.SessionWriter``.
+"""Unit tests for ``basicctrl.persist.session_writer.SessionWriter``.
 
 Covers PERSIST-02:
 * Per-session ~/.cua/sessions/<uuid>/ tree creation at instantiation
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.persist.snapshot_io import atomic_write_json, read_json
+from basicctrl.persist.session_writer import SessionWriter
+from basicctrl.persist.snapshot_io import atomic_write_json, read_json
 
 
 _UUID4_RE = re.compile(

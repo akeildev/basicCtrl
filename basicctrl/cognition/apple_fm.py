@@ -19,7 +19,7 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.cognition.schemas import AppleFMOutput
+from basicctrl.cognition.schemas import AppleFMOutput
 
 _log = structlog.get_logger()
 

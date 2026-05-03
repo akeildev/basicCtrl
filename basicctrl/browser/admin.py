@@ -151,7 +151,7 @@ def ensure_daemon(wait=60.0, name=None, env=None):
     for attempt in (0, 1):
         e = {**os.environ, **({"CUA_BROWSER_NAME": name} if name else {}), **(env or {})}
         p = subprocess.Popen(
-            [sys.executable, "-m", "cua_overlay.browser.daemon"],
+            [sys.executable, "-m", "basicctrl.browser.daemon"],
             env=e, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **ipc.spawn_kwargs(),
         )
         deadline = time.time() + wait

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from cua_overlay.profile.classifier import AppProfile
+    from basicctrl.profile.classifier import AppProfile
 
 _CACHE_DIR = Path.home() / ".cua" / "profiles"
 
@@ -48,7 +48,7 @@ def load_cached_profile(
 ) -> Optional["AppProfile"]:
     """Load AppProfile from disk; None if missing or corrupt."""
     # Lazy import to avoid circular dependency: classifier imports this module.
-    from cua_overlay.profile.classifier import AppProfile
+    from basicctrl.profile.classifier import AppProfile
 
     path = _cache_path(bundle_id, base)
     if not path.exists():

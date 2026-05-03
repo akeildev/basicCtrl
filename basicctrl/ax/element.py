@@ -25,7 +25,7 @@ from typing import Any
 
 import structlog
 
-from cua_overlay.ax.errors import (
+from basicctrl.ax.errors import (
     AXError,
     axerror_from_code,
     kAXErrorAPIDisabled,
@@ -33,7 +33,7 @@ from cua_overlay.ax.errors import (
     kAXErrorInvalidUIElement,
     kAXErrorNotificationUnsupported,
 )
-from cua_overlay.ax.rate_limit import TokenBucket
+from basicctrl.ax.rate_limit import TokenBucket
 
 # 100ms read coalescing window per Pitfall P2 prevention rule 2.
 _CACHE_TTL_SECONDS = 0.1

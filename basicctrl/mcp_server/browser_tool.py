@@ -1,4 +1,4 @@
-"""mcp__cua-maximalist__browser — CDP-driven browser tool.
+"""mcp__basicCtrl__browser — CDP-driven browser tool.
 
 Vendored from browser-use/browser-harness (May 2026). Same patterns:
 - Per-profile DevToolsActivePort discovery (no need to launch with
@@ -84,7 +84,7 @@ async def _heal_and_retry(action_fn, *, action_name: str, max_retries: int = 1):
     branch + daemon.py 30s polling. This wrapper layers retry-on-success on
     top so the MCP caller doesn't have to.
     """
-    from cua_overlay.browser import admin
+    from basicctrl.browser import admin
     last_err: Optional[str] = None
     for attempt in range(max_retries + 1):
         try:
@@ -109,13 +109,13 @@ async def _heal_and_retry(action_fn, *, action_name: str, max_retries: int = 1):
 
 
 def register_browser_tool(proxy: FastMCP) -> None:
-    """Register the cua-maximalist browser tool on the FastMCP proxy.
+    """Register the basicCtrl browser tool on the FastMCP proxy.
 
     One tool, dispatched by `action` keyword. This keeps the surface
     small (one function in tool listings) while exposing the full CDP
     helper set.
     """
-    from cua_overlay.browser import helpers, admin
+    from basicctrl.browser import helpers, admin
 
     @proxy.tool(
         name="browser",

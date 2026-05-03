@@ -1,4 +1,4 @@
-"""Unit tests for cua_overlay.profile.cache (Plan 01-02 Task 1).
+"""Unit tests for basicctrl.profile.cache (Plan 01-02 Task 1).
 
 Behavior tests per plan:
 1. test_save_creates_directory: save_cached_profile creates parent dir tree
@@ -18,13 +18,13 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.profile.cache import (
+from basicctrl.profile.cache import (
     _cache_path,
     load_cached_profile,
     save_cached_profile,
     should_invalidate_cache,
 )
-from cua_overlay.profile.classifier import AppProfile
+from basicctrl.profile.classifier import AppProfile
 
 
 def _make_profile(

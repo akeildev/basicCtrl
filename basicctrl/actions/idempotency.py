@@ -23,7 +23,7 @@ from typing import Literal, Optional
 import structlog
 from pydantic import BaseModel, ConfigDict
 
-from cua_overlay.persist.session_writer import SessionWriter
+from basicctrl.persist.session_writer import SessionWriter
 
 
 class ChannelClaim(BaseModel):

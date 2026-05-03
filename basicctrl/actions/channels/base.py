@@ -19,9 +19,9 @@ from typing import Literal, Optional, Protocol, runtime_checkable
 import anyio
 from pydantic import BaseModel, ConfigDict
 
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TranslatorTarget
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TranslatorTarget
 
 
 class ChannelOutcome(BaseModel):

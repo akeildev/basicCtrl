@@ -97,7 +97,7 @@ async def _spawn_proxy_session() -> AsyncIterator:  # type: ignore[type-arg]
 
     params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "cua_overlay.mcp_server"],
+        args=["-m", "basicctrl.mcp_server"],
         env=None,
     )
     async with stdio_client(params) as (read, write):
@@ -180,7 +180,7 @@ def _resolve_calculator_5_button(pid: int) -> Optional[tuple[int, int]]:
     within a reasonable budget (e.g. window not yet drawn).
     """
     try:
-        from cua_overlay.ax.walker import walk_subtree  # noqa: F401
+        from basicctrl.ax.walker import walk_subtree  # noqa: F401
         from HIServices import AXUIElementCreateApplication  # type: ignore[import-not-found]
     except ImportError:
         return None
@@ -188,7 +188,7 @@ def _resolve_calculator_5_button(pid: int) -> Optional[tuple[int, int]]:
     # Build the AX root for Calculator.
     app_ref = AXUIElementCreateApplication(pid)
     # Run walk_subtree synchronously via asyncio.
-    from cua_overlay.ax.walker import walk_subtree as _walk
+    from basicctrl.ax.walker import walk_subtree as _walk
 
     async def _do_walk() -> Optional[tuple[int, int]]:
         result = await _walk(app_ref)
@@ -336,13 +336,13 @@ async def test_action_log_written(
 def _run_subprocess_smoke() -> None:
     """Manual smoke-test helper — launches the proxy and lists tools.
 
-    Not invoked by pytest. Provided so ``python -m cua_overlay.mcp_server``
+    Not invoked by pytest. Provided so ``python -m basicctrl.mcp_server``
     can be exercised by hand alongside this file::
 
         python -c "from tests.integration.test_mcp_proxy import _run_subprocess_smoke; _run_subprocess_smoke()"
     """
     proc = subprocess.Popen(
-        [sys.executable, "-m", "cua_overlay.mcp_server"],
+        [sys.executable, "-m", "basicctrl.mcp_server"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

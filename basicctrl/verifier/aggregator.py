@@ -37,13 +37,13 @@ from typing import Any, Optional
 import anyio
 import structlog
 
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
-from cua_overlay.state.graph import UIElement
-from cua_overlay.verifier.ensemble.l0_push import L0Push
-from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap, L1Snapshot
-from cua_overlay.verifier.ensemble.l2_medium import L2Medium, L2Snapshot
-from cua_overlay.verifier.ensemble.l3_llm import L3Contract
-from cua_overlay.verifier.ensemble.weighted_vote import (
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost
+from basicctrl.state.graph import UIElement
+from basicctrl.verifier.ensemble.l0_push import L0Push
+from basicctrl.verifier.ensemble.l1_cheap import L1Cheap, L1Snapshot
+from basicctrl.verifier.ensemble.l2_medium import L2Medium, L2Snapshot
+from basicctrl.verifier.ensemble.l3_llm import L3Contract
+from basicctrl.verifier.ensemble.weighted_vote import (
     L3_ESCALATE_THRESHOLD,
     VERIFIED_THRESHOLD,
     WeightedVote,

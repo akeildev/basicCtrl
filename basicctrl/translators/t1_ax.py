@@ -1,4 +1,4 @@
-"""T1 AX Translator — wraps Phase 1's cua_overlay.ax.* safety stack.
+"""T1 AX Translator — wraps Phase 1's basicctrl.ax.* safety stack.
 
 Per CONTEXT.md D-01: in-process Python via PyObjC HIServices, no Swift IPC.
 Per CONTEXT.md D-14: T1 default channel binding is C2 (kAXPress).
@@ -11,7 +11,7 @@ Resolution flow:
     4. Pre-action validity probe (P28 ACT-04) — AXRole accessor, 1 bucket token
 
 Why this module ships its own ``_walk_with_refs`` instead of using
-``cua_overlay.ax.walker.walk_subtree`` directly: Phase 1's walker returns
+``basicctrl.ax.walker.walk_subtree`` directly: Phase 1's walker returns
 ``WalkResult.nodes: list[UIElement]`` and discards the raw AXUIElementRef
 opaque handles. C2 (kAXPress) needs the raw ref to call
 ``AXUIElementPerformAction``. T1's walker reuses the SAME safety primitives
@@ -29,10 +29,10 @@ from typing import Any, Literal, Optional
 
 import structlog
 
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.ax.walker import walk_subtree  # noqa: F401 — canonical reference; see module docstring
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.ax.walker import walk_subtree  # noqa: F401 — canonical reference; see module docstring
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
 
 
 _log = structlog.get_logger()
@@ -135,7 +135,7 @@ class T1AXTranslator:
         3 from the window (AXWindow → AXSplitGroup → AXGroup → AXButton);
         starting the walk at the window means we hit it cleanly.
 
-        Same primitives as ``cua_overlay.ax.walker.walk_subtree``:
+        Same primitives as ``basicctrl.ax.walker.walk_subtree``:
             * TokenBucket gate per AX read (P2)
             * max_depth=3 per walk root (CLAUDE.md hard rule)
             * asyncio.to_thread for sync AX syscalls
@@ -291,7 +291,7 @@ class T1AXTranslator:
         single stale-handle error (-25204) re-attaches and retries instead
         of bubbling.
         """
-        from cua_overlay.ax.window_manager import (
+        from basicctrl.ax.window_manager import (
             ensure_real_window,
             retry_on_stale_ax,
         )

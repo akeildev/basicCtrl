@@ -1,6 +1,6 @@
 """Skills loader — surface per-app skill markdown to cognition prompts.
 
-Skills are markdown files at `cua_overlay/skills/<bundle_id>/*.md`.
+Skills are markdown files at `basicctrl/skills/<bundle_id>/*.md`.
 They're not load-bearing for the framework (no behavior depends on
 their content); they're reference text that B3/B4 cognition agents
 can include in their prompts when planning recovery for a known app.

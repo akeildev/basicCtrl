@@ -27,13 +27,13 @@ from unittest.mock import AsyncMock
 import pytest
 import structlog
 
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.verifier.aggregator import Aggregator
-from cua_overlay.verifier.ensemble.l1_cheap import L1Snapshot
-from cua_overlay.verifier.ensemble.l2_medium import L2Snapshot
-from cua_overlay.verifier.ensemble.l3_llm import L3Stub
-from cua_overlay.verifier.ensemble.weighted_vote import (
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.verifier.aggregator import Aggregator
+from basicctrl.verifier.ensemble.l1_cheap import L1Snapshot
+from basicctrl.verifier.ensemble.l2_medium import L2Snapshot
+from basicctrl.verifier.ensemble.l3_llm import L3Stub
+from basicctrl.verifier.ensemble.weighted_vote import (
     L3_ESCALATE_THRESHOLD,
     VERIFIED_THRESHOLD,
     WeightedVote,

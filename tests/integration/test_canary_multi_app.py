@@ -89,12 +89,12 @@ async def test_canary_multi_app_single_session() -> None:
         [
             sys.executable,
             "-m",
-            "cua_overlay.mcp_server.main",
+            "basicctrl.mcp_server.main",
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd="/Users/akeilsmith/dev/cua-maximalist",
+        cwd="/Users/akeilsmith/dev/basicCtrl",
     )
 
     try:
@@ -107,7 +107,7 @@ async def test_canary_multi_app_single_session() -> None:
                 command=sys.executable,
                 args=[
                     "-m",
-                    "cua_overlay.mcp_server",
+                    "basicctrl.mcp_server",
                 ],
                 env=os.environ.copy(),
             )

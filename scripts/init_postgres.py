@@ -1,20 +1,20 @@
 """One-time provisioning helper — runs ``DurableExecutor.setup()``.
 
-Called by ``scripts/init_postgres.sh`` after ``createdb cua_maximalist``.
+Called by ``scripts/init_postgres.sh`` after ``createdb basicctrl``.
 """
 from __future__ import annotations
 
 import asyncio
 import sys
 
-from cua_overlay.persist.durable_step import DurableExecutor
+from basicctrl.persist.durable_step import DurableExecutor
 
 
 async def main() -> None:
     durable = DurableExecutor()
     try:
         await durable.setup()
-        print("Postgres tables provisioned for cua_maximalist.")
+        print("Postgres tables provisioned for basicctrl.")
     finally:
         await durable.aclose()
 

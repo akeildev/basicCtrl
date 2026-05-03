@@ -1,6 +1,6 @@
 """Integration tests mirroring the Phase 1 Calculator click demo.
 
-Each test calls ``cua_overlay.demo.calculator_click.run_demo()`` directly and
+Each test calls ``basicctrl.demo.calculator_click.run_demo()`` directly and
 asserts on the returned result dict — no parsing of rich console output.
 
 Skips cleanly when:
@@ -24,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.demo.calculator_click import run_demo
-from cua_overlay.profile.classifier import AppProfile
+from basicctrl.demo.calculator_click import run_demo
+from basicctrl.profile.classifier import AppProfile
 
 pytestmark = [
     pytest.mark.integration,

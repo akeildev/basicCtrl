@@ -19,9 +19,9 @@ from typing import Any
 
 import pytest
 
-from cua_overlay.ax.observer import AXEvent, Subscription
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.verifier.axobserver import AXObserverManager, _passes_filter
+from basicctrl.ax.observer import AXEvent, Subscription
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.verifier.axobserver import AXObserverManager, _passes_filter
 
 
 # ----------------------------------------------------------------- fixtures

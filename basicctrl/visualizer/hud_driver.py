@@ -9,7 +9,7 @@ from pathlib import Path
 
 import structlog
 
-from cua_overlay.visualizer.models import (
+from basicctrl.visualizer.models import (
     HUDCommand,
     HUDActionEntry,
     ActionTier,

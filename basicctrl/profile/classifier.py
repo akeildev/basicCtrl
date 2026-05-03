@@ -22,12 +22,12 @@ import anyio
 import structlog
 from pydantic import BaseModel, Field
 
-from cua_overlay.profile.cache import (
+from basicctrl.profile.cache import (
     load_cached_profile,
     save_cached_profile,
     should_invalidate_cache,
 )
-from cua_overlay.profile.capability_probe import (
+from basicctrl.profile.capability_probe import (
     probe_applescript_sdef,
     probe_ax_observer_works,
     probe_ax_rich,
@@ -36,8 +36,8 @@ from cua_overlay.profile.capability_probe import (
     probe_electron,
     probe_tauri_or_wails,
 )
-from cua_overlay.profile.known_apps import KNOWN_APPS, KnownApp
-from cua_overlay.profile.tcc import TCCMonitor
+from basicctrl.profile.known_apps import KNOWN_APPS, KnownApp
+from basicctrl.profile.tcc import TCCMonitor
 
 
 class AppProfile(BaseModel):
@@ -307,7 +307,7 @@ async def classify(bundle_id: str, pid: int) -> AppProfile:
 
     # Phase 6: Probe SPI capabilities
     # Run once at session start; cached in AppProfile
-    from cua_overlay.spi import probe_spi_capabilities
+    from basicctrl.spi import probe_spi_capabilities
     spi_caps = await probe_spi_capabilities()
 
     profile = AppProfile(

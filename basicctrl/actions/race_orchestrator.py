@@ -36,16 +36,16 @@ from typing import Any, Awaitable, Callable, Optional
 import anyio
 import structlog
 
-from cua_overlay.actions.channel_registry import ChannelRegistry
-from cua_overlay.actions.channels.base import Channel, ChannelOutcome
-from cua_overlay.actions.duplicate_receipt import DuplicateReceipt
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.actions.race_policy import RacePolicy, resolve_race_policy
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
-from cua_overlay.translators.registry import TranslatorRegistry
-from cua_overlay.visualizer.driver import VisualizerBus
-from cua_overlay.visualizer.hud_driver import HUDDriver
+from basicctrl.actions.channel_registry import ChannelRegistry
+from basicctrl.actions.channels.base import Channel, ChannelOutcome
+from basicctrl.actions.duplicate_receipt import DuplicateReceipt
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.actions.race_policy import RacePolicy, resolve_race_policy
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.translators.registry import TranslatorRegistry
+from basicctrl.visualizer.driver import VisualizerBus
+from basicctrl.visualizer.hud_driver import HUDDriver
 
 
 _log = structlog.get_logger()
@@ -140,11 +140,11 @@ class RaceOrchestrator:
         channel_registry: ChannelRegistry,
         idem_store: IdempotencyTokenStore,
         duplicate_receipt: DuplicateReceipt,
-        axmgr: Any,         # cua_overlay.verifier.axobserver.AXObserverManager
-        aggregator: Any,    # cua_overlay.verifier.aggregator.Aggregator
-        l1_cheap: Any,      # cua_overlay.verifier.ensemble.l1_cheap.L1Cheap
+        axmgr: Any,         # basicctrl.verifier.axobserver.AXObserverManager
+        aggregator: Any,    # basicctrl.verifier.aggregator.Aggregator
+        l1_cheap: Any,      # basicctrl.verifier.ensemble.l1_cheap.L1Cheap
         classifier: Any,    # async classify(bundle_id, pid) -> AppProfile
-        session_writer: Any,  # cua_overlay.persist.session_writer.SessionWriter
+        session_writer: Any,  # basicctrl.persist.session_writer.SessionWriter
     ) -> None:
         self._translators = translator_registry
         self._channels = channel_registry

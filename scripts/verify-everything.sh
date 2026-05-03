@@ -93,7 +93,7 @@ if command -v chromium >/dev/null 2>&1 \
    || [[ -d "/Applications/Microsoft Edge.app" ]]; then
   HAS_CHROMIUM=yes
 fi
-psql -d "postgresql://localhost:5432/cua_maximalist" -c "SELECT 1" >/dev/null 2>&1 && HAS_POSTGRES=yes
+psql -d "postgresql://localhost:5432/basicctrl" -c "SELECT 1" >/dev/null 2>&1 && HAS_POSTGRES=yes
 [[ -x libs/cua-driver/.build/arm64-apple-macosx/debug/cua-driver ]] && HAS_VIZ_BIN=yes
 [[ -n "${ANTHROPIC_API_KEY:-}" ]] && HAS_ANTHROPIC=yes
 [[ -d /System/Applications/Calculator.app ]] && HAS_CALCULATOR=yes

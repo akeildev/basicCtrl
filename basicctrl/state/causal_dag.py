@@ -22,7 +22,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from cua_overlay.state.graph import Edge, EdgeKind, StateGraph
+from basicctrl.state.graph import Edge, EdgeKind, StateGraph
 
 
 class ActionCanonical(BaseModel):

@@ -12,7 +12,7 @@ import logging
 from typing import Optional
 
 import structlog
-from cua_overlay.ax.observer import AXEventBridge
+from basicctrl.ax.observer import AXEventBridge
 
 log = structlog.get_logger(__name__)
 

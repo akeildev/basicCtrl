@@ -9,17 +9,17 @@ Default channel binding (D-14):
     T3 → C4 (AppleScript)     |  T4 → C1 (CGEvent public)
     T5 → C3 (CGEvent postToPid with cursor)
 """
-from cua_overlay.translators.base import (
+from basicctrl.translators.base import (
     TargetSpec,
     Translator,
     TranslatorTarget,
 )
-from cua_overlay.translators.registry import TranslatorRegistry
-from cua_overlay.translators.t1_ax import T1AXTranslator
-from cua_overlay.translators.t2_cdp import T2CDPTranslator
-from cua_overlay.translators.t3_applescript import T3AppleScriptTranslator
-from cua_overlay.translators.t4_vision import T4VisionTranslator
-from cua_overlay.translators.t5_pixel import T5PixelTranslator
+from basicctrl.translators.registry import TranslatorRegistry
+from basicctrl.translators.t1_ax import T1AXTranslator
+from basicctrl.translators.t2_cdp import T2CDPTranslator
+from basicctrl.translators.t3_applescript import T3AppleScriptTranslator
+from basicctrl.translators.t4_vision import T4VisionTranslator
+from basicctrl.translators.t5_pixel import T5PixelTranslator
 
 __all__ = [
     "TargetSpec",

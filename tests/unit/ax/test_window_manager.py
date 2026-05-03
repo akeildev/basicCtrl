@@ -14,13 +14,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cua_overlay.ax.errors import (
+from basicctrl.ax.errors import (
     AXCannotCompleteError,
     AXError,
     kAXErrorCannotComplete,
     kAXErrorInvalidUIElement,
 )
-from cua_overlay.ax import window_manager
+from basicctrl.ax import window_manager
 
 
 # ─── helpers: stub out the HIServices module ────────────────────────────────

@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import Mock, AsyncMock
 
-from cua_overlay.cognition.critic import Critic
+from basicctrl.cognition.critic import Critic
 
 
 @pytest.mark.unit

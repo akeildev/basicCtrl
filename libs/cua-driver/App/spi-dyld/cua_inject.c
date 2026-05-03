@@ -24,19 +24,19 @@ const char *cua_inject_version = "1.0.0";
 /* Constructor: fires when dylib loads into target process */
 __attribute__((constructor))
 static void cua_inject_init(void) {
-    fprintf(stderr, "[cua-maximalist] dylib loaded (pid=%d)\n", getpid());
+    fprintf(stderr, "[basicCtrl] dylib loaded (pid=%d)\n", getpid());
     fflush(stderr);
 }
 
 /* Destructor: fires when dylib unloads */
 __attribute__((destructor))
 static void cua_inject_fini(void) {
-    fprintf(stderr, "[cua-maximalist] dylib unloading (pid=%d)\n", getpid());
+    fprintf(stderr, "[basicCtrl] dylib unloading (pid=%d)\n", getpid());
     fflush(stderr);
 }
 
 /* Exported callback for testing (dlsym-able) */
 void cua_inject_on_load(void) {
-    fprintf(stderr, "[cua-maximalist] cua_inject_on_load callback fired\n");
+    fprintf(stderr, "[basicCtrl] cua_inject_on_load callback fired\n");
     fflush(stderr);
 }

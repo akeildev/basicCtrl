@@ -30,8 +30,8 @@ from typing import Any, Literal, Optional
 
 import structlog
 
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
 
 
 _log = structlog.get_logger()

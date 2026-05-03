@@ -17,7 +17,7 @@ import signal
 
 import pytest
 
-from cua_overlay.verifier.kqueue_proc import KqueueProcObserver
+from basicctrl.verifier.kqueue_proc import KqueueProcObserver
 
 
 @pytest.mark.integration

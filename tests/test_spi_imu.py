@@ -8,7 +8,7 @@ Per RESEARCH.md §"AppleSPUHIDDevice IMU (SPI-08)" L133-177:
 import pytest
 from dataclasses import dataclass
 
-from cua_overlay.spi.imu import IMUBridge, IMUData, get_imu_bridge
+from basicctrl.spi.imu import IMUBridge, IMUData, get_imu_bridge
 
 
 # Mock SPICapabilities for testing
@@ -106,7 +106,7 @@ class TestGetIMUBridge:
     async def test_get_imu_bridge_unavailable(self):
         """get_imu_bridge respects capabilities.imu_available."""
         # Reset the global _bridge for clean test
-        import cua_overlay.spi.imu as imu_module
+        import basicctrl.spi.imu as imu_module
         imu_module._bridge = None
 
         caps = MockSPICapabilities(imu_available=False)

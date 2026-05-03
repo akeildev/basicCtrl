@@ -101,7 +101,7 @@ def axmgr_mock() -> AsyncMock:
 @pytest.fixture
 def channel_outcome_mock() -> object:
     """Factory for ChannelOutcome mocks."""
-    from cua_overlay.actions.channels.base import ChannelOutcome
+    from basicctrl.actions.channels.base import ChannelOutcome
 
     def _build(
         channel: str = "C1",

@@ -22,8 +22,8 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.learning.schemas import ObservedAction
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.learning.schemas import ObservedAction
+from basicctrl.state.causal_dag import ActionCanonical
 
 log = structlog.get_logger(__name__)
 
@@ -54,7 +54,7 @@ class LearningLoop:
     episodic: Optional[Any] = None  # EpisodicMemory (duck-typed for tests)
     synthesizer: Optional[Any] = None  # RecipeSynthesizer (duck-typed for tests)
     skills_root: Optional[Any] = None  # Override for auto-write target dir.
-                                       # Production: `cua_overlay/skills/`.
+                                       # Production: `basicctrl/skills/`.
                                        # Tests pass `tmp_path` so auto-write
                                        # doesn't pollute the real skills tree.
     _buffer: list[ObservedAction] = field(default_factory=list)
@@ -131,7 +131,7 @@ class LearningLoop:
                 f"{app_bundle_id}|{task_class}|{len(actions)}".encode()
             ).hexdigest()
 
-        from cua_overlay.agents.embedder import task_source_text
+        from basicctrl.agents.embedder import task_source_text
 
         action_summary = ",".join(
             a.action.action_type for a in actions[:10]  # cap at 10 for stable embed
@@ -190,7 +190,7 @@ class LearningLoop:
     ) -> None:
         """Append a recipe markdown to `<skills_root>/<bundle>/<task_class>.md`.
 
-        skills_root defaults to `cua_overlay/skills/` (production). Tests
+        skills_root defaults to `basicctrl/skills/` (production). Tests
         override via `LearningLoop(skills_root=tmp_path)` so they don't
         pollute the shipped skills tree.
 

@@ -25,7 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field
 import structlog
 
 if TYPE_CHECKING:
-    from cua_overlay.learning import Recipe
+    from basicctrl.learning import Recipe
 
 
 class EpisodicQuery(BaseModel):
@@ -85,7 +85,7 @@ class EpisodicMemory:
     - Phase 5+: IndexIVFPQ for 1M+ vectors per faiss-cpu docs
 
     Architecture reference:
-    ~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md
+    ~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md
     (Section: Episodic Memory, Lines ~L3400-L3450)
     """
 
@@ -285,7 +285,7 @@ class EpisodicMemory:
             # Reconstruct Recipe object
             recipe = None
             if metadata.get("recipe"):
-                from cua_overlay.learning import Recipe
+                from basicctrl.learning import Recipe
 
                 try:
                     recipe = Recipe(**metadata["recipe"])

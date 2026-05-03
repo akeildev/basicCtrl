@@ -1,4 +1,4 @@
-"""Add a new Calendar event for tomorrow 5pm via the cua-maximalist framework.
+"""Add a new Calendar event for tomorrow 5pm via the basicCtrl framework.
 
 GUI-only, no AppleScript: every interaction is a healing-tool call routed
 through the proxied MCP server.
@@ -71,7 +71,7 @@ def _resolve_calendar_window_id(pid: int) -> int:
 
 async def main() -> int:
     tomorrow = date.today() + timedelta(days=1)
-    title = f"cua-maximalist test event"
+    title = f"basicCtrl test event"
     nl = f"{title} tomorrow at 5pm"
 
     print(f"  target date    : {tomorrow.isoformat()}")
@@ -91,7 +91,7 @@ async def main() -> int:
 
     server_params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "cua_overlay.mcp_server"],
+        args=["-m", "basicctrl.mcp_server"],
         env=dict(os.environ),
     )
 

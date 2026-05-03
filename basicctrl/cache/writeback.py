@@ -16,8 +16,8 @@ import os
 from pathlib import Path
 from typing import AsyncGenerator, Optional
 
-from cua_overlay.cache.cassette import Cassette
-from cua_overlay.recovery.heal_event import HealEvent
+from basicctrl.cache.cassette import Cassette
+from basicctrl.recovery.heal_event import HealEvent
 
 
 log = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ class WriteBack:
                 updated_healed.append(heal_event.new_locator)
 
                 # Reconstruct step with updated healed_selectors
-                from cua_overlay.cache.cassette import CassetteStep
+                from basicctrl.cache.cassette import CassetteStep
 
                 updated_step = CassetteStep(
                     step_idx=step.step_idx,

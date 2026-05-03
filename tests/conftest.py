@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for cua-maximalist.
+"""Shared pytest fixtures for basicCtrl.
 
 * ``session_dir`` — an empty per-test session directory under ``tmp_path``
 * ``_configure_structlog`` (autouse) — resets structlog test config every test
@@ -32,13 +32,13 @@ def session_dir(tmp_path: Path) -> Path:
 def _configure_structlog() -> Iterator[None]:
     """Reset structlog into testing mode at the start of every test.
 
-    cua_overlay.log.configure(testing=True) installs the LogCapture processor
+    basicctrl.log.configure(testing=True) installs the LogCapture processor
     so structlog.testing.capture_logs() works inside individual tests. If the
     log module isn't available yet (e.g. during the Task 1 scaffold step
     before Task 2 lands), the fixture is a no-op so tests can still run.
     """
     try:
-        from cua_overlay import log as cua_log  # noqa: WPS433
+        from basicctrl import log as cua_log  # noqa: WPS433
     except ImportError:
         yield
         return

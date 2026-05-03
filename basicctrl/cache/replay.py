@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from cua_overlay.cache.cassette import Cassette
+from basicctrl.cache.cassette import Cassette
 
 
 log = logging.getLogger(__name__)

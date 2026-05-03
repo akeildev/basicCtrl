@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/preflight.sh — environment validation before running cua-maximalist.
+# scripts/preflight.sh — environment validation before running basicCtrl.
 #
 # Checks every dependency the overlay needs at boot. Distinguishes REQUIRED
 # (block) from OPTIONAL (warn-only).
@@ -13,7 +13,7 @@
 #
 # To launch MCP Inspector against the overlay (manual G1 boot proof):
 #   npm install -g @modelcontextprotocol/inspector
-#   mcp-inspector uv run python -m cua_overlay.mcp_server
+#   mcp-inspector uv run python -m basicctrl.mcp_server
 #
 # Then in the browser: List Tools → expect 6 healing tools (click_with_healing,
 # type_with_healing, scroll_with_healing, set_value_with_healing,
@@ -42,7 +42,7 @@ row() {
 }
 
 hr
-echo "cua-maximalist preflight"
+echo "basicCtrl preflight"
 echo "Repo: $REPO_ROOT"
 hr
 
@@ -70,8 +70,8 @@ else
 fi
 
 # uv env intact + main module importable
-if uv run python -c "from cua_overlay.mcp_server.main import main" >/dev/null 2>&1; then
-  row "main module imports" OK "cua_overlay.mcp_server.main"
+if uv run python -c "from basicctrl.mcp_server.main import main" >/dev/null 2>&1; then
+  row "main module imports" OK "basicctrl.mcp_server.main"
 else
   row "main module imports" FAIL "uv sync failed or import error — run: uv sync"
 fi
@@ -85,8 +85,8 @@ fi
 
 # Postgres reachable
 if command -v psql >/dev/null 2>&1; then
-  if psql -d "postgresql://localhost:5432/cua_maximalist" -c "SELECT 1" >/dev/null 2>&1; then
-    row "Postgres :5432" OK "cua_maximalist database reachable"
+  if psql -d "postgresql://localhost:5432/basicctrl" -c "SELECT 1" >/dev/null 2>&1; then
+    row "Postgres :5432" OK "basicctrl database reachable"
   else
     row "Postgres :5432" FAIL "create db: ./scripts/init_postgres.sh"
   fi
@@ -215,7 +215,7 @@ if [[ $REQUIRED_FAILS -eq 0 ]]; then
   echo
   echo
   echo "Manual G1 boot proof (one-time):"
-  echo "  mcp-inspector uv run python -m cua_overlay.mcp_server"
+  echo "  mcp-inspector uv run python -m basicctrl.mcp_server"
   echo "  → in browser, click List Tools → expect 6 healing tools"
   hr
   exit 0

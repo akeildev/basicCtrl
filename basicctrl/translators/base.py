@@ -15,7 +15,7 @@ from typing import Any, Literal, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cua_overlay.state.graph import Bbox, UIElement
+from basicctrl.state.graph import Bbox, UIElement
 
 
 class TargetSpec(BaseModel):

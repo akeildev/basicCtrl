@@ -43,9 +43,9 @@ uv run pytest -q tests/unit/state/ tests/unit/actions/ tests/unit/translators/ t
 # Expected: all pass (no integration calls)
 
 # 6. Verify Phase 4 modules can import
-python3 -c "from cua_overlay.cognition import EnsembleVoter; print('✓ Cognition module')"
-python3 -c "from cua_overlay.learning import CGEventRecorder, RecipeSynthesizer; print('✓ Learning module')"
-python3 -c "from cua_overlay.state import EpisodicMemory; print('✓ Episodic module')"
+python3 -c "from basicctrl.cognition import EnsembleVoter; print('✓ Cognition module')"
+python3 -c "from basicctrl.learning import CGEventRecorder, RecipeSynthesizer; print('✓ Learning module')"
+python3 -c "from basicctrl.state import EpisodicMemory; print('✓ Episodic module')"
 python3 -c "import apple_fm_sdk; print('✓ Apple FM SDK')"  # Requires macOS 26 + Apple Intelligence ON
 python3 -c "from mlx_vlm.utils import load_model; print('✓ MLX-VLM')"
 python3 -c "import faiss; print('✓ FAISS')"
@@ -228,8 +228,8 @@ Per Phase 4 design, verify correctness on your local Mac.
 
 ```bash
 python3 <<'PY'
-from cua_overlay.cognition import EnsembleVotingEngine
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
+from basicctrl.cognition import EnsembleVotingEngine
+from basicctrl.state.causal_dag import ActionCanonical, HoarePre
 import time
 
 voter = EnsembleVotingEngine()
@@ -284,7 +284,7 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.cognition import SpeculativeDraft
+from basicctrl.cognition import SpeculativeDraft
 import time
 
 # Valid: N+1 speculative draft is READ-only
@@ -320,8 +320,8 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.learning import RecipeSynthesizer, ObservedAction
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.learning import RecipeSynthesizer, ObservedAction
+from basicctrl.state.causal_dag import ActionCanonical
 import time
 import asyncio
 
@@ -385,8 +385,8 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
-from cua_overlay.learning import Recipe, RecipeStep, RecipeParam
+from basicctrl.state.episodic import EpisodicMemory, EpisodicQuery
+from basicctrl.learning import Recipe, RecipeStep, RecipeParam
 import hashlib
 import time
 
@@ -456,7 +456,7 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.cognition.grounder import UITARSGrounder
+from basicctrl.cognition.grounder import UITARSGrounder
 import asyncio
 
 async def test_sanity_gate():
@@ -516,11 +516,11 @@ PY
 
 | Pitfall | Mitigation file | Tests / Demo evidence |
 |---------|-----------------|----------------------|
-| **P4: UI-TARS coord quantization → screen center** | `cua_overlay/cognition/grounder.py` (sanity_gate) | `test_ui_tars_sanity_gate_rejects_center` verifies ±10px rejection + uitag fallback |
-| **P6: Apple FM hallucinates params on complex schemas** | `cua_overlay/cognition/ensemble.py` (enum-only validation) | `test_ensemble_apple_fm_enum_gate` enforces Literal["T1".."T5", "retry", "escalate", "abort"] |
-| **P7: Apple FM text-only API gate** | `cua_overlay/cognition/ensemble.py` (no pixel input) | Code inspection: Apple FM never receives screenshot data; visual context goes through OCR/uitag first |
-| **P21: Intrinsic LLM self-correction broken** | `cua_overlay/cognition/critic.py` (ranks external oracles only) | Critic.rank_candidates() never self-critiques; Phase 4 contract enforced via code review |
-| **P22: Speculation mutates state** | `cua_overlay/cognition/speculator.py` (READ-only type gate) | `test_speculative_read_only_type_gate` validates SpeculativeDraft.kind Literal["READ"] |
+| **P4: UI-TARS coord quantization → screen center** | `basicctrl/cognition/grounder.py` (sanity_gate) | `test_ui_tars_sanity_gate_rejects_center` verifies ±10px rejection + uitag fallback |
+| **P6: Apple FM hallucinates params on complex schemas** | `basicctrl/cognition/ensemble.py` (enum-only validation) | `test_ensemble_apple_fm_enum_gate` enforces Literal["T1".."T5", "retry", "escalate", "abort"] |
+| **P7: Apple FM text-only API gate** | `basicctrl/cognition/ensemble.py` (no pixel input) | Code inspection: Apple FM never receives screenshot data; visual context goes through OCR/uitag first |
+| **P21: Intrinsic LLM self-correction broken** | `basicctrl/cognition/critic.py` (ranks external oracles only) | Critic.rank_candidates() never self-critiques; Phase 4 contract enforced via code review |
+| **P22: Speculation mutates state** | `basicctrl/cognition/speculator.py` (READ-only type gate) | `test_speculative_read_only_type_gate` validates SpeculativeDraft.kind Literal["READ"] |
 
 ---
 
@@ -538,13 +538,13 @@ PY
 - [ ] `uv run pytest tests/integration/state/test_episodic_e2e.py::test_episodic_query_structure` — PASSED
 - [ ] `uv run pytest tests/integration/state/test_episodic_e2e.py::test_episodic_memory_initialization` — PASSED
 - [ ] All manual smoke checks (1-5) completed and passed
-- [ ] `grep -c "class EnsembleVoter" cua_overlay/cognition/ensemble.py` returns 1
-- [ ] `grep -c "class Speculator" cua_overlay/cognition/speculator.py` returns 1
-- [ ] `grep -c "class UITARSGrounder" cua_overlay/cognition/grounder.py` returns 1
-- [ ] `grep -c "class RecipeSynthesizer" cua_overlay/learning/recipe_synth.py` returns 1
-- [ ] `grep -c "class EpisodicMemory" cua_overlay/state/episodic.py` returns 1
-- [ ] `grep -c "sanity_gate" cua_overlay/cognition/grounder.py` returns >=1 (P4 mitigation)
-- [ ] `grep -c 'kind.*READ' cua_overlay/cognition/speculator.py` returns >=1 (P22 gate)
+- [ ] `grep -c "class EnsembleVoter" basicctrl/cognition/ensemble.py` returns 1
+- [ ] `grep -c "class Speculator" basicctrl/cognition/speculator.py` returns 1
+- [ ] `grep -c "class UITARSGrounder" basicctrl/cognition/grounder.py` returns 1
+- [ ] `grep -c "class RecipeSynthesizer" basicctrl/learning/recipe_synth.py` returns 1
+- [ ] `grep -c "class EpisodicMemory" basicctrl/state/episodic.py` returns 1
+- [ ] `grep -c "sanity_gate" basicctrl/cognition/grounder.py` returns >=1 (P4 mitigation)
+- [ ] `grep -c 'kind.*READ' basicctrl/cognition/speculator.py` returns >=1 (P22 gate)
 - [ ] Per-plan SUMMARY.md files exist for all 04-01 through 04-08 plans
 - [ ] PHASE-4-DEMO.md (this file) reviewed end-to-end
 - [ ] `.planning/ROADMAP.md` Phase 4 status updated to mark 04-09 complete

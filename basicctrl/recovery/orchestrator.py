@@ -25,19 +25,19 @@ from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
 import anyio
 import structlog
 
-from cua_overlay.recovery.classifier import (
+from basicctrl.recovery.classifier import (
     FailureClass,
     FailureClassifier,
     FailureCtx,
     FAILURE_CLASS_TO_BRANCHES,
 )
-from cua_overlay.recovery.circuit_breaker import CircuitBreaker
+from basicctrl.recovery.circuit_breaker import CircuitBreaker
 
 if TYPE_CHECKING:
-    from cua_overlay.actions.channels.base import ChannelOutcome
-    from cua_overlay.persist.session_writer import SessionWriter
-    from cua_overlay.profile.classifier import AppProfile
-    from cua_overlay.verifier.aggregator import Aggregator
+    from basicctrl.actions.channels.base import ChannelOutcome
+    from basicctrl.persist.session_writer import SessionWriter
+    from basicctrl.profile.classifier import AppProfile
+    from basicctrl.verifier.aggregator import Aggregator
 
 _log = structlog.get_logger()
 

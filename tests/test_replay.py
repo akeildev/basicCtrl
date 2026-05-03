@@ -5,10 +5,10 @@ from datetime import datetime, timezone
 
 import pytest
 
-from cua_overlay.replay.engine import ReplayEngine
-from cua_overlay.replay.timeline import Timeline3D, TimelineNode
-from cua_overlay.replay.counterfactual import CounterfactualRenderer
-from cua_overlay.observability.session_storage import SessionWriter
+from basicctrl.replay.engine import ReplayEngine
+from basicctrl.replay.timeline import Timeline3D, TimelineNode
+from basicctrl.replay.counterfactual import CounterfactualRenderer
+from basicctrl.observability.session_storage import SessionWriter
 
 
 # =============================================================================

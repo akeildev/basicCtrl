@@ -14,9 +14,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cua_overlay.learning.coalesce import KeystrokeCoalescer
-from cua_overlay.learning.recorder import LearningRecorder
-from cua_overlay.learning.schemas import ObservedAction
+from basicctrl.learning.coalesce import KeystrokeCoalescer
+from basicctrl.learning.recorder import LearningRecorder
+from basicctrl.learning.schemas import ObservedAction
 
 
 @pytest.mark.unit

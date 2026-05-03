@@ -27,8 +27,8 @@ from typing import Any, Literal, Optional
 
 import structlog
 
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
 
 
 _log = structlog.get_logger()
@@ -219,7 +219,7 @@ class T3AppleScriptTranslator:
             # AppleEvent listener stalls.
             return await loop.run_in_executor(self._exec, _sync)
 
-        from cua_overlay.translators.as_daemon import (
+        from basicctrl.translators.as_daemon import (
             run_with_resilience,
             _DEFAULT_TIMEOUT_SEC,
         )

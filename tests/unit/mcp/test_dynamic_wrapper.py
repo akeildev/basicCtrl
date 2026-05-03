@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cua_overlay.mcp_server.dynamic_wrapper import build_dynamic_wrapper
+from basicctrl.mcp_server.dynamic_wrapper import build_dynamic_wrapper
 
 
 @pytest.mark.unit

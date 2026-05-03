@@ -4,7 +4,7 @@ Hard rule from CLAUDE.md:
     Never run a full recursive AX tree walk (15-20s on Safari).
     Always depth-limited (3 levels max).
 
-This walker is the ONLY sanctioned way to walk an AX hierarchy in cua-maximalist.
+This walker is the ONLY sanctioned way to walk an AX hierarchy in basicCtrl.
 It enforces three independent caps and emits a ``truncated`` flag whenever any
 cap fires so downstream verifiers can reduce their confidence:
 
@@ -28,9 +28,9 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.ax.errors import AXError, axerror_from_code, kAXErrorAPIDisabled, kAXErrorCannotComplete
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.state.graph import Bbox, Source, UIElement
+from basicctrl.ax.errors import AXError, axerror_from_code, kAXErrorAPIDisabled, kAXErrorCannotComplete
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.state.graph import Bbox, Source, UIElement
 
 
 @dataclass

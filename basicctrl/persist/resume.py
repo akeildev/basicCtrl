@@ -27,8 +27,8 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.persist.durable_step import DurableExecutor
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.persist.durable_step import DurableExecutor
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 @dataclass

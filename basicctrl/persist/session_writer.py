@@ -24,7 +24,7 @@ Notes
   the caller (Plan 09 demo + resume tests pin one for determinism).
 * ``append_action_log`` writes one valid JSON line per call (NDJSON / JSONL).
   Each line is one ``ActionCanonical`` or ``HoarePost`` event — never a
-  pasteboard payload (T-1-03: see ``cua_overlay/log.py`` redactor).
+  pasteboard payload (T-1-03: see ``basicctrl/log.py`` redactor).
 * ``write_snapshot`` is atomic via ``snapshot_io.atomic_write_json`` —
   ``tempfile + os.replace`` so crashes never leave torn writes.
 """
@@ -37,7 +37,7 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.persist.snapshot_io import atomic_write_json, read_json
+from basicctrl.persist.snapshot_io import atomic_write_json, read_json
 
 
 class SessionWriter:

@@ -6,8 +6,8 @@ from uuid import uuid4
 
 import pytest
 
-from cua_overlay.cache.cassette import Cassette, CassetteStep
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.cache.cassette import Cassette, CassetteStep
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
 
 class TestCassetteCreation:

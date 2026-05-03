@@ -479,7 +479,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cua-maximalist"
+name = "basicCtrl"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

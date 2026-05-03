@@ -21,10 +21,10 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.ax.errors import AXError
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.ax.walker import _coords_to_bbox, _read_attr
-from cua_overlay.state.graph import Source, UIElement
+from basicctrl.ax.errors import AXError
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.ax.walker import _coords_to_bbox, _read_attr
+from basicctrl.state.graph import Source, UIElement
 
 # Cap so a malicious / runaway app with hundreds of windows can never blow our
 # budget. 10 is well past every observed real-world max-window-count.

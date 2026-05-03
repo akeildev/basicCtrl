@@ -8,16 +8,16 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-pytest.importorskip("cua_overlay.learning")
+pytest.importorskip("basicctrl.learning")
 
-from cua_overlay.learning import (
+from basicctrl.learning import (
     ObservedAction,
     Recipe,
     RecipeParam,
     RecipePrecondition,
     RecipeStep,
 )
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 def _build_action(

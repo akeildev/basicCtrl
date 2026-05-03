@@ -28,12 +28,12 @@ from pathlib import Path
 import anyio
 import pytest
 
-from cua_overlay.actions.channels.c2_ax_press import C2AXPressChannel
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TargetSpec
-from cua_overlay.translators.t1_ax import T1AXTranslator
+from basicctrl.actions.channels.c2_ax_press import C2AXPressChannel
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.persist.session_writer import SessionWriter
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TargetSpec
+from basicctrl.translators.t1_ax import T1AXTranslator
 
 
 pytestmark = [

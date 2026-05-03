@@ -4,7 +4,7 @@ from __future__ import annotations
 import structlog
 from structlog.testing import capture_logs
 
-from cua_overlay.actions.race_policy import RacePolicy, resolve_race_policy
+from basicctrl.actions.race_policy import RacePolicy, resolve_race_policy
 
 
 def test_auto_click_races() -> None:

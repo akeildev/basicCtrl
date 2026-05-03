@@ -24,10 +24,10 @@ from typing import Optional
 
 import pytest
 
-from cua_overlay.cognition.ensemble import EnsembleVotingEngine
-from cua_overlay.cognition.schemas import AppleFMOutput, EnsembleVote
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.state.graph import StateGraph, UIElement
+from basicctrl.cognition.ensemble import EnsembleVotingEngine
+from basicctrl.cognition.schemas import AppleFMOutput, EnsembleVote
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.state.graph import StateGraph, UIElement
 
 pytestmark = pytest.mark.integration
 

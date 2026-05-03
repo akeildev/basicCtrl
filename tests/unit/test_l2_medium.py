@@ -20,9 +20,9 @@ from unittest.mock import patch
 
 import pytest
 
-from cua_overlay.ax.walker import WalkResult
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.verifier.ensemble.l2_medium import L2Medium, L2Snapshot
+from basicctrl.ax.walker import WalkResult
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.verifier.ensemble.l2_medium import L2Medium, L2Snapshot
 
 
 # ----------------------------------------------------------------- helpers
@@ -93,7 +93,7 @@ def test_no_full_recursion() -> None:
 
     Walker delegation only — raw AX recursion is forbidden.
     """
-    import cua_overlay.verifier.ensemble.l2_medium as l2_module
+    import basicctrl.verifier.ensemble.l2_medium as l2_module
     src = inspect.getsource(l2_module)
     assert "AXUIElementCopyAttributeValue" not in src, (
         "L2Medium must delegate to walker, never raw AX recursion"
@@ -125,7 +125,7 @@ async def test_run_executes_subchecks_in_parallel() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=slow_ocr),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=slow_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=slow_walk),
     ):
         before = await l2.snapshot(target, ax_element=object())
 
@@ -133,7 +133,7 @@ async def test_run_executes_subchecks_in_parallel() -> None:
     # Re-do the timing test with run() since it does snapshot().
     with (
         patch.object(l2, "_capture_ocr", side_effect=slow_ocr),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=slow_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=slow_walk),
     ):
         t0 = time.monotonic()
         await l2.snapshot(target, ax_element=object())
@@ -160,7 +160,7 @@ async def test_truncated_signal_emitted_on_walker_truncation() -> None:
     with (
         patch.object(l2, "_capture_ocr", side_effect=fake_ocr),
         patch(
-            "cua_overlay.verifier.ensemble.l2_medium.walk_subtree",
+            "basicctrl.verifier.ensemble.l2_medium.walk_subtree",
             side_effect=fake_walk_truncated,
         ),
     ):
@@ -191,7 +191,7 @@ async def test_ocr_text_change_signal() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=changing_ocr),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
     ):
         before = await l2.snapshot(target, ax_element=object())
         signals_a = await l2.run(target, ax_element=object(), before=before)
@@ -204,7 +204,7 @@ async def test_ocr_text_change_signal() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=stable_ocr),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
     ):
         before = await l2.snapshot(target, ax_element=object())
         signals_b = await l2.run(target, ax_element=object(), before=before)
@@ -230,7 +230,7 @@ async def test_expected_text_match_signal() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=ocr_with_target),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
     ):
         before = await l2.snapshot(target, ax_element=object())
         signals_a = await l2.run(
@@ -245,7 +245,7 @@ async def test_expected_text_match_signal() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=ocr_missing_target),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=stable_walk),
     ):
         before = await l2.snapshot(target, ax_element=object())
         signals_b = await l2.run(
@@ -272,7 +272,7 @@ async def test_run_returns_float_signals() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=fake_ocr),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=fake_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=fake_walk),
     ):
         before = await l2.snapshot(target, ax_element=object())
         signals = await l2.run(target, ax_element=object(), before=before)
@@ -299,7 +299,7 @@ async def test_snapshot_returns_l2snapshot_with_fields() -> None:
 
     with (
         patch.object(l2, "_capture_ocr", side_effect=fake_ocr),
-        patch("cua_overlay.verifier.ensemble.l2_medium.walk_subtree", side_effect=fake_walk),
+        patch("basicctrl.verifier.ensemble.l2_medium.walk_subtree", side_effect=fake_walk),
     ):
         snap = await l2.snapshot(target, ax_element=object())
 

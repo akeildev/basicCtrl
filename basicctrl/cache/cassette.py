@@ -18,7 +18,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
 
 log = logging.getLogger(__name__)

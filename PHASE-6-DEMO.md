@@ -32,8 +32,8 @@ csrutil status
 uv sync --all-extras    # Pulls SPI + durability modules, pytest
 
 # 6. Verify Phase 6 modules can import
-uv run python3 -c "from cua_overlay.spi import SPICapabilities, probe_spi_capabilities; print('✓ SPI modules')"
-uv run python3 -c "from cua_overlay.persist import SessionWriter, DurableExecutor, ResumeContext; print('✓ Durability modules')"
+uv run python3 -c "from basicctrl.spi import SPICapabilities, probe_spi_capabilities; print('✓ SPI modules')"
+uv run python3 -c "from basicctrl.persist import SessionWriter, DurableExecutor, ResumeContext; print('✓ Durability modules')"
 
 # 7. Verify test collection
 uv run pytest --collect-only -q tests/test_spi_*.py tests/test_durability.py
@@ -42,7 +42,7 @@ uv run pytest --collect-only -q tests/test_spi_*.py tests/test_durability.py
 # 8. Verify Postgres connectivity
 uv run python3 -c "
 import asyncio
-from cua_overlay.persist.durable_step import DurableExecutor
+from basicctrl.persist.durable_step import DurableExecutor
 async def test():
     executor = DurableExecutor()
     await executor.setup()
@@ -173,7 +173,7 @@ test_spi_05_dtrace_gates_correctly PASSED
 
 **Manual verification:**
 ```bash
-# 1. Run: uv run python -c "from cua_overlay.spi import probe_spi_capabilities; caps = probe_spi_capabilities(); print(f'ES: {caps.endpoint_security_available}, DTrace: {caps.dtrace_available}')"
+# 1. Run: uv run python -c "from basicctrl.spi import probe_spi_capabilities; caps = probe_spi_capabilities(); print(f'ES: {caps.endpoint_security_available}, DTrace: {caps.dtrace_available}')"
 # Expected: ES: False, DTrace: False (on default Mac with SIP on)
 # 2. Verify no crash; agent continues
 ```
@@ -213,7 +213,7 @@ test_spi_06_dyld_gates_on_spike_outcome PASSED
 **Manual verification:**
 ```bash
 # Check spike outcome:
-uv run python -c "from cua_overlay.spi.dyld_inject import is_dyld_inject_available; print(f'DYLD available: {is_dyld_inject_available()}')"
+uv run python -c "from basicctrl.spi.dyld_inject import is_dyld_inject_available; print(f'DYLD available: {is_dyld_inject_available()}')"
 
 # If available: verify dylib can inject
 # If unavailable: verify fallback to T1 AX works
@@ -254,7 +254,7 @@ test_spi_07_webkit_inspector_gates_correctly PASSED
 ```bash
 # Open Safari
 uv run python -c "
-from cua_overlay.spi.webkit_inspector import get_webkit_inspector_bridge
+from basicctrl.spi.webkit_inspector import get_webkit_inspector_bridge
 bridge = get_webkit_inspector_bridge()
 if bridge.available:
     print('✓ WebKit RemoteInspector available')
@@ -310,7 +310,7 @@ else:
 "
 
 # Check bridge status:
-uv run python -c "from cua_overlay.spi.imu import get_imu_bridge; bridge = get_imu_bridge(); print(f'IMU available: {bridge.available}')"
+uv run python -c "from basicctrl.spi.imu import get_imu_bridge; bridge = get_imu_bridge(); print(f'IMU available: {bridge.available}')"
 ```
 
 ---
@@ -427,7 +427,7 @@ Per Phase 6 design, verify correctness on your local Mac.
 ```bash
 uv run python3 <<'PY'
 import asyncio
-from cua_overlay.spi import probe_spi_capabilities
+from basicctrl.spi import probe_spi_capabilities
 
 async def test():
     caps = await probe_spi_capabilities()
@@ -455,8 +455,8 @@ PY
 ```bash
 uv run python3 <<'PY'
 import asyncio
-from cua_overlay.spi import probe_spi_capabilities
-from cua_overlay.spi.skylight import get_skylight_bridge
+from basicctrl.spi import probe_spi_capabilities
+from basicctrl.spi.skylight import get_skylight_bridge
 
 async def test():
     caps = await probe_spi_capabilities()
@@ -480,8 +480,8 @@ PY
 ```bash
 uv run python3 <<'PY'
 import asyncio
-from cua_overlay.spi import probe_spi_capabilities
-from cua_overlay.spi.ax_remote import get_ax_remote_bridge
+from basicctrl.spi import probe_spi_capabilities
+from basicctrl.spi.ax_remote import get_ax_remote_bridge
 
 async def test():
     caps = await probe_spi_capabilities()
@@ -505,8 +505,8 @@ PY
 ```bash
 uv run python3 <<'PY'
 import asyncio
-from cua_overlay.spi import probe_spi_capabilities
-from cua_overlay.spi.dyld_inject import get_dyld_inject_bridge
+from basicctrl.spi import probe_spi_capabilities
+from basicctrl.spi.dyld_inject import get_dyld_inject_bridge
 
 async def test():
     caps = await probe_spi_capabilities()
@@ -530,8 +530,8 @@ PY
 ```bash
 uv run python3 <<'PY'
 import asyncio
-from cua_overlay.spi import probe_spi_capabilities
-from cua_overlay.spi.imu import get_imu_bridge
+from basicctrl.spi import probe_spi_capabilities
+from basicctrl.spi.imu import get_imu_bridge
 
 async def test():
     caps = await probe_spi_capabilities()
@@ -562,7 +562,7 @@ PY
 ```bash
 uv run python3 <<'PY'
 import asyncio
-from cua_overlay.persist.durable_step import DurableExecutor
+from basicctrl.persist.durable_step import DurableExecutor
 
 async def test():
     executor = DurableExecutor()
@@ -706,7 +706,7 @@ If every box ticks, Phase 6 is ready for Phase 6-12 (final ship-gate checkpoint)
 
 **Verification:** 61 plans executed, 61 SUMMARY.md files committed, 6 PHASE-N-DEMO.md operator runbooks. All 79 requirements verified via integrated test suites (200+ tests total across phases). All ROADMAP success criteria met.
 
-**Next: Phase 6-12 (final ship-gate verification checkpoint) — operator signals approval, v1.0 tagged, cua-maximalist ready for production use.**
+**Next: Phase 6-12 (final ship-gate verification checkpoint) — operator signals approval, v1.0 tagged, basicCtrl ready for production use.**
 
 ---
 

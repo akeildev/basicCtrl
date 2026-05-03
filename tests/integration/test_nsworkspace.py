@@ -11,7 +11,7 @@ import subprocess
 
 import pytest
 
-from cua_overlay.verifier.nsworkspace import NSWorkspaceObserver
+from basicctrl.verifier.nsworkspace import NSWorkspaceObserver
 
 
 @pytest.mark.integration

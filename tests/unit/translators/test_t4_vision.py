@@ -15,9 +15,9 @@ from unittest.mock import patch
 
 import pytest
 
-from cua_overlay.state.graph import Source
-from cua_overlay.translators.base import TargetSpec
-from cua_overlay.translators.t4_vision import T4VisionTranslator
+from basicctrl.state.graph import Source
+from basicctrl.translators.base import TargetSpec
+from basicctrl.translators.t4_vision import T4VisionTranslator
 
 
 def test_tier_is_T4() -> None:
@@ -28,7 +28,7 @@ def test_no_screen2ax_or_macpaw_imports() -> None:
     """D-06 hard rule: no MacPaw/Screen2AX references in the module source."""
     src = (
         Path(__file__).parents[3]
-        / "cua_overlay"
+        / "basicctrl"
         / "translators"
         / "t4_vision.py"
     ).read_text()

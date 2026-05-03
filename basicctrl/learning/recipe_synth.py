@@ -19,7 +19,7 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.learning.schemas import (
+from basicctrl.learning.schemas import (
     ObservedAction,
     Recipe,
     RecipePrecondition,
@@ -119,7 +119,7 @@ class RecipeSynthesizer:
         names based on context clues (limited to Phase 4; Phase 5 adds smarter
         param detection).
         """
-        from cua_overlay.learning.schemas import RecipeParam
+        from basicctrl.learning.schemas import RecipeParam
 
         params = []
         type_count = 0

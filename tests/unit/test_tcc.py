@@ -1,4 +1,4 @@
-"""Unit tests for cua_overlay.profile.tcc (Plan 01-02 Task 2).
+"""Unit tests for basicctrl.profile.tcc (Plan 01-02 Task 2).
 
 Behavior tests per plan:
 1. test_check_returns_axisprocesstrusted: monkey-patch HIServices.AXIsProcessTrusted
@@ -19,9 +19,9 @@ import pytest
 import structlog
 from structlog.testing import LogCapture
 
-from cua_overlay.profile import classifier as classifier_mod
-from cua_overlay.profile.classifier import AppProfile
-from cua_overlay.profile.tcc import TCCMonitor
+from basicctrl.profile import classifier as classifier_mod
+from basicctrl.profile.classifier import AppProfile
+from basicctrl.profile.tcc import TCCMonitor
 
 
 @pytest.fixture

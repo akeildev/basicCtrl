@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel
 
-from cua_overlay.visualizer.models import ReplayFrameMetadata
+from basicctrl.visualizer.models import ReplayFrameMetadata
 
 
 class PerformanceMetrics(BaseModel, frozen=True):

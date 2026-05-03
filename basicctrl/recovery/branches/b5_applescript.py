@@ -32,16 +32,16 @@ from typing import TYPE_CHECKING, Optional
 import anyio
 import structlog
 
-from cua_overlay.recovery.branches import BranchBase
+from basicctrl.recovery.branches import BranchBase
 
 if TYPE_CHECKING:
-    from cua_overlay.actions.channels.base import ChannelOutcome
-    from cua_overlay.actions.channel_registry import ChannelRegistry
-    from cua_overlay.actions.idempotency import IdempotencyTokenStore
-    from cua_overlay.persist.session_writer import SessionWriter
-    from cua_overlay.recovery.classifier import FailureCtx
-    from cua_overlay.translators.registry import TranslatorRegistry
-    from cua_overlay.verifier.aggregator import Aggregator
+    from basicctrl.actions.channels.base import ChannelOutcome
+    from basicctrl.actions.channel_registry import ChannelRegistry
+    from basicctrl.actions.idempotency import IdempotencyTokenStore
+    from basicctrl.persist.session_writer import SessionWriter
+    from basicctrl.recovery.classifier import FailureCtx
+    from basicctrl.translators.registry import TranslatorRegistry
+    from basicctrl.verifier.aggregator import Aggregator
 
 
 class B5_AppleScriptFallback(BranchBase):
@@ -230,7 +230,7 @@ class B5_AppleScriptFallback(BranchBase):
             return None
 
         try:
-            from cua_overlay.translators.base import TargetSpec
+            from basicctrl.translators.base import TargetSpec
 
             target_spec = TargetSpec(key=target_key)
             as_target = await t3_translator.resolve(
@@ -290,7 +290,7 @@ class B5_AppleScriptFallback(BranchBase):
 
         # Step 7: Fire C4 channel
         try:
-            from cua_overlay.state.causal_dag import ActionCanonical
+            from basicctrl.state.causal_dag import ActionCanonical
             import time
 
             action = ActionCanonical(

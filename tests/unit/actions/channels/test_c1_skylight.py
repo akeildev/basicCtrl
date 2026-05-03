@@ -24,13 +24,13 @@ from unittest.mock import patch
 import anyio
 import pytest
 
-from cua_overlay.actions.channels import c1_skylight
-from cua_overlay.actions.channels.c1_skylight import C1SkyLightChannel
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TranslatorTarget
+from basicctrl.actions.channels import c1_skylight
+from basicctrl.actions.channels.c1_skylight import C1SkyLightChannel
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.persist.session_writer import SessionWriter
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TranslatorTarget
 
 
 # ─── helpers ────────────────────────────────────────────────────────────────

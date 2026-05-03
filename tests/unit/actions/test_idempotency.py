@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.actions.idempotency import ChannelClaim, IdempotencyTokenStore
-from cua_overlay.persist.session_writer import SessionWriter
+from basicctrl.actions.idempotency import ChannelClaim, IdempotencyTokenStore
+from basicctrl.persist.session_writer import SessionWriter
 
 
 @pytest.fixture

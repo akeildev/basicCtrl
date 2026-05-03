@@ -17,7 +17,7 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
+from basicctrl.state.causal_dag import ActionCanonical, HoarePre
 
 
 class AppleFMOutput(BaseModel):

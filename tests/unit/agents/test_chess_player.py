@@ -6,7 +6,7 @@ import random
 import chess
 import pytest
 
-from cua_overlay.agents.chess_player import ChessAgent
+from basicctrl.agents.chess_player import ChessAgent
 
 
 @pytest.mark.unit

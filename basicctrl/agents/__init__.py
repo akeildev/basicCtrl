@@ -1,4 +1,4 @@
-"""Agents — task-specific drivers that compose cua-maximalist primitives.
+"""Agents — task-specific drivers that compose basicCtrl primitives.
 
 Each agent wraps a domain (Chess, Calculator+TextEdit, etc.) and exposes a
 loop that calls the MCP healing tools to drive the target app. Agents are

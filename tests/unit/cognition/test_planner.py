@@ -6,14 +6,14 @@ Per D-07: WorldModelPredictor heuristic predictions.
 """
 import pytest
 
-pytest.importorskip("cua_overlay.cognition.planner")
+pytest.importorskip("basicctrl.cognition.planner")
 
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from cua_overlay.cognition.planner import Planner, WorldModelPredictor
-from cua_overlay.cognition.schemas import PlanCandidate
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.cognition.planner import Planner, WorldModelPredictor
+from basicctrl.cognition.schemas import PlanCandidate
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 @pytest.mark.unit

@@ -4,10 +4,10 @@ import json
 import pytest
 
 # Wave 0: soft import, skip if not ready
-pytest.importorskip("cua_overlay.visualizer")
+pytest.importorskip("basicctrl.visualizer")
 
-from cua_overlay.observability.session_storage import SessionWriter
-from cua_overlay.visualizer.models import (
+from basicctrl.observability.session_storage import SessionWriter
+from basicctrl.visualizer.models import (
     ActionChannel,
     ActionTier,
     CounterfactualState,
@@ -182,7 +182,7 @@ def test_hud_action_history_snapshot():
     - Entries ordered by recency (oldest first, newest last)
     - Serialization includes all fields
     """
-    from cua_overlay.visualizer.hud_driver import HUDDriver
+    from basicctrl.visualizer.hud_driver import HUDDriver
 
     driver = HUDDriver()
     driver.set_session_metadata(
@@ -268,7 +268,7 @@ def test_hotkey_hud_toggle():
     - toggle_hud action serializable
     - Timestamp in nanoseconds
     """
-    from cua_overlay.visualizer.models import HotKeyCommand
+    from basicctrl.visualizer.models import HotKeyCommand
     from datetime import datetime, timezone
 
     # Simulate Cmd+Shift+V hotkey event

@@ -29,7 +29,7 @@ Run
 
 .. code-block:: bash
 
-   uv run python -m cua_overlay.demo.calculator_click
+   uv run python -m basicctrl.demo.calculator_click
 
 Prerequisites: Calculator launchable, Accessibility TCC granted to the
 Python interpreter, Postgres listening (optional — checkpoint failures
@@ -53,18 +53,18 @@ from typing import Any, Optional
 import structlog
 from rich.console import Console
 
-from cua_overlay.ax import (
+from basicctrl.ax import (
     TokenBucket,
     has_blocking_modal,
     walk_subtree,
 )
-from cua_overlay.ax.observer import AXEventBridge
-from cua_overlay.log import configure as configure_logging
-from cua_overlay.persist import DurableExecutor, SessionWriter
-from cua_overlay.profile import classify
-from cua_overlay.state import Source, StateGraph, UIElement
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
-from cua_overlay.verifier import (
+from basicctrl.ax.observer import AXEventBridge
+from basicctrl.log import configure as configure_logging
+from basicctrl.persist import DurableExecutor, SessionWriter
+from basicctrl.profile import classify
+from basicctrl.state import Source, StateGraph, UIElement
+from basicctrl.state.causal_dag import ActionCanonical, HoarePre
+from basicctrl.verifier import (
     Aggregator,
     AXObserverManager,
     KqueueProcObserver,
@@ -283,7 +283,7 @@ def _coords_to_bbox(position: Any, size: Any) -> "Bbox":
     Real AX positions/sizes are AXValueRef wrappers around CGPoint/CGSize,
     NOT plain tuples. Use ``AXValueGetValue`` to extract the numeric struct.
     """
-    from cua_overlay.state.graph import Bbox as _Bbox
+    from basicctrl.state.graph import Bbox as _Bbox
 
     if position is None or size is None:
         return _Bbox(x=0.0, y=0.0, w=0.0, h=0.0)

@@ -25,15 +25,15 @@ from typing import Optional
 
 import pytest
 
-from cua_overlay.learning.recipe_synth import RecipeSynthesizer
-from cua_overlay.learning.schemas import (
+from basicctrl.learning.recipe_synth import RecipeSynthesizer
+from basicctrl.learning.schemas import (
     ObservedAction,
     Recipe,
     RecipeParam,
     RecipePrecondition,
     RecipeStep,
 )
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.state.causal_dag import ActionCanonical
 
 pytestmark = pytest.mark.integration
 

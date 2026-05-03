@@ -1,7 +1,7 @@
 """ACT-03 / D-19 — DuplicateReceipt 2s ring buffer behavior tests."""
 from __future__ import annotations
 
-from cua_overlay.actions.duplicate_receipt import DuplicateReceipt
+from basicctrl.actions.duplicate_receipt import DuplicateReceipt
 
 
 def test_first_record_not_duplicate() -> None:

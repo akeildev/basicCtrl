@@ -1,4 +1,4 @@
-"""Unit tests for cua_overlay.ax.errors typed exception hierarchy.
+"""Unit tests for basicctrl.ax.errors typed exception hierarchy.
 
 Verifies that ``axerror_from_code(code)`` returns the right typed subclass for
 each native AX error code, sourced from PyObjC HIServices's live exports of
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from cua_overlay.ax.errors import (
+from basicctrl.ax.errors import (
     AXActionUnsupportedError,
     AXAPIDisabledError,
     AXAttributeUnsupportedError,

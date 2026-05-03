@@ -29,10 +29,10 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.ax.walker import walk_subtree
-from cua_overlay.demo.calculator_click import run_demo
-from cua_overlay.profile.classifier import AppProfile
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.ax.walker import walk_subtree
+from basicctrl.demo.calculator_click import run_demo
+from basicctrl.profile.classifier import AppProfile
 
 pytestmark = [
     pytest.mark.integration,
@@ -179,7 +179,7 @@ async def test_all_six_success_criteria(capsys) -> None:
     # subprocess); Plan 08's tests/integration/test_mcp_proxy.py does that.
     # Here we verify the surface is importable + click_with_healing exists,
     # and that the cua-driver binary is available (or skip this leg).
-    from cua_overlay.mcp_server import healing_tools, main as mcp_main, proxy
+    from basicctrl.mcp_server import healing_tools, main as mcp_main, proxy
 
     assert hasattr(healing_tools, "register_healing_tools"), (
         "SC-6 FAIL: register_healing_tools missing from healing_tools module"

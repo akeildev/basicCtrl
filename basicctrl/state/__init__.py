@@ -7,12 +7,12 @@ this module.
 """
 from __future__ import annotations
 
-from cua_overlay.state.episodic import (
+from basicctrl.state.episodic import (
     EpisodicHit,
     EpisodicMemory,
     EpisodicQuery,
 )
-from cua_overlay.state.graph import (
+from basicctrl.state.graph import (
     Bbox,
     Capability,
     Edge,

@@ -9,8 +9,8 @@ Per PLAN 04-02:
 import pytest
 from unittest import mock
 
-from cua_overlay.cognition.apple_fm import AppleFMClassifier
-from cua_overlay.cognition.schemas import AppleFMOutput
+from basicctrl.cognition.apple_fm import AppleFMClassifier
+from basicctrl.cognition.schemas import AppleFMOutput
 
 
 def _make_classifier_with_mock(return_value: str) -> tuple:
@@ -33,7 +33,7 @@ class TestAppleFMClassifier:
         """Test 1: Enum validation passes on valid output (T1, T2, retry, etc.)."""
         classifier, original = _make_classifier_with_mock("T1")
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is not None
             assert isinstance(result, AppleFMOutput)
@@ -46,7 +46,7 @@ class TestAppleFMClassifier:
         """Test all allowed enum values pass validation."""
         valid_outputs = ["T1", "T2", "T3", "T4", "T5", "retry", "escalate", "abort"]
 
-        with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+        with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
             for output_val in valid_outputs:
                 classifier, original = _make_classifier_with_mock(output_val)
                 try:
@@ -62,7 +62,7 @@ class TestAppleFMClassifier:
         """Test 2: JSON response rejected (P6 hallucination marker)."""
         classifier, original = _make_classifier_with_mock('{"translator": "T1", "confidence": 0.95}')
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             # P6 gate should reject JSON
             assert result is None
@@ -74,7 +74,7 @@ class TestAppleFMClassifier:
         """Test P6: quoted strings also rejected (alternative JSON marker)."""
         classifier, original = _make_classifier_with_mock('"T1"')
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is None
         finally:
@@ -85,7 +85,7 @@ class TestAppleFMClassifier:
         """Test: Invalid enum value rejected (not in allowed list)."""
         classifier, original = _make_classifier_with_mock("T99")
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is None
         finally:
@@ -102,7 +102,7 @@ class TestAppleFMClassifier:
 
         classifier._call_apple_fm = mock_call_timeout
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is None
         finally:
@@ -113,7 +113,7 @@ class TestAppleFMClassifier:
         """Test: SDK unavailable (ImportError) returns None gracefully."""
         classifier = AppleFMClassifier()
 
-        with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", False):
+        with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", False):
             result = await classifier.classify("test state", "route_translator")
 
         assert result is None
@@ -144,7 +144,7 @@ class TestAppleFMClassifier:
         """Test: Leading/trailing whitespace stripped before validation."""
         classifier, original = _make_classifier_with_mock("  T2  \n")
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is not None
             assert result.output == "T2"
@@ -156,7 +156,7 @@ class TestAppleFMClassifier:
         """Test: Output matched case-insensitively (enum uppercase)."""
         classifier, original = _make_classifier_with_mock("t3")
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is not None
             assert result.output == "T3"
@@ -168,7 +168,7 @@ class TestAppleFMClassifier:
         """Test: Empty response handled gracefully."""
         classifier, original = _make_classifier_with_mock("")
         try:
-            with mock.patch("cua_overlay.cognition.apple_fm.HAS_APPLE_FM", True):
+            with mock.patch("basicctrl.cognition.apple_fm.HAS_APPLE_FM", True):
                 result = await classifier.classify("test state", "route_translator")
             assert result is None
         finally:

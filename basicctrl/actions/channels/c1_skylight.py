@@ -21,10 +21,10 @@ from typing import Literal
 import anyio
 import structlog
 
-from cua_overlay.actions.channels.base import ChannelOutcome
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TranslatorTarget
+from basicctrl.actions.channels.base import ChannelOutcome
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TranslatorTarget
 
 
 _log = structlog.get_logger()

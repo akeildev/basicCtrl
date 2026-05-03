@@ -2,7 +2,7 @@
 
 Browser-harness §3 (deep-study) — `daemon.attach_first_page()` filters
 out chrome://omnibox-popup and creates about:blank when no real pages
-exist. The cua-maximalist analogue for native macOS apps:
+exist. The basicCtrl analogue for native macOS apps:
 
   - Filter out minimized / hidden windows that look attached but won't
     receive AX events
@@ -25,7 +25,7 @@ from typing import Any, Awaitable, Callable, Optional, TypeVar
 
 import structlog
 
-from cua_overlay.ax.errors import (
+from basicctrl.ax.errors import (
     AXCannotCompleteError,
     AXError,
     kAXErrorCannotComplete,

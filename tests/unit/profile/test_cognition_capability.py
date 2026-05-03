@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cua_overlay.profile.classifier import _probe_cognition_capable
+from basicctrl.profile.classifier import _probe_cognition_capable
 
 
 @pytest.mark.unit
@@ -99,7 +99,7 @@ class TestAppProfileCognitionCapable:
     @pytest.mark.asyncio
     async def test_appprofile_has_cognition_capable_field(self):
         """Test 6: AppProfile model includes cognition_capable field."""
-        from cua_overlay.profile.classifier import AppProfile
+        from basicctrl.profile.classifier import AppProfile
         from datetime import datetime, timezone
 
         # Create an AppProfile instance
@@ -129,7 +129,7 @@ class TestAppProfileCognitionCapable:
     @pytest.mark.asyncio
     async def test_appprofile_cognition_capable_default_none(self):
         """Test 7: AppProfile.cognition_capable defaults to None if not provided."""
-        from cua_overlay.profile.classifier import AppProfile
+        from basicctrl.profile.classifier import AppProfile
         from datetime import datetime, timezone
 
         # Create an AppProfile without specifying cognition_capable
@@ -158,7 +158,7 @@ class TestAppProfileCognitionCapable:
     @pytest.mark.asyncio
     async def test_appprofile_cognition_capable_false(self):
         """Test 8: AppProfile.cognition_capable can be explicitly set to False."""
-        from cua_overlay.profile.classifier import AppProfile
+        from basicctrl.profile.classifier import AppProfile
         from datetime import datetime, timezone
 
         # Create an AppProfile with cognition_capable=False

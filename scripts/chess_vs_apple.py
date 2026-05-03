@@ -31,7 +31,7 @@ import chess.engine
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from cua_overlay.agents.chess_player import ChessAgent
+from basicctrl.agents.chess_player import ChessAgent
 
 CHESS_BUNDLE = "com.apple.Chess"
 
@@ -198,7 +198,7 @@ async def click_element(
     """Click a Chess.app square via the proxied `click` tool.
 
     The proxy now builds a wrapper whose Python signature mirrors the
-    upstream tool's JSON Schema (cua_overlay.mcp_server.dynamic_wrapper),
+    upstream tool's JSON Schema (basicctrl.mcp_server.dynamic_wrapper),
     so `session.call_tool("click", {pid, window_id, element_index})` works.
     Action-class tools also run through the verifier wrap, so we get a
     HoarePost confidence on every click.
@@ -263,7 +263,7 @@ async def play_loop(
 
     server_params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "cua_overlay.mcp_server"],
+        args=["-m", "basicctrl.mcp_server"],
         env=dict(os.environ),
     )
 
@@ -342,7 +342,7 @@ async def play_loop(
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Stockfish vs Chess.app — driven by cua-maximalist"
+        description="Stockfish vs Chess.app — driven by basicCtrl"
     )
     p.add_argument("--plies", type=int, default=6, help="Move pairs (default 6)")
     p.add_argument("--think-time", type=float, default=0.3)

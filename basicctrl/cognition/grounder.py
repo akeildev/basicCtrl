@@ -17,7 +17,7 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.cognition.schemas import EnsembleVote
+from basicctrl.cognition.schemas import EnsembleVote
 
 _log = structlog.get_logger()
 

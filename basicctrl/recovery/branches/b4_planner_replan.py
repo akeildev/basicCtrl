@@ -18,17 +18,17 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import structlog
 
-from cua_overlay.recovery.branches import BranchBase
+from basicctrl.recovery.branches import BranchBase
 
 if TYPE_CHECKING:
-    from cua_overlay.actions.channels.base import ChannelOutcome
-    from cua_overlay.actions.idempotency import IdempotencyTokenStore
-    from cua_overlay.cognition.critic import Critic
-    from cua_overlay.cognition.planner import Planner
-    from cua_overlay.persist.session_writer import SessionWriter
-    from cua_overlay.recovery.classifier import FailureCtx
-    from cua_overlay.state.causal_dag import ActionCanonical
-    from cua_overlay.state.graph import StateGraph
+    from basicctrl.actions.channels.base import ChannelOutcome
+    from basicctrl.actions.idempotency import IdempotencyTokenStore
+    from basicctrl.cognition.critic import Critic
+    from basicctrl.cognition.planner import Planner
+    from basicctrl.persist.session_writer import SessionWriter
+    from basicctrl.recovery.classifier import FailureCtx
+    from basicctrl.state.causal_dag import ActionCanonical
+    from basicctrl.state.graph import StateGraph
 
 PlannerFactory = Callable[[Optional[Any]], Optional[Any]]
 
@@ -214,7 +214,7 @@ class B4RecoveryBranch(BranchBase):
 
                         # Coerce to ActionCanonical if needed (Phase 4 allows dicts)
                         if isinstance(first_step, dict):
-                            from cua_overlay.state.causal_dag import ActionCanonical
+                            from basicctrl.state.causal_dag import ActionCanonical
                             import time
 
                             candidate_action = ActionCanonical(

@@ -5,7 +5,7 @@ The pattern is the standard ``tempfile + os.replace`` dance:
 ``os.replace`` is atomic on the same filesystem, so readers either see the
 previous good file or the new good file — never a half-written one.
 
-Re-exposed at ``cua_overlay.persist`` so Plan 02 (``app_profile.cache``),
+Re-exposed at ``basicctrl.persist`` so Plan 02 (``app_profile.cache``),
 Plan 08 (MCP startup snapshot), and Plan 09 (Calculator demo final snapshot)
 all share the same primitive.
 """

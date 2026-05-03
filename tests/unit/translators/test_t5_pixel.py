@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
-from cua_overlay.translators.t5_pixel import T5PixelTranslator
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.translators.t5_pixel import T5PixelTranslator
 
 
 def _fake_t4_target() -> TranslatorTarget:

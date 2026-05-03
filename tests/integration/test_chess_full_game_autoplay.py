@@ -1,6 +1,6 @@
 """J2 — Chess autoplayer integration smoke.
 
-Drives Chess.app for a handful of moves through the cua-maximalist MCP
+Drives Chess.app for a handful of moves through the basicCtrl MCP
 server. Gated by `CUA_RUN_CHESS_AUTOPLAY=1` so it never fires in normal
 unit runs (Chess.app is not headless and TCC permissions are required).
 

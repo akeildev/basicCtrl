@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.replay.diff import (
+from basicctrl.replay.diff import (
     DiffRow,
     SessionDiffer,
     lcs_alignment,

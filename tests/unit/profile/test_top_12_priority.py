@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.profile.classifier import classify
-from cua_overlay.profile.known_apps import KNOWN_APPS
+from basicctrl.profile.classifier import classify
+from basicctrl.profile.known_apps import KNOWN_APPS
 
 
 # D-21 verified bundle IDs (top-12). Order matches CONTEXT.md D-21 table.
@@ -47,7 +47,7 @@ pytestmark = pytest.mark.asyncio
 def tmp_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Override the disk cache to tmp_path so tests don't pollute ~/.cua/profiles."""
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier._CACHE_DIR_OVERRIDE", tmp_path
+        "basicctrl.profile.classifier._CACHE_DIR_OVERRIDE", tmp_path
     )
     return tmp_path
 
@@ -66,7 +66,7 @@ def fake_meta(monkeypatch: pytest.MonkeyPatch) -> None:
         }
 
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier.probe_bundle_metadata", _fake
+        "basicctrl.profile.classifier.probe_bundle_metadata", _fake
     )
 
 
@@ -83,21 +83,21 @@ def fake_probes(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _cdp(pid: int):
         return None
 
-    monkeypatch.setattr("cua_overlay.profile.classifier.probe_ax_rich", _ax_rich)
+    monkeypatch.setattr("basicctrl.profile.classifier.probe_ax_rich", _ax_rich)
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier.probe_ax_observer_works", _ax_observer
+        "basicctrl.profile.classifier.probe_ax_observer_works", _ax_observer
     )
-    monkeypatch.setattr("cua_overlay.profile.classifier.probe_cdp_ports", _cdp)
+    monkeypatch.setattr("basicctrl.profile.classifier.probe_cdp_ports", _cdp)
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier.probe_electron",
+        "basicctrl.profile.classifier.probe_electron",
         lambda path: False,
     )
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier.probe_applescript_sdef",
+        "basicctrl.profile.classifier.probe_applescript_sdef",
         lambda info_plist: False,
     )
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier.probe_tauri_or_wails",
+        "basicctrl.profile.classifier.probe_tauri_or_wails",
         lambda path, info_plist: False,
     )
 
@@ -112,7 +112,7 @@ def fake_tcc(monkeypatch: pytest.MonkeyPatch) -> None:
     attribute that monkeypatch cannot restore correctly, which leaks into
     sibling tests (test_tcc.py::test_classify_calls_tcc_check_at_start).
     """
-    from cua_overlay.profile.tcc import TCCMonitor
+    from basicctrl.profile.tcc import TCCMonitor
 
     async def _granted(self) -> bool:
         return True
@@ -177,7 +177,7 @@ async def test_pages_version_drift_warning(stubbed_classify, monkeypatch) -> Non
         }
 
     monkeypatch.setattr(
-        "cua_overlay.profile.classifier.probe_bundle_metadata", _new_meta
+        "basicctrl.profile.classifier.probe_bundle_metadata", _new_meta
     )
     profile = await classify("com.apple.iWork.Pages", 1234)
     # Fell through to live derivation; bundled priority NOT applied.
@@ -241,7 +241,7 @@ async def test_no_silent_relaunch_for_electron_apps() -> None:
     a Slack/Cursor/Obsidian restart automatically."""
     src = (
         Path(__file__).parents[3]
-        / "cua_overlay"
+        / "basicctrl"
         / "profile"
         / "classifier.py"
     ).read_text()

@@ -9,12 +9,12 @@ Verifies that episodic memory (FAISS vector store) can:
 
 Uses a temporary FAISS file path so each run gets a fresh vector store.
 
-Schema reference (cua_overlay/learning/schemas.py):
+Schema reference (basicctrl/learning/schemas.py):
   Recipe(name, app_bundle_id, params, preconditions, steps, success_criteria, created_ts)
   RecipeStep(idx, action, preconditions, on_failure)
   RecipePrecondition(expression, expected_value, confidence)
 
-EpisodicMemory API (cua_overlay/state/episodic.py):
+EpisodicMemory API (basicctrl/state/episodic.py):
   EpisodicMemory(faiss_path=..., embedding_dim=384)
   index_recipe(recipe, app_bundle_id, task_class, state_fingerprint, embedding, source_text)
   lookup(query: EpisodicQuery) -> list[EpisodicHit]
@@ -40,9 +40,9 @@ pytestmark = [
 
 
 def _build_recipe(name: str = "calculator_add") -> "Recipe":
-    """Build a minimal valid Recipe per the actual cua_overlay.learning schema."""
-    from cua_overlay.learning import Recipe, RecipeStep
-    from cua_overlay.state.causal_dag import ActionCanonical
+    """Build a minimal valid Recipe per the actual basicctrl.learning schema."""
+    from basicctrl.learning import Recipe, RecipeStep
+    from basicctrl.state.causal_dag import ActionCanonical
 
     action = ActionCanonical(
         id=f"act-{uuid.uuid4().hex[:8]}",
@@ -82,7 +82,7 @@ def temp_faiss_path():
 @pytest.mark.asyncio
 async def test_episodic_memory_index_and_lookup(temp_faiss_path: Path) -> None:
     """Index a recipe, lookup with same embedding → expect ≥1 hit at high similarity."""
-    from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
+    from basicctrl.state.episodic import EpisodicMemory, EpisodicQuery
 
     memory = EpisodicMemory(faiss_path=str(temp_faiss_path))
     recipe = _build_recipe("calculator_add_test1")
@@ -120,7 +120,7 @@ async def test_episodic_memory_index_and_lookup(temp_faiss_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_episodic_memory_multiple_recipes(temp_faiss_path: Path) -> None:
     """Index two recipes; lookup recovers the matching one preferentially."""
-    from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
+    from basicctrl.state.episodic import EpisodicMemory, EpisodicQuery
 
     memory = EpisodicMemory(faiss_path=str(temp_faiss_path))
 

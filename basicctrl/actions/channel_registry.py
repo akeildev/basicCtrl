@@ -20,8 +20,8 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.actions.channels.base import Channel
-from cua_overlay.actions.race_policy import RacePolicy
+from basicctrl.actions.channels.base import Channel
+from basicctrl.actions.race_policy import RacePolicy
 
 
 _log = structlog.get_logger()
@@ -86,7 +86,7 @@ class ChannelRegistry:
         """
         # SPI-optional channels (Wave 1+)
         if capabilities.skylight_available:
-            from cua_overlay.actions.channels.c1_skylight_spi import C1SkyLightSPI
+            from basicctrl.actions.channels.c1_skylight_spi import C1SkyLightSPI
             self.register(C1SkyLightSPI(capabilities=capabilities))
             _log.info("registered_c1_spi_channel")
 

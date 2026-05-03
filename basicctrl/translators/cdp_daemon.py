@@ -3,7 +3,7 @@
 Pattern ported from `~/browser-harness/daemon.py:99-187` per
 ULTRAPLAN browser-harness integration §F.
 
-Replaces cua-maximalist's per-fire `async with CDPClient(ws_url) as cdp:`
+Replaces basicCtrl's per-fire `async with CDPClient(ws_url) as cdp:`
 in T2/C5 with one persistent connection per browser. Saves ~10-20ms
 socket handshake per action and unlocks:
 

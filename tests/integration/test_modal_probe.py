@@ -12,11 +12,11 @@ from typing import Any
 
 import pytest
 
-from cua_overlay.ax import element as element_module
-from cua_overlay.ax import modal_probe as modal_probe_module
-from cua_overlay.ax.element import AXUIElementWrapper, _CACHE_TTL_SECONDS
-from cua_overlay.ax.modal_probe import _MAX_WINDOWS_TO_CHECK, has_blocking_modal
-from cua_overlay.ax.rate_limit import TokenBucket
+from basicctrl.ax import element as element_module
+from basicctrl.ax import modal_probe as modal_probe_module
+from basicctrl.ax.element import AXUIElementWrapper, _CACHE_TTL_SECONDS
+from basicctrl.ax.modal_probe import _MAX_WINDOWS_TO_CHECK, has_blocking_modal
+from basicctrl.ax.rate_limit import TokenBucket
 
 
 # ---------------------------------------------------------------------------

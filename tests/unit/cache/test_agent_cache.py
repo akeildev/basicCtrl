@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cua_overlay.cache.agent_cache import AgentCache
-from cua_overlay.cache.cassette import Cassette, CassetteStep
-from cua_overlay.cache.key import compute_cache_key
+from basicctrl.cache.agent_cache import AgentCache
+from basicctrl.cache.cassette import Cassette, CassetteStep
+from basicctrl.cache.key import compute_cache_key
 
 
 class TestAgentCachePutGet:

@@ -21,11 +21,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cua_overlay.cache.cassette import Cassette, CassetteStep
-from cua_overlay.cache.replay import CassetteReplayEngine
-from cua_overlay.cache.writeback import WriteBack, StreamCache
-from cua_overlay.recovery.heal_event import HealEvent, LocatorTier
-from cua_overlay.state.causal_dag import (
+from basicctrl.cache.cassette import Cassette, CassetteStep
+from basicctrl.cache.replay import CassetteReplayEngine
+from basicctrl.cache.writeback import WriteBack, StreamCache
+from basicctrl.recovery.heal_event import HealEvent, LocatorTier
+from basicctrl.state.causal_dag import (
     ActionCanonical,
     HoarePost,
     HoarePre,

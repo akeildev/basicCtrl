@@ -35,11 +35,11 @@ from mcp.client.session import ClientSession
 from mcp.server.fastmcp import FastMCP
 from mcp.types import Tool
 
-from cua_overlay.mcp_server.dynamic_wrapper import build_dynamic_wrapper
-from cua_overlay.mcp_server.main import ProxyDeps
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
-from cua_overlay.state.graph import Bbox, UIElement
-from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap
+from basicctrl.mcp_server.dynamic_wrapper import build_dynamic_wrapper
+from basicctrl.mcp_server.main import ProxyDeps
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.state.graph import Bbox, UIElement
+from basicctrl.verifier.ensemble.l1_cheap import L1Cheap
 
 
 # ACTION_CLASS_TOOLS — verbatim per Plan 01-08 ``<interfaces>`` block. Maps every

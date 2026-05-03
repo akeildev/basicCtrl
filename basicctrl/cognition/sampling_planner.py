@@ -16,14 +16,14 @@ from typing import TYPE_CHECKING, Any, Optional
 import structlog
 from mcp import types as mcp_types
 
-from cua_overlay.cognition.exceptions import CognitionDisabledError
-from cua_overlay.cognition.schemas import PlanCandidate
+from basicctrl.cognition.exceptions import CognitionDisabledError
+from basicctrl.cognition.schemas import PlanCandidate
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import Context
 
-    from cua_overlay.state.episodic import EpisodicMemory, EpisodicQuery
-    from cua_overlay.state.graph import StateGraph
+    from basicctrl.state.episodic import EpisodicMemory, EpisodicQuery
+    from basicctrl.state.graph import StateGraph
 
 
 log = structlog.get_logger(__name__)
@@ -160,7 +160,7 @@ class MCPSamplingPlanner:
         """Return per-app skill markdown for `app_bundle_id`, capped to a
         reasonable size. Empty string when no skills are filed for the app.
 
-        Skills live at `cua_overlay/skills/<bundle_id>/*.md`. Originally
+        Skills live at `basicctrl/skills/<bundle_id>/*.md`. Originally
         loader.py was dead code per its README — α3 wires it into planner
         prompts so the planner has concrete prior knowledge about the app
         (URL patterns, stable selectors, framework quirks, traps) instead
@@ -169,7 +169,7 @@ class MCPSamplingPlanner:
         if not app_bundle_id or app_bundle_id == "?":
             return ""
         try:
-            from cua_overlay.skills.loader import read_all_skills
+            from basicctrl.skills.loader import read_all_skills
 
             blob = read_all_skills(app_bundle_id)
         except Exception as exc:  # noqa: BLE001

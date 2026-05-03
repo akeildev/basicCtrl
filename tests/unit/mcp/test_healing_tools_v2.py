@@ -41,9 +41,9 @@ class _FakeFastMCP:
 @pytest.fixture
 def fake_proxy_with_tools():
     """Spin up the 6 Phase 2 tools against a fake FastMCP + mocked RaceOrchestrator."""
-    from cua_overlay.actions.race_policy import RacePolicy
-    from cua_overlay.mcp_server.healing_tools import register_healing_tools
-    from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
+    from basicctrl.actions.race_policy import RacePolicy
+    from basicctrl.mcp_server.healing_tools import register_healing_tools
+    from basicctrl.state.causal_dag import ActionCanonical, HoarePost
 
     proxy = _FakeFastMCP()
 
@@ -340,9 +340,9 @@ async def test_targetless_verifier_reads_upstream_iserror():
     (target-less actions can't diff against a target element), the response
     must use upstream.isError as the truth signal — `not isError` → verified.
     """
-    from cua_overlay.actions.race_policy import RacePolicy
-    from cua_overlay.mcp_server.healing_tools import register_healing_tools
-    from cua_overlay.state.causal_dag import HoarePost
+    from basicctrl.actions.race_policy import RacePolicy
+    from basicctrl.mcp_server.healing_tools import register_healing_tools
+    from basicctrl.state.causal_dag import HoarePost
 
     proxy = _FakeFastMCP()
 
@@ -395,9 +395,9 @@ async def test_targetless_verifier_reads_upstream_iserror():
 async def test_targetless_verifier_respects_upstream_iserror_true():
     """Inverse: when upstream.isError=True, do NOT silently mark verified.
     The override only fires on the success path — failures still surface."""
-    from cua_overlay.actions.race_policy import RacePolicy
-    from cua_overlay.mcp_server.healing_tools import register_healing_tools
-    from cua_overlay.state.causal_dag import HoarePost
+    from basicctrl.actions.race_policy import RacePolicy
+    from basicctrl.mcp_server.healing_tools import register_healing_tools
+    from basicctrl.state.causal_dag import HoarePost
 
     proxy = _FakeFastMCP()
     unhappy_post = HoarePost(
@@ -510,10 +510,10 @@ async def _build_proxy_with_recovery(verified: bool):
     """Async helper — spin up healing tools with a configurable verified flag
     and a mocked RecoveryOrchestrator. Async so it can be awaited from inside
     pytest-asyncio's event loop (asyncio.run() can't be called there)."""
-    from cua_overlay.actions.race_policy import RacePolicy
-    from cua_overlay.actions.channels.base import ChannelOutcome
-    from cua_overlay.mcp_server.healing_tools import register_healing_tools
-    from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
+    from basicctrl.actions.race_policy import RacePolicy
+    from basicctrl.actions.channels.base import ChannelOutcome
+    from basicctrl.mcp_server.healing_tools import register_healing_tools
+    from basicctrl.state.causal_dag import ActionCanonical, HoarePost
 
     proxy = _FakeFastMCP()
     upstream = MagicMock()

@@ -15,8 +15,8 @@ import time
 
 import pytest
 
-from cua_overlay.state.causal_dag import HoarePost
-from cua_overlay.verifier.ensemble.l3_llm import L3Contract, L3Stub
+from basicctrl.state.causal_dag import HoarePost
+from basicctrl.verifier.ensemble.l3_llm import L3Contract, L3Stub
 
 
 # ----------------------------------------------------------------- Test 1

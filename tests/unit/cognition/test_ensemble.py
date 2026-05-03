@@ -2,8 +2,8 @@
 import pytest
 from unittest.mock import Mock
 
-from cua_overlay.cognition.ensemble import EnsembleVotingEngine
-from cua_overlay.cognition.schemas import AppleFMOutput
+from basicctrl.cognition.ensemble import EnsembleVotingEngine
+from basicctrl.cognition.schemas import AppleFMOutput
 
 
 @pytest.mark.unit

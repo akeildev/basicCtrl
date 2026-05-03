@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cua_overlay.recovery.circuit_breaker import CircuitBreaker, BreakState
-from cua_overlay.profile.classifier import AppProfile
+from basicctrl.recovery.circuit_breaker import CircuitBreaker, BreakState
+from basicctrl.profile.classifier import AppProfile
 
 
 @pytest.fixture
@@ -136,7 +136,7 @@ async def test_circuit_breaker_resets_after_60s(
             return future_time
 
     # Patch datetime in circuit_breaker module
-    monkeypatch.setattr("cua_overlay.recovery.circuit_breaker.datetime", MockDatetime)
+    monkeypatch.setattr("basicctrl.recovery.circuit_breaker.datetime", MockDatetime)
 
     # Record second failure (should reset count to 1)
     result = await circuit_breaker.record_failure(bundle_id, target_key, None)

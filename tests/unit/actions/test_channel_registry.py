@@ -6,12 +6,12 @@ from typing import Literal, Optional
 import anyio
 import pytest
 
-from cua_overlay.actions.channel_registry import CHANNEL_TO_TIER_DEFAULT, ChannelRegistry, TIER_TO_CHANNEL_DEFAULT
-from cua_overlay.actions.channels.base import Channel, ChannelOutcome
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.actions.race_policy import RacePolicy
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TranslatorTarget
+from basicctrl.actions.channel_registry import CHANNEL_TO_TIER_DEFAULT, ChannelRegistry, TIER_TO_CHANNEL_DEFAULT
+from basicctrl.actions.channels.base import Channel, ChannelOutcome
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.actions.race_policy import RacePolicy
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TranslatorTarget
 
 
 class _FakeChannel:

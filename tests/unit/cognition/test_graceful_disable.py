@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 
-from cua_overlay.cognition import (
+from basicctrl.cognition import (
     CognitionDisabledError,
     Planner,
     VerifierLLM,

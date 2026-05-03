@@ -16,7 +16,7 @@ from typing import Deque
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cua_overlay.state.graph import Edge, EdgeKind, StateGraph, UIElement
+from basicctrl.state.graph import Edge, EdgeKind, StateGraph, UIElement
 
 
 class StateSnapshot(BaseModel):

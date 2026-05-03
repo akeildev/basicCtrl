@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING, Optional
 import structlog
 
 if TYPE_CHECKING:
-    from cua_overlay.state.causal_dag import ActionCanonical, StateGraph
+    from basicctrl.state.causal_dag import ActionCanonical, StateGraph
 
-from cua_overlay.cognition.schemas import SpeculativeDraft
+from basicctrl.cognition.schemas import SpeculativeDraft
 
 logger = structlog.get_logger(__name__)
 

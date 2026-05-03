@@ -45,7 +45,7 @@ def _try_connect_or_skip() -> None:
 
     try:
         with psycopg.connect(
-            "postgresql://localhost:5432/cua_maximalist", connect_timeout=2
+            "postgresql://localhost:5432/basicctrl", connect_timeout=2
         ):
             pass
     except Exception as e:
@@ -53,7 +53,7 @@ def _try_connect_or_skip() -> None:
 
 
 def _make_triple(step_idx: int, session_id: str):
-    from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+    from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
     pre = HoarePre(
         target_key=f"axid:com.test:{step_idx}",
@@ -92,7 +92,7 @@ async def _cleanup(session_id: str) -> None:
     import psycopg
 
     try:
-        with psycopg.connect("postgresql://localhost:5432/cua_maximalist") as conn:
+        with psycopg.connect("postgresql://localhost:5432/basicctrl") as conn:
             with conn.cursor() as cur:
                 # LangGraph tables — delete by thread_id
                 for table in ("checkpoints", "checkpoint_writes", "checkpoint_blobs"):
@@ -108,7 +108,7 @@ async def _cleanup(session_id: str) -> None:
 async def test_resume_from_simulated_crash_returns_latest_step() -> None:
     """Write 5 checkpoints, drop executor, re-instantiate, assert latest_step_idx=4."""
     _try_connect_or_skip()
-    from cua_overlay.persist import DurableExecutor
+    from basicctrl.persist import DurableExecutor
 
     session_id = f"durtest-{uuid.uuid4()}"
 

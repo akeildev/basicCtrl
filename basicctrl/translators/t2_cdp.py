@@ -9,7 +9,7 @@ Per CONTEXT.md D-24: Slack/Cursor/Obsidian workspace renderer filter.
 Per RESEARCH.md §"Pattern 5: T2 CDP Implementation" + Pitfall B (flatten=True)
 + Pitfall D (workspace filter).
 
-cua-maximalist coexists with the user's other CDP tooling — both call
+basicCtrl coexists with the user's other CDP tooling — both call
 cdp-use directly; neither owns the other.
 
 Resolution flow:
@@ -39,8 +39,8 @@ from typing import Any, Literal, Optional
 import httpx
 import structlog
 
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
 
 
 _log = structlog.get_logger()
@@ -55,7 +55,7 @@ CDP_PROBE_PORTS: tuple[int, ...] = (9222, 9223, 9224, 9225)
 class T2CDPTranslator:
     """T2 CDP translator using cdp-use 1.4.5.
 
-    Implements ``Translator`` Protocol (cua_overlay.translators.base.Translator).
+    Implements ``Translator`` Protocol (basicctrl.translators.base.Translator).
     Tier='T2'. Default channel binding (D-14): C5 CDPInputChannel.
     """
 
@@ -64,7 +64,7 @@ class T2CDPTranslator:
     async def _discover_ws_url(self, pid: int) -> Optional[str]:
         """Resolve the live CDP WebSocket URL for the user's browser.
 
-        Discovery order (mirrors cua_overlay.browser.daemon.get_ws_url, which
+        Discovery order (mirrors basicctrl.browser.daemon.get_ws_url, which
         was vendored from browser-use/browser-harness 2026-05-03):
 
         1. ``CUA_T2_CDP_PORT_OVERRIDE`` env var → single probe port (test hook).
@@ -220,7 +220,7 @@ class T2CDPTranslator:
         if ws_url is None:
             return None
 
-        from cua_overlay.translators.cdp_daemon import get_or_create
+        from basicctrl.translators.cdp_daemon import get_or_create
 
         try:
             daemon = await get_or_create(pid=pid, ws_url=ws_url, bundle_id=bundle_id)

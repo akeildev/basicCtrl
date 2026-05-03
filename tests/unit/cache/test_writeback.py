@@ -10,9 +10,9 @@ from uuid import uuid4
 
 import pytest
 
-from cua_overlay.cache.cassette import Cassette, CassetteStep
-from cua_overlay.cache.writeback import StreamCache, WriteBack
-from cua_overlay.recovery.heal_event import HealEvent
+from basicctrl.cache.cassette import Cassette, CassetteStep
+from basicctrl.cache.writeback import StreamCache, WriteBack
+from basicctrl.recovery.heal_event import HealEvent
 
 
 class TestWriteBackStableTierGate:

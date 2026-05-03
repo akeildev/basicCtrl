@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from cua_overlay.state.graph import (
+from basicctrl.state.graph import (
     Bbox,
     Capability,
     Edge,
@@ -21,7 +21,7 @@ from cua_overlay.state.graph import (
     StateGraph,
     UIElement,
 )
-from cua_overlay.state.snapshot import dump_snapshot, load_snapshot
+from basicctrl.state.snapshot import dump_snapshot, load_snapshot
 
 
 def _now() -> datetime:

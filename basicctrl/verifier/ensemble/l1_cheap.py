@@ -30,7 +30,7 @@ import imagehash
 import structlog
 from PIL import Image
 
-from cua_overlay.state.graph import Bbox, UIElement
+from basicctrl.state.graph import Bbox, UIElement
 
 
 # Hamming distance threshold for the dHash compare. 5 bits / 64 ≈ 8% change;
@@ -200,7 +200,7 @@ class L1Cheap:
         latency on the link target) and L1.run typically fires within
         single-digit ms of the click landing."""
         try:
-            from cua_overlay.translators.cdp_daemon import find_for_pid
+            from basicctrl.translators.cdp_daemon import find_for_pid
         except Exception:  # noqa: BLE001
             return 0.0
         daemon = find_for_pid(pid)

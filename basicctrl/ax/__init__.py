@@ -1,4 +1,4 @@
-"""cua_overlay.ax — AX safety primitives.
+"""basicctrl.ax — AX safety primitives.
 
 This subpackage holds the foundation layer that mitigates THREE BLOCKER pitfalls:
 
@@ -15,8 +15,8 @@ Public exports below are the LOCKED contract every Phase 1+ module imports.
 """
 from __future__ import annotations
 
-from cua_overlay.ax.element import AXUIElementWrapper
-from cua_overlay.ax.errors import (
+from basicctrl.ax.element import AXUIElementWrapper
+from basicctrl.ax.errors import (
     AXActionUnsupportedError,
     AXAPIDisabledError,
     AXAttributeUnsupportedError,
@@ -26,9 +26,9 @@ from cua_overlay.ax.errors import (
     AXNotificationUnsupportedError,
     axerror_from_code,
 )
-from cua_overlay.ax.modal_probe import has_blocking_modal
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.ax.walker import WalkResult, walk_subtree
+from basicctrl.ax.modal_probe import has_blocking_modal
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.ax.walker import WalkResult, walk_subtree
 
 __all__ = [
     "AXError",

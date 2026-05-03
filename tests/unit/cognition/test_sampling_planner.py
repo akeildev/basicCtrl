@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-pytest.importorskip("cua_overlay.cognition.sampling_planner")
+pytest.importorskip("basicctrl.cognition.sampling_planner")
 
-from cua_overlay.cognition.exceptions import CognitionDisabledError
-from cua_overlay.cognition.sampling_planner import MCPSamplingPlanner
+from basicctrl.cognition.exceptions import CognitionDisabledError
+from basicctrl.cognition.sampling_planner import MCPSamplingPlanner
 
 
 def _ctx_with_sampling(supported: bool) -> MagicMock:
@@ -124,7 +124,7 @@ class TestPlanAction:
         ctx.session.create_message = AsyncMock(side_effect=fake_create_message)
 
         planner = MCPSamplingPlanner(ctx)
-        # com.apple.calculator has a skill file in cua_overlay/skills/.
+        # com.apple.calculator has a skill file in basicctrl/skills/.
         state = MagicMock(app="com.apple.calculator", nodes=[])
         await planner.plan_action("compute 17 times 23", state)
         text = captured["messages"][0].content.text

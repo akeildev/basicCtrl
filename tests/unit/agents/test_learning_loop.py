@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cua_overlay.agents.embedder import task_source_text
-from cua_overlay.agents.learning_loop import LearningLoop
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.agents.embedder import task_source_text
+from basicctrl.agents.learning_loop import LearningLoop
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 def _make_action(target_key: str = "btn", action_type: str = "click") -> ActionCanonical:

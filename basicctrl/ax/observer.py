@@ -14,7 +14,7 @@ The asyncio side awaits ``bridge.queue.get()``. Never call PyObjC AX functions
 from the asyncio loop thread directly — they require a CFRunLoop and fight the
 asyncio loop's scheduler.
 
-This module is the foundation for ``cua_overlay.verifier.axobserver``'s
+This module is the foundation for ``basicctrl.verifier.axobserver``'s
 ``AXObserverManager.expect()`` — the subscribe-before-fire pattern that
 mitigates Pitfall P28 (stale notification race) via:
 
@@ -36,7 +36,7 @@ from typing import Any, Callable, Optional
 
 import structlog
 
-from cua_overlay.ax.errors import axerror_from_code
+from basicctrl.ax.errors import axerror_from_code
 
 
 @dataclass(frozen=True)

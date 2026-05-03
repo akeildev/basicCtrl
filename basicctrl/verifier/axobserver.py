@@ -25,8 +25,8 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.ax.observer import AXEvent, AXEventBridge, Subscription
-from cua_overlay.state.graph import UIElement
+from basicctrl.ax.observer import AXEvent, AXEventBridge, Subscription
+from basicctrl.state.graph import UIElement
 
 
 # 5 ms stale-event guard. Pitfall P28 mitigation. The number comes directly

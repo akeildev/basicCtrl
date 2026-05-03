@@ -11,12 +11,12 @@ Per CORE-02 + MCP-01 + MCP-02:
 
 Layout::
 
-    cua_overlay/mcp_server/
+    basicctrl/mcp_server/
     ├── __init__.py            # this file — public re-exports
     ├── main.py                # bootstrap (FastMCP + spawn cua-driver mcp + wire deps)
     ├── proxy.py               # ACTION_CLASS_TOOLS + register_proxied_tool wrapper
     ├── healing_tools.py       # click_with_healing (Phase 1)
-    └── __main__.py            # entry point: ``python -m cua_overlay.mcp_server``
+    └── __main__.py            # entry point: ``python -m basicctrl.mcp_server``
 
 Threat model
 ------------
@@ -26,6 +26,6 @@ Codex) that spawned the proxy can connect.
 """
 from __future__ import annotations
 
-from cua_overlay.mcp_server.main import ProxyDeps, main
+from basicctrl.mcp_server.main import ProxyDeps, main
 
 __all__ = ["main", "ProxyDeps"]

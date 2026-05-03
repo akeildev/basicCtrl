@@ -69,7 +69,7 @@ def configure(testing: bool = False) -> None:
     # CUA_DEBUG=1: use DEBUG level and enable TraceBus
     if os.environ.get("CUA_DEBUG") == "1":
         # Add TraceBus processor (best-effort event distribution)
-        from cua_overlay.observability.bus import bus_processor
+        from basicctrl.observability.bus import bus_processor
         processors.append(bus_processor)
         log_level = "DEBUG"
     else:

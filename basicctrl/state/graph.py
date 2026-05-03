@@ -1,7 +1,7 @@
 """STATE-01 — UIElement, Bbox, Edge, EdgeKind, Capability, Source, StateGraph.
 
 This module defines the canonical state-graph schema that every translator,
-recovery branch, cognition layer, visualizer, and SPI bridge in cua-maximalist
+recovery branch, cognition layer, visualizer, and SPI bridge in basicCtrl
 imports. Do NOT redefine these types in downstream modules. If a field is
 missing, add a plan that updates THIS file.
 
@@ -94,7 +94,7 @@ class UIElement(BaseModel):
     """A single element observation in the state graph.
 
     The schema mirrors ARCHITECTURE.md L40-49 verbatim. The ``composite_key``
-    property delegates to ``cua_overlay.state.fingerprint.compute_composite_key``
+    property delegates to ``basicctrl.state.fingerprint.compute_composite_key``
     so the tier ladder lives in one place.
     """
 
@@ -131,7 +131,7 @@ class UIElement(BaseModel):
         Late import dodges the circular dependency between graph.py (which
         UIElement lives in) and fingerprint.py (which type-hints UIElement).
         """
-        from cua_overlay.state.fingerprint import compute_composite_key
+        from basicctrl.state.fingerprint import compute_composite_key
 
         return compute_composite_key(self)
 
@@ -139,9 +139,9 @@ class UIElement(BaseModel):
 class StateGraph:
     """In-memory state-graph store: composite_key -> UIElement plus an edge list.
 
-    Snapshot persistence lives in ``cua_overlay.state.snapshot`` (atomic write
+    Snapshot persistence lives in ``basicctrl.state.snapshot`` (atomic write
     via tmp + os.replace). The ring-buffer-of-snapshots lives in
-    ``cua_overlay.state.ring_buffer``.
+    ``basicctrl.state.ring_buffer``.
     """
 
     def __init__(self) -> None:

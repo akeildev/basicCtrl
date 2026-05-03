@@ -32,11 +32,11 @@ from typing import Literal, Optional, Protocol
 import anyio
 import structlog
 
-from cua_overlay.actions.channels.base import ChannelOutcome
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TranslatorTarget
-from cua_overlay.translators.t3_applescript import T3AppleScriptTranslator
+from basicctrl.actions.channels.base import ChannelOutcome
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TranslatorTarget
+from basicctrl.translators.t3_applescript import T3AppleScriptTranslator
 
 
 _log = structlog.get_logger()

@@ -13,11 +13,11 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import structlog
 
-from cua_overlay.cognition.exceptions import CognitionDisabledError
+from basicctrl.cognition.exceptions import CognitionDisabledError
 
 if TYPE_CHECKING:
-    from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
-    from cua_overlay.state.graph import StateGraph
+    from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+    from basicctrl.state.graph import StateGraph
 
 
 log = structlog.get_logger(__name__)

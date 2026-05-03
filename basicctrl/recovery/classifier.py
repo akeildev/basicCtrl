@@ -10,7 +10,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal, Optional, Tuple, TypedDict
 
-from cua_overlay.state.causal_dag import HoarePost
+from basicctrl.state.causal_dag import HoarePost
 
 
 class FailureClass(str, Enum):

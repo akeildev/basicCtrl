@@ -9,7 +9,7 @@ from typing import Optional
 
 import structlog
 
-from cua_overlay.translators.base import Translator
+from basicctrl.translators.base import Translator
 
 
 _log = structlog.get_logger()

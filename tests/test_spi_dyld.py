@@ -16,12 +16,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cua_overlay.spi.dyld_inject import (
+from basicctrl.spi.dyld_inject import (
     DYLDInjectBridge,
     get_dyld_inject_bridge,
     is_dyld_inject_available,
 )
-from cua_overlay.spi.probe import probe_dyld_inject
+from basicctrl.spi.probe import probe_dyld_inject
 
 
 class TestProbe:
@@ -48,14 +48,14 @@ class TestDYLDInjectBridge:
 
     def test_bridge_logs_status(self):
         """Bridge logs initialization status."""
-        with patch("cua_overlay.spi.dyld_inject.log") as mock_log:
+        with patch("basicctrl.spi.dyld_inject.log") as mock_log:
             bridge = DYLDInjectBridge(available=True)
             # Should log that bridge is loaded
             mock_log.info.assert_called()
 
     def test_bridge_fallback_logged_when_unavailable(self):
         """When unavailable, logs fallback to T1 AX."""
-        with patch("cua_overlay.spi.dyld_inject.log") as mock_log:
+        with patch("basicctrl.spi.dyld_inject.log") as mock_log:
             bridge = DYLDInjectBridge(available=False)
             # Should log unavailable status
             assert mock_log.info.called or mock_log.warning.called
@@ -134,7 +134,7 @@ class TestDYLDInjectIntegration:
     async def test_inject_into_electron_app_unavailable_logs_fallback(self):
         """If unavailable, logs fallback to T1 AX."""
         bridge = DYLDInjectBridge(available=False)
-        with patch("cua_overlay.spi.dyld_inject.log") as mock_log:
+        with patch("basicctrl.spi.dyld_inject.log") as mock_log:
             result = await bridge.inject_into_electron_app(
                 "/Applications/Slack.app", "com.tinyspeck.slackmacgap"
             )

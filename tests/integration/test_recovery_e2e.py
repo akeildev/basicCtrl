@@ -22,17 +22,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cua_overlay.cache.cassette import Cassette, CassetteStep
-from cua_overlay.recovery.classifier import (
+from basicctrl.cache.cassette import Cassette, CassetteStep
+from basicctrl.recovery.classifier import (
     FailureClass,
     FailureClassifier,
     FailureCtx,
     FAILURE_CLASS_TO_BRANCHES,
 )
-from cua_overlay.recovery.circuit_breaker import CircuitBreaker
-from cua_overlay.recovery.heal_event import HealEvent, LocatorTier
-from cua_overlay.recovery.orchestrator import RecoveryOrchestrator
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.recovery.circuit_breaker import CircuitBreaker
+from basicctrl.recovery.heal_event import HealEvent, LocatorTier
+from basicctrl.recovery.orchestrator import RecoveryOrchestrator
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
 
 log = logging.getLogger(__name__)

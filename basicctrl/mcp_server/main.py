@@ -32,18 +32,18 @@ from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.server.fastmcp import FastMCP
 
-from cua_overlay.actions import (
+from basicctrl.actions import (
     DuplicateReceipt,
     IdempotencyTokenStore,
     RaceOrchestrator,
 )
-from cua_overlay.actions.channel_registry import ChannelRegistry
-from cua_overlay.ax.observer import AXEventBridge
-from cua_overlay.log import configure as configure_logging
-from cua_overlay.persist import DurableExecutor, SessionWriter
-from cua_overlay.profile.classifier import classify
-from cua_overlay.translators.registry import TranslatorRegistry
-from cua_overlay.verifier import (
+from basicctrl.actions.channel_registry import ChannelRegistry
+from basicctrl.ax.observer import AXEventBridge
+from basicctrl.log import configure as configure_logging
+from basicctrl.persist import DurableExecutor, SessionWriter
+from basicctrl.profile.classifier import classify
+from basicctrl.translators.registry import TranslatorRegistry
+from basicctrl.verifier import (
     Aggregator,
     AXObserverManager,
     KqueueProcObserver,
@@ -173,7 +173,7 @@ async def main() -> None:
         )
 
         # Top-level FastMCP that the host (Claude Code / Cursor / Codex) talks to.
-        proxy_server = FastMCP(name="cua-maximalist")
+        proxy_server = FastMCP(name="basicCtrl")
 
         try:
             upstream_stdio_cm = stdio_client(upstream_params)
@@ -204,7 +204,7 @@ async def main() -> None:
         # the PRE-subscribe/FIRE/POST-aggregate wrap; non-action tools are
         # straight passthroughs. Late import to avoid circular dependency
         # between main.py and proxy.py.
-        from cua_overlay.mcp_server.proxy import register_proxied_tool
+        from basicctrl.mcp_server.proxy import register_proxied_tool
 
         for tool in upstream_tools.tools:
             await register_proxied_tool(proxy_server, upstream, tool, deps)
@@ -214,14 +214,14 @@ async def main() -> None:
         # registering them. Plans 02-05..02-09 implement the translators;
         # plans 02-04..02-09 implement the channels. Each is a class with a
         # default constructor (T5PixelTranslator wires T4 internally).
-        from cua_overlay.translators import (  # noqa: E402 — late to avoid cycle
+        from basicctrl.translators import (  # noqa: E402 — late to avoid cycle
             T1AXTranslator,
             T2CDPTranslator,
             T3AppleScriptTranslator,
             T4VisionTranslator,
             T5PixelTranslator,
         )
-        from cua_overlay.actions.channels import (  # noqa: E402
+        from basicctrl.actions.channels import (  # noqa: E402
             C1SkyLightChannel,
             C2AXPressChannel,
             C3CGEventChannel,
@@ -263,7 +263,7 @@ async def main() -> None:
         # this, healing tools call race_orch.execute → return verified=False →
         # silently fail. Wiring the recovery layer turns that into an actual
         # self-healing loop.
-        from cua_overlay.recovery import (  # noqa: E402
+        from basicctrl.recovery import (  # noqa: E402
             B1_Rescroll,
             B2_OCRRegrounding,
             B3_WorldReplan,
@@ -273,9 +273,9 @@ async def main() -> None:
             B5_AppleScriptFallback,
             RecoveryOrchestrator,
         )
-        from cua_overlay.recovery.circuit_breaker import CircuitBreaker  # noqa: E402
-        from cua_overlay.recovery.classifier import FailureClassifier  # noqa: E402
-        from cua_overlay.ax.walker import walk_subtree  # noqa: E402
+        from basicctrl.recovery.circuit_breaker import CircuitBreaker  # noqa: E402
+        from basicctrl.recovery.classifier import FailureClassifier  # noqa: E402
+        from basicctrl.ax.walker import walk_subtree  # noqa: E402
 
         # B3/B4 Phase 4 wire-up. J1: planner picked per-call by a factory:
         #   1. host advertises sampling → MCPSamplingPlanner (no key needed)
@@ -284,7 +284,7 @@ async def main() -> None:
         #                                  no_planner_available + branch_failed
         # WorldModelPredictor + Critic are heuristic-only in Phase 4 so they
         # boot without a key.
-        from cua_overlay.cognition import (  # noqa: E402
+        from basicctrl.cognition import (  # noqa: E402
             CognitionDisabledError,
             Critic,
             MCPSamplingPlanner,
@@ -297,10 +297,10 @@ async def main() -> None:
         # Memory layer (D-18..D-21). EpisodicMemory + Embedder + LearningLoop
         # are constructed unconditionally — sentence-transformers is lazy
         # so we don't pay the model-download cost until the first embed.
-        from cua_overlay.agents.embedder import Embedder  # noqa: E402
-        from cua_overlay.agents.learning_loop import LearningLoop  # noqa: E402
-        from cua_overlay.learning.recipe_synth import RecipeSynthesizer  # noqa: E402
-        from cua_overlay.state.episodic import EpisodicMemory  # noqa: E402
+        from basicctrl.agents.embedder import Embedder  # noqa: E402
+        from basicctrl.agents.learning_loop import LearningLoop  # noqa: E402
+        from basicctrl.learning.recipe_synth import RecipeSynthesizer  # noqa: E402
+        from basicctrl.state.episodic import EpisodicMemory  # noqa: E402
 
         episodic_memory = EpisodicMemory()
         embedder = Embedder()
@@ -393,7 +393,7 @@ async def main() -> None:
 
         # 8. Register healing tools (Phase 2: 6 tools through RaceOrchestrator
         # + auto-recovery on verified=False per F10).
-        from cua_overlay.mcp_server.healing_tools import register_healing_tools
+        from basicctrl.mcp_server.healing_tools import register_healing_tools
 
         await register_healing_tools(
             proxy_server,
@@ -404,10 +404,10 @@ async def main() -> None:
             learning_loop=learning_loop,
         )
 
-        # Browser tool (mcp__cua-maximalist__browser) — CDP-driven, vendored
+        # Browser tool (mcp__basicCtrl__browser) — CDP-driven, vendored
         # from browser-use/browser-harness. Routing rule: Chromium-class
         # targets prefer this over T1 AX (faster, sees iframes/shadow DOM).
-        from cua_overlay.mcp_server.browser_tool import register_browser_tool
+        from basicctrl.mcp_server.browser_tool import register_browser_tool
 
         register_browser_tool(proxy_server)
 

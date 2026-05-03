@@ -4,11 +4,11 @@ Per D-07: CUWM-style world-model predictor.
 """
 import pytest
 
-pytest.importorskip("cua_overlay.cognition.planner")
+pytest.importorskip("basicctrl.cognition.planner")
 
 from unittest.mock import MagicMock
 
-from cua_overlay.cognition.planner import WorldModelPredictor
+from basicctrl.cognition.planner import WorldModelPredictor
 
 
 @pytest.mark.unit

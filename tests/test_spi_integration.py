@@ -12,15 +12,15 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from dataclasses import dataclass
 
-from cua_overlay.spi import probe_spi_capabilities, SPICapabilities
-from cua_overlay.spi.skylight import SkyLightBridge
-from cua_overlay.spi.ax_remote import AXRemoteBridge
-from cua_overlay.spi.webkit_inspector import WebKitInspectorBridge
-from cua_overlay.spi.imu import IMUBridge
-from cua_overlay.spi.cgs_display import CGSBridge
-from cua_overlay.spi.endpoint_security import EndpointSecurityBridge
-from cua_overlay.spi.dtrace import DTraceBridge
-from cua_overlay.spi.dyld_inject import DYLDInjectBridge
+from basicctrl.spi import probe_spi_capabilities, SPICapabilities
+from basicctrl.spi.skylight import SkyLightBridge
+from basicctrl.spi.ax_remote import AXRemoteBridge
+from basicctrl.spi.webkit_inspector import WebKitInspectorBridge
+from basicctrl.spi.imu import IMUBridge
+from basicctrl.spi.cgs_display import CGSBridge
+from basicctrl.spi.endpoint_security import EndpointSecurityBridge
+from basicctrl.spi.dtrace import DTraceBridge
+from basicctrl.spi.dyld_inject import DYLDInjectBridge
 
 
 pytestmark = pytest.mark.integration

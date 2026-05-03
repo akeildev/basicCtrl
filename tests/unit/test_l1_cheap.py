@@ -19,8 +19,8 @@ import pytest
 import structlog
 from PIL import Image
 
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap, L1Snapshot
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.verifier.ensemble.l1_cheap import L1Cheap, L1Snapshot
 
 
 # ----------------------------------------------------------------- fixtures

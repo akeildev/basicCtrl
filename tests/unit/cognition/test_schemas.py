@@ -8,9 +8,9 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-pytest.importorskip("cua_overlay.cognition")
+pytest.importorskip("basicctrl.cognition")
 
-from cua_overlay.cognition import (
+from basicctrl.cognition import (
     AppleFMOutput,
     EnsembleVote,
     OracleOutput,
@@ -18,7 +18,7 @@ from cua_overlay.cognition import (
     PredictedState,
     SpeculativeDraft,
 )
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
+from basicctrl.state.causal_dag import ActionCanonical, HoarePre
 
 
 def _build_action(

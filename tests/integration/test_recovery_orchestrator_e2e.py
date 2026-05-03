@@ -35,7 +35,7 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.state.causal_dag import HoarePost
+from basicctrl.state.causal_dag import HoarePost
 
 
 pytestmark = [
@@ -54,24 +54,24 @@ def _build_recovery_stack(session_dir: Path):
     The race_orch is returned in case a future test wants to combine the
     two stacks; this test only uses recovery_orch directly.
     """
-    from cua_overlay.actions import (
+    from basicctrl.actions import (
         DuplicateReceipt,
         IdempotencyTokenStore,
         RaceOrchestrator,
     )
-    from cua_overlay.actions.channel_registry import ChannelRegistry
-    from cua_overlay.actions.channels import (
+    from basicctrl.actions.channel_registry import ChannelRegistry
+    from basicctrl.actions.channels import (
         C1SkyLightChannel,
         C2AXPressChannel,
         C3CGEventChannel,
         C4AppleScriptChannel,
         C5CDPInputChannel,
     )
-    from cua_overlay.ax.observer import AXEventBridge
-    from cua_overlay.ax.walker import walk_subtree
-    from cua_overlay.persist import SessionWriter
-    from cua_overlay.profile.classifier import classify
-    from cua_overlay.recovery import (
+    from basicctrl.ax.observer import AXEventBridge
+    from basicctrl.ax.walker import walk_subtree
+    from basicctrl.persist import SessionWriter
+    from basicctrl.profile.classifier import classify
+    from basicctrl.recovery import (
         B1_Rescroll,
         B2_OCRRegrounding,
         # This test exercises stub-style B3/B4 dispatch (no LLM); use the
@@ -82,17 +82,17 @@ def _build_recovery_stack(session_dir: Path):
         B5_AppleScriptFallback,
         RecoveryOrchestrator,
     )
-    from cua_overlay.recovery.circuit_breaker import CircuitBreaker
-    from cua_overlay.recovery.classifier import FailureClassifier
-    from cua_overlay.translators import (
+    from basicctrl.recovery.circuit_breaker import CircuitBreaker
+    from basicctrl.recovery.classifier import FailureClassifier
+    from basicctrl.translators import (
         T1AXTranslator,
         T2CDPTranslator,
         T3AppleScriptTranslator,
         T4VisionTranslator,
         T5PixelTranslator,
     )
-    from cua_overlay.translators.registry import TranslatorRegistry
-    from cua_overlay.verifier import (
+    from basicctrl.translators.registry import TranslatorRegistry
+    from basicctrl.verifier import (
         Aggregator,
         AXObserverManager,
         L0Push,

@@ -9,11 +9,11 @@ SPI-07 confidence is MEDIUM (private API); tests validate that the stub loads
 cleanly and graceful fallback is wired (no exceptions when unavailable).
 """
 import pytest
-from cua_overlay.spi.webkit_inspector import (
+from basicctrl.spi.webkit_inspector import (
     WebKitInspectorBridge,
     get_webkit_inspector_bridge,
 )
-from cua_overlay.spi.probe import SPICapabilities
+from basicctrl.spi.probe import SPICapabilities
 
 
 def test_webkit_inspector_bridge_init_available():
@@ -61,7 +61,7 @@ async def test_get_webkit_inspector_bridge_caches():
     )
 
     # Reset global bridge for test isolation
-    import cua_overlay.spi.webkit_inspector as webkit_module
+    import basicctrl.spi.webkit_inspector as webkit_module
 
     webkit_module._bridge = None
 
@@ -92,7 +92,7 @@ async def test_get_webkit_inspector_bridge_respects_capability():
     )
 
     # Reset global bridge for test isolation
-    import cua_overlay.spi.webkit_inspector as webkit_module
+    import basicctrl.spi.webkit_inspector as webkit_module
 
     webkit_module._bridge = None
 
@@ -118,7 +118,7 @@ async def test_get_webkit_inspector_bridge_unavailable():
     )
 
     # Reset global bridge for test isolation
-    import cua_overlay.spi.webkit_inspector as webkit_module
+    import basicctrl.spi.webkit_inspector as webkit_module
 
     webkit_module._bridge = None
 

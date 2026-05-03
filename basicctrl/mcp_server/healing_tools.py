@@ -6,7 +6,7 @@ Per CONTEXT.md D-28 (option (a) — extend + sibling tools), D-29 (5 new + 1 ext
 Per RESEARCH.md §"Pattern 12: MCP Tool Schemas" (Pydantic input models).
 
 Phase 2 wrapper behaviour:
-* Each tool calls cua_overlay.actions.race_orchestrator.RaceOrchestrator.execute
+* Each tool calls basicctrl.actions.race_orchestrator.RaceOrchestrator.execute
   with the appropriate action_type + race_policy. The orchestrator owns
   translator + channel + verifier wiring.
 * Returns HealingToolResult-shaped dict so the host has tier_won / channel_won /
@@ -29,11 +29,11 @@ import structlog
 from mcp.client.session import ClientSession
 from mcp.server.fastmcp import Context, FastMCP
 
-from cua_overlay.actions.race_orchestrator import RaceOrchestrator
-from cua_overlay.actions.race_policy import RacePolicy
-from cua_overlay.mcp_server.main import ProxyDeps
-from cua_overlay.recovery.orchestrator import RecoveryOrchestrator
-from cua_overlay.translators.base import TargetSpec
+from basicctrl.actions.race_orchestrator import RaceOrchestrator
+from basicctrl.actions.race_policy import RacePolicy
+from basicctrl.mcp_server.main import ProxyDeps
+from basicctrl.recovery.orchestrator import RecoveryOrchestrator
+from basicctrl.translators.base import TargetSpec
 
 
 _log = structlog.get_logger()
@@ -271,7 +271,7 @@ async def register_healing_tools(
         windows (i.e. is hidden / on another Space).
         """
         try:
-            from cua_overlay.ax.window_manager import (
+            from basicctrl.ax.window_manager import (
                 ensure_real_window,
                 list_real_windows,
             )
@@ -327,7 +327,7 @@ async def register_healing_tools(
         Fix #4 (pre-flight): ensure target app has a visible window before
         firing so menu-bar shortcuts (cmd+n etc) actually fire.
         """
-        from cua_overlay.mcp_server.proxy import run_action_wrap
+        from basicctrl.mcp_server.proxy import run_action_wrap
 
         target_pid = kwargs.get("pid")
         if isinstance(target_pid, int) and target_pid > 0:
@@ -378,7 +378,7 @@ async def register_healing_tools(
             latency_ms = (time.monotonic() - t_start) * 1000.0
             # `result` is the raw upstream content; build a synthetic
             # ActionCanonical-shaped record for parity with the race path.
-            from cua_overlay.state.causal_dag import ActionCanonical
+            from basicctrl.state.causal_dag import ActionCanonical
             import uuid as _uuid
 
             synthetic_action = ActionCanonical(
@@ -604,7 +604,7 @@ async def register_healing_tools(
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
 
-        from cua_overlay.state.causal_dag import ActionCanonical
+        from basicctrl.state.causal_dag import ActionCanonical
         import uuid as _uuid
 
         synthetic_action = ActionCanonical(
@@ -687,8 +687,8 @@ async def register_healing_tools(
         max_steps: int = 15,
         ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
-        from cua_overlay.cognition.sampling_planner import MCPSamplingPlanner
-        from cua_overlay.skills.loader import read_all_skills
+        from basicctrl.cognition.sampling_planner import MCPSamplingPlanner
+        from basicctrl.skills.loader import read_all_skills
         from mcp import types as mcp_types
         import json as _json
 
@@ -697,13 +697,13 @@ async def register_healing_tools(
                 "ok": False,
                 "reason": "host_does_not_advertise_sampling_capability",
                 "hint": (
-                    "Register cua-maximalist with an MCP host that supports "
+                    "Register basicCtrl with an MCP host that supports "
                     "sampling (e.g. Claude Code) so the framework can plan "
                     "via sampling/createMessage."
                 ),
             }
 
-        # Skill block: per-app prior knowledge from cua_overlay/skills/.
+        # Skill block: per-app prior knowledge from basicctrl/skills/.
         skill_blob = ""
         try:
             blob = read_all_skills(app_bundle_id) or ""
@@ -713,7 +713,7 @@ async def register_healing_tools(
             pass
 
         system_prompt = (
-            "You are an agent driving a Mac app via cua-maximalist's healing "
+            "You are an agent driving a Mac app via basicCtrl's healing "
             "tools. Generate a JSON plan whose steps map directly to tool "
             "calls. Available tools and arguments:\n"
             "  click_with_healing  — args: {label: str (preferred), x?: int, y?: int}\n"

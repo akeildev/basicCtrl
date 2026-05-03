@@ -13,8 +13,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cua_overlay.recovery.branches.b3_world_replan import B3RecoveryBranch
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.recovery.branches.b3_world_replan import B3RecoveryBranch
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 @pytest.mark.unit
@@ -95,7 +95,7 @@ class TestB3WorldReplam:
         )
 
         # Mock planner to return a plan with the replanned action
-        from cua_overlay.cognition.schemas import PlanCandidate
+        from basicctrl.cognition.schemas import PlanCandidate
 
         mock_planner.plan_action.return_value = PlanCandidate(
             steps=[replanned_step],
@@ -243,7 +243,7 @@ class TestB3WorldReplam:
 
         current_state = MagicMock()
 
-        from cua_overlay.cognition.schemas import PlanCandidate
+        from basicctrl.cognition.schemas import PlanCandidate
 
         b3_branch._planner.plan_action.return_value = PlanCandidate(
             steps=[failed_action],

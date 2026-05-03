@@ -1,4 +1,4 @@
-"""Integration tests for ``cua_overlay.persist.resume.resume_from_checkpoint``.
+"""Integration tests for ``basicctrl.persist.resume.resume_from_checkpoint``.
 
 Covers PERSIST-03:
 * Fresh session → ``resume_from_checkpoint`` returns ``None``.
@@ -22,9 +22,9 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.persist.durable_step import DurableExecutor
-from cua_overlay.persist.resume import ResumeContext, resume_from_checkpoint
-from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
+from basicctrl.persist.durable_step import DurableExecutor
+from basicctrl.persist.resume import ResumeContext, resume_from_checkpoint
+from basicctrl.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 
 pytestmark = pytest.mark.integration
 
@@ -39,12 +39,12 @@ def _try_connect_or_skip() -> None:
 
     try:
         with psycopg.connect(
-            "postgresql://localhost:5432/cua_maximalist", connect_timeout=2
+            "postgresql://localhost:5432/basicctrl", connect_timeout=2
         ) as _conn:
             pass
     except Exception as e:
         pytest.skip(
-            f"Postgres not reachable on localhost:5432/cua_maximalist — run "
+            f"Postgres not reachable on localhost:5432/basicctrl — run "
             f"`bash scripts/init_postgres.sh` first. ({type(e).__name__}: {e})"
         )
 
@@ -171,8 +171,8 @@ async def test_resume_after_kill() -> None:
         SESSION_ID=$(uuidgen); echo "$SESSION_ID"
         uv run python -c "
             import asyncio, uuid
-            from cua_overlay.persist.durable_step import DurableExecutor
-            from cua_overlay.state.causal_dag import ActionCanonical, HoarePre, HoarePost
+            from basicctrl.persist.durable_step import DurableExecutor
+            from basicctrl.state.causal_dag import ActionCanonical, HoarePre, HoarePost
 
             async def main():
                 d = DurableExecutor()
@@ -197,8 +197,8 @@ async def test_resume_after_kill() -> None:
     3. In terminal C::
         uv run python -c "
             import asyncio
-            from cua_overlay.persist.durable_step import DurableExecutor
-            from cua_overlay.persist.resume import resume_from_checkpoint
+            from basicctrl.persist.durable_step import DurableExecutor
+            from basicctrl.persist.resume import resume_from_checkpoint
 
             async def main():
                 d = DurableExecutor()

@@ -10,7 +10,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from cua_overlay.recovery.heal_event import HealEvent
+from basicctrl.recovery.heal_event import HealEvent
 
 
 def test_heal_event_creation_valid() -> None:

@@ -18,16 +18,16 @@ from unittest.mock import AsyncMock, MagicMock
 import anyio
 import pytest
 
-from cua_overlay.actions.channels.base import ChannelOutcome
-from cua_overlay.actions.race_orchestrator import (
+from basicctrl.actions.channels.base import ChannelOutcome
+from basicctrl.actions.race_orchestrator import (
     AS_STAGGER_MS_DEFAULT,
     RaceOrchestrator,
     race_first_complete,
 )
-from cua_overlay.actions.race_policy import RacePolicy
-from cua_overlay.state.causal_dag import HoarePost
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.actions.race_policy import RacePolicy
+from basicctrl.state.causal_dag import HoarePost
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
 
 
 pytestmark = pytest.mark.integration
@@ -54,7 +54,7 @@ def _fake_target() -> TranslatorTarget:
 
 
 def _fake_post(verified: bool = True) -> HoarePost:
-    """HoarePost matches actual cua_overlay.state.causal_dag schema."""
+    """HoarePost matches actual basicctrl.state.causal_dag schema."""
     return HoarePost(
         target_key="role:AXButton|label:5",
         confidence=1.0 if verified else 0.0,

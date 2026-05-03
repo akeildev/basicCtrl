@@ -22,12 +22,12 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.profile import classifier as classifier_mod
-from cua_overlay.profile.cache import (
+from basicctrl.profile import classifier as classifier_mod
+from basicctrl.profile.cache import (
     load_cached_profile,
     save_cached_profile,
 )
-from cua_overlay.profile.classifier import classify
+from basicctrl.profile.classifier import classify
 
 pytestmark = pytest.mark.integration
 

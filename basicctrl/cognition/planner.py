@@ -17,13 +17,13 @@ from typing import TYPE_CHECKING, Any, Optional
 import structlog
 from pydantic import ValidationError
 
-from cua_overlay.cognition.exceptions import CognitionDisabledError
-from cua_overlay.cognition.schemas import PlanCandidate
+from basicctrl.cognition.exceptions import CognitionDisabledError
+from basicctrl.cognition.schemas import PlanCandidate
 
 if TYPE_CHECKING:
-    from cua_overlay.state.causal_dag import ActionCanonical, HoarePre
-    from cua_overlay.state.episodic import EpisodicHit, EpisodicMemory, EpisodicQuery
-    from cua_overlay.state.graph import StateGraph
+    from basicctrl.state.causal_dag import ActionCanonical, HoarePre
+    from basicctrl.state.episodic import EpisodicHit, EpisodicMemory, EpisodicQuery
+    from basicctrl.state.graph import StateGraph
 
 
 log = structlog.get_logger(__name__)
@@ -208,14 +208,14 @@ class Planner:
     def _load_skill_context(self, app_bundle_id: str) -> str:
         """α3: surface per-app skill markdown to the planner prompt.
 
-        Skills live at `cua_overlay/skills/<bundle_id>/*.md`. They were
+        Skills live at `basicctrl/skills/<bundle_id>/*.md`. They were
         previously dead code; this wires them in so the LLM has prior
         knowledge about the target app instead of rediscovering it.
         """
         if not app_bundle_id or app_bundle_id in ("?", "unknown"):
             return ""
         try:
-            from cua_overlay.skills.loader import read_all_skills
+            from basicctrl.skills.loader import read_all_skills
 
             blob = read_all_skills(app_bundle_id)
         except Exception as exc:  # noqa: BLE001

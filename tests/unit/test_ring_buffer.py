@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from cua_overlay.state.graph import (
+from basicctrl.state.graph import (
     Bbox,
     Capability,
     EdgeKind,
@@ -11,7 +11,7 @@ from cua_overlay.state.graph import (
     StateGraph,
     UIElement,
 )
-from cua_overlay.state.ring_buffer import StateSnapshot, TemporalRingBuffer
+from basicctrl.state.ring_buffer import StateSnapshot, TemporalRingBuffer
 
 
 def _now() -> datetime:

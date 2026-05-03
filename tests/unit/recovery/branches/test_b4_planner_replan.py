@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cua_overlay.recovery.branches.b4_planner_replan import B4RecoveryBranch
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.recovery.branches.b4_planner_replan import B4RecoveryBranch
+from basicctrl.state.causal_dag import ActionCanonical
 
 
 @pytest.mark.unit
@@ -98,7 +98,7 @@ class TestB4PlannerReplan:
             candidates.append(candidate)
 
         # Mock planner to return plans with different actions
-        from cua_overlay.cognition.schemas import PlanCandidate
+        from basicctrl.cognition.schemas import PlanCandidate
 
         plan_responses = [
             PlanCandidate(
@@ -219,7 +219,7 @@ class TestB4PlannerReplan:
     ):
         """Test 5: B4.attempt() returns None if planner fails for all candidates."""
         # Mock planner to return empty plans
-        from cua_overlay.cognition.schemas import PlanCandidate
+        from basicctrl.cognition.schemas import PlanCandidate
 
         mock_planner.plan_action.side_effect = [
             PlanCandidate(steps=[], preconds=[], success_criteria=[], bounded=True),
@@ -276,7 +276,7 @@ class TestB4PlannerReplan:
         current_state = MagicMock()
 
         # Setup planner to return one valid candidate
-        from cua_overlay.cognition.schemas import PlanCandidate
+        from basicctrl.cognition.schemas import PlanCandidate
 
         candidate = ActionCanonical(
             id="candidate_0",
@@ -337,7 +337,7 @@ class TestB4PlannerReplan:
             session_id="test_session",
         )
 
-        from cua_overlay.cognition.schemas import PlanCandidate
+        from basicctrl.cognition.schemas import PlanCandidate
 
         mock_planner.plan_action.return_value = PlanCandidate(
             steps=[candidate],

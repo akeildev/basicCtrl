@@ -8,10 +8,10 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-pytest.importorskip("cua_overlay.state.episodic")
+pytest.importorskip("basicctrl.state.episodic")
 
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.state.episodic import EpisodicHit, EpisodicMemory, EpisodicQuery
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.state.episodic import EpisodicHit, EpisodicMemory, EpisodicQuery
 
 
 def _build_action(step_idx: int = 0) -> ActionCanonical:
@@ -34,7 +34,7 @@ def _build_recipe(
 ):
     """Helper to build a Recipe."""
     # Deferred import to avoid circular dependency at module load time
-    from cua_overlay.learning import Recipe, RecipePrecondition, RecipeStep
+    from basicctrl.learning import Recipe, RecipePrecondition, RecipeStep
 
     action = _build_action(step_idx=0)
     step = RecipeStep(

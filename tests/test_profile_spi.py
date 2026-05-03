@@ -3,7 +3,7 @@
 Per Task 2 acceptance criteria: AppProfile has 8 spi_*_available fields.
 """
 import pytest
-from cua_overlay.profile.classifier import AppProfile
+from basicctrl.profile.classifier import AppProfile
 
 
 def test_app_profile_has_spi_fields():

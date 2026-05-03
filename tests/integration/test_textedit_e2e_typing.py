@@ -29,12 +29,12 @@ from pathlib import Path
 import anyio
 import pytest
 
-from cua_overlay.actions.channels.c4_applescript import C4AppleScriptChannel
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.persist.session_writer import SessionWriter
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TargetSpec
-from cua_overlay.translators.t3_applescript import T3AppleScriptTranslator
+from basicctrl.actions.channels.c4_applescript import C4AppleScriptChannel
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.persist.session_writer import SessionWriter
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TargetSpec
+from basicctrl.translators.t3_applescript import T3AppleScriptTranslator
 
 
 pytestmark = [
@@ -111,7 +111,7 @@ async def test_t3_c4_writes_text_to_textedit(
 ) -> None:
     """Drive TextEdit via T3+C4 to set its document body, verify via AX."""
     pid = textedit_pid
-    text = "hello from cua-maximalist"
+    text = "hello from basicCtrl"
 
     sw = SessionWriter(base=tmp_path)
     store = IdempotencyTokenStore(sw)

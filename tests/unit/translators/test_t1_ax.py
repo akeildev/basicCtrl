@@ -16,10 +16,10 @@ from unittest.mock import patch
 
 import pytest
 
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.state.graph import Bbox, UIElement
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
-from cua_overlay.translators.t1_ax import T1AXTranslator
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.state.graph import Bbox, UIElement
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.translators.t1_ax import T1AXTranslator
 
 
 def _fake_uielement(label: str, role: str = "AXButton", pid: int = 1234) -> UIElement:
@@ -48,7 +48,7 @@ async def test_resolve_returns_none_on_label_miss() -> None:
     elem_other = _fake_uielement("OtherButton")
     fake_walk = [(elem_other, object())]  # list[(UIElement, ax_ref)]
     with patch(
-        "cua_overlay.ax.window_manager.ensure_real_window",
+        "basicctrl.ax.window_manager.ensure_real_window",
         return_value=object(),
     ):
         with patch.object(t, "_get_app_element", return_value=object()):
@@ -66,7 +66,7 @@ async def test_resolve_matches_by_label() -> None:
     ax_ref = object()
     fake_walk = [(elem, ax_ref)]
     with patch(
-        "cua_overlay.ax.window_manager.ensure_real_window",
+        "basicctrl.ax.window_manager.ensure_real_window",
         return_value=object(),
     ):
         with patch.object(t, "_get_app_element", return_value=object()):
@@ -84,7 +84,7 @@ async def test_resolve_returns_none_when_no_real_windows() -> None:
     """Phase H: pid with no visible windows short-circuits before walk."""
     t = T1AXTranslator()
     with patch(
-        "cua_overlay.ax.window_manager.ensure_real_window",
+        "basicctrl.ax.window_manager.ensure_real_window",
         return_value=None,
     ):
         target = await t.resolve(

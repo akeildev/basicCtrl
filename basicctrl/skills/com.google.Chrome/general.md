@@ -6,11 +6,11 @@
 
 If Akeil has the browser-harness daemon running (`browser-harness ...`),
 its Electron-based Chrome instance binds one of T2's probe ports
-(usually 9223). cua-maximalist's T2 then probes 9222→9225 in order
+(usually 9223). basicCtrl's T2 then probes 9222→9225 in order
 and may attach to browser-harness's Chrome — wrong instance. The
 `CUA_T2_CDP_PORT_OVERRIDE` env var pins the probe to a single port;
 the cdp-chromium e2e test sets it. For interactive use, stop
-browser-harness before running cua-maximalist on Chrome.
+browser-harness before running basicCtrl on Chrome.
 
 ## Launch with remote debugging
 
@@ -32,8 +32,8 @@ user's daily browsing). Always pass a fresh temp profile:
 
 ## CDP probe ports
 
-cua-maximalist's T2 only probes `9222-9225` (cdp_use limitation: see
-`cua_overlay/translators/t2_cdp.py:CDP_PROBE_PORTS`). Bind your test
+basicCtrl's T2 only probes `9222-9225` (cdp_use limitation: see
+`basicctrl/translators/t2_cdp.py:CDP_PROBE_PORTS`). Bind your test
 launcher to one of these. The fixture in
 `tests/integration/test_cdp_chromium_e2e.py` iterates and kills any
 stale process holding the others.
@@ -125,8 +125,8 @@ auto-enables CDP — no flags, no checkboxes, no popups.
 
 ### Drive via CDP (after preflight)
 
-cua-maximalist's `T2 CDP` translator already knows how to talk CDP
-(`cua_overlay/translators/t2_cdp.py`, probes ports 9222-9225). Once
+basicCtrl's `T2 CDP` translator already knows how to talk CDP
+(`basicctrl/translators/t2_cdp.py`, probes ports 9222-9225). Once
 DevToolsActivePort exists, T2 will pick it up automatically — no
 extra setup on the cua side.
 
@@ -162,7 +162,7 @@ to 30 seconds (per browser-harness CLAUDE.md). Don't conclude broken.
 ### Fallback only — the AppleScript JS bridge
 
 If CDP setup is impossible (managed-profile policy, locked-down
-Chrome) the `mcp__cua-maximalist__page` tool routes through Chrome's
+Chrome) the `mcp__basicCtrl__page` tool routes through Chrome's
 AppleScript JS bridge. Requires `defaults write com.google.Chrome
 AllowJavaScriptFromAppleEvents -bool true` PLUS toggling View →
 Developer → Allow JavaScript from Apple Events in the menu (the
@@ -194,7 +194,7 @@ sleep 3   # let the session restore finish before the first JS call
 Verify the bridge is live by running a tiny JS read against any tab:
 
 ```python
-mcp__cua-maximalist__page(
+mcp__basicCtrl__page(
   action="execute_javascript",
   javascript="document.title",
   pid=<chrome_pid>,

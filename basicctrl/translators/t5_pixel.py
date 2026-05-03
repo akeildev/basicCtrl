@@ -13,9 +13,9 @@ from typing import Literal, Optional
 
 import structlog
 
-from cua_overlay.state.graph import Bbox
-from cua_overlay.translators.base import TargetSpec, TranslatorTarget
-from cua_overlay.translators.t4_vision import T4VisionTranslator
+from basicctrl.state.graph import Bbox
+from basicctrl.translators.base import TargetSpec, TranslatorTarget
+from basicctrl.translators.t4_vision import T4VisionTranslator
 
 
 _log = structlog.get_logger()

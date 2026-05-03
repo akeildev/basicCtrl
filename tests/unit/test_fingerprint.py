@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from cua_overlay.state.graph import Bbox, Capability, Source, UIElement
+from basicctrl.state.graph import Bbox, Capability, Source, UIElement
 
 
 def _now() -> datetime:

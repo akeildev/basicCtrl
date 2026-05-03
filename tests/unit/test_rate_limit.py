@@ -1,4 +1,4 @@
-"""Unit tests for cua_overlay.ax.rate_limit.TokenBucket.
+"""Unit tests for basicctrl.ax.rate_limit.TokenBucket.
 
 Pitfall P2 (cmux #2985) mitigation: token bucket caps AX calls at 20/sec/pid.
 Tests verify hard cap, per-pid isolation, refill rate, fail-open semantics, and
@@ -11,7 +11,7 @@ import asyncio
 import pytest
 import structlog
 
-from cua_overlay.ax.rate_limit import TokenBucket
+from basicctrl.ax.rate_limit import TokenBucket
 
 
 @pytest.mark.asyncio
@@ -31,7 +31,7 @@ async def test_21st_call_in_first_second_returns_false(monkeypatch: pytest.Monke
 
     We freeze ``time.monotonic`` so refill cannot mask the cap.
     """
-    import cua_overlay.ax.rate_limit as rl
+    import basicctrl.ax.rate_limit as rl
 
     frozen = [1000.0]
     monkeypatch.setattr(rl.time, "monotonic", lambda: frozen[0])
@@ -46,7 +46,7 @@ async def test_21st_call_in_first_second_returns_false(monkeypatch: pytest.Monke
 @pytest.mark.asyncio
 async def test_per_pid_isolation(monkeypatch: pytest.MonkeyPatch) -> None:
     """Depleting pid=1's bucket does not affect pid=2."""
-    import cua_overlay.ax.rate_limit as rl
+    import basicctrl.ax.rate_limit as rl
 
     frozen = [2000.0]
     monkeypatch.setattr(rl.time, "monotonic", lambda: frozen[0])
@@ -66,7 +66,7 @@ async def test_per_pid_isolation(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_refills_at_20_per_sec(monkeypatch: pytest.MonkeyPatch) -> None:
     """After draining, advancing the clock by 0.5s allows ~10 more grants."""
-    import cua_overlay.ax.rate_limit as rl
+    import basicctrl.ax.rate_limit as rl
 
     frozen = [3000.0]
     monkeypatch.setattr(rl.time, "monotonic", lambda: frozen[0])
@@ -89,7 +89,7 @@ async def test_refills_at_20_per_sec(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_emits_structlog_event_on_deny(monkeypatch: pytest.MonkeyPatch) -> None:
     """When acquire() returns False, ``ax.rate_limited`` event is emitted with pid."""
-    import cua_overlay.ax.rate_limit as rl
+    import basicctrl.ax.rate_limit as rl
 
     frozen = [4000.0]
     monkeypatch.setattr(rl.time, "monotonic", lambda: frozen[0])
@@ -110,7 +110,7 @@ async def test_emits_structlog_event_on_deny(monkeypatch: pytest.MonkeyPatch) ->
 @pytest.mark.asyncio
 async def test_no_blocking_when_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
     """acquire() returns False quickly — does not block, does not raise."""
-    import cua_overlay.ax.rate_limit as rl
+    import basicctrl.ax.rate_limit as rl
 
     frozen = [5000.0]
     monkeypatch.setattr(rl.time, "monotonic", lambda: frozen[0])

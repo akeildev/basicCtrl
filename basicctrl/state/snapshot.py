@@ -18,7 +18,7 @@ import json
 import os
 from pathlib import Path
 
-from cua_overlay.state.graph import Edge, StateGraph, UIElement
+from basicctrl.state.graph import Edge, StateGraph, UIElement
 
 _SNAPSHOT_VERSION = 1
 

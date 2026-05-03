@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from cua_overlay.skills import loader
+from basicctrl.skills import loader
 
 
 @pytest.mark.unit

@@ -118,7 +118,7 @@ def chromium_process() -> tuple[subprocess.Popen, int]:
     import socket
     import tempfile
 
-    # T2CDPTranslator only probes 9222-9225 (cua_overlay/translators/t2_cdp.py
+    # T2CDPTranslator only probes 9222-9225 (basicctrl/translators/t2_cdp.py
     # CDP_PROBE_PORTS), so we MUST land in that range. Pick the first one
     # that's free; kill any stale Chrome holding the others as we go.
     cdp_port = None
@@ -237,31 +237,31 @@ async def _get_page_url(cdp_ws_url: str, cdp_port: int | None = None) -> str:
 
 def _build_race_orchestrator_with_cdp(session_dir: Path):
     """Wire a real RaceOrchestrator with all Phase 1+2 deps including T2/C5."""
-    from cua_overlay.actions import (
+    from basicctrl.actions import (
         DuplicateReceipt,
         IdempotencyTokenStore,
         RaceOrchestrator,
     )
-    from cua_overlay.actions.channel_registry import ChannelRegistry
-    from cua_overlay.actions.channels import (
+    from basicctrl.actions.channel_registry import ChannelRegistry
+    from basicctrl.actions.channels import (
         C1SkyLightChannel,
         C2AXPressChannel,
         C3CGEventChannel,
         C4AppleScriptChannel,
         C5CDPInputChannel,
     )
-    from cua_overlay.ax.observer import AXEventBridge
-    from cua_overlay.persist import SessionWriter
-    from cua_overlay.profile.classifier import classify
-    from cua_overlay.translators import (
+    from basicctrl.ax.observer import AXEventBridge
+    from basicctrl.persist import SessionWriter
+    from basicctrl.profile.classifier import classify
+    from basicctrl.translators import (
         T1AXTranslator,
         T2CDPTranslator,
         T3AppleScriptTranslator,
         T4VisionTranslator,
         T5PixelTranslator,
     )
-    from cua_overlay.translators.registry import TranslatorRegistry
-    from cua_overlay.verifier import (
+    from basicctrl.translators.registry import TranslatorRegistry
+    from basicctrl.verifier import (
         Aggregator,
         AXObserverManager,
         L0Push,
@@ -338,8 +338,8 @@ async def test_cdp_chromium_click_via_race_orchestrator(
         assert "example.com" in initial_url, f"Initial URL mismatch: {initial_url}"
 
         # Click "Learn more" link via RaceOrchestrator
-        from cua_overlay.actions.race_policy import RacePolicy
-        from cua_overlay.translators.base import TargetSpec
+        from basicctrl.actions.race_policy import RacePolicy
+        from basicctrl.translators.base import TargetSpec
 
         action, post = await race_orch.execute(
             bundle_id="com.google.Chrome",  # Chromium mimics Chrome bundle

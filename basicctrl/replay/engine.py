@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Optional, Any
 
-from cua_overlay.observability.session_storage import SessionWriter
+from basicctrl.observability.session_storage import SessionWriter
 
 
 class ReplayEngine:

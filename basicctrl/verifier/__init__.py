@@ -6,13 +6,13 @@ racing/recovery import.
 """
 from __future__ import annotations
 
-from cua_overlay.verifier.aggregator import Aggregator
-from cua_overlay.verifier.axobserver import AXObserverManager
-from cua_overlay.verifier.distnotif import (
+from basicctrl.verifier.aggregator import Aggregator
+from basicctrl.verifier.axobserver import AXObserverManager
+from basicctrl.verifier.distnotif import (
     DistributedNotificationEvent,
     DistributedNotificationObserver,
 )
-from cua_overlay.verifier.ensemble import (
+from basicctrl.verifier.ensemble import (
     L0Push,
     L1Cheap,
     L1Snapshot,
@@ -24,8 +24,8 @@ from cua_overlay.verifier.ensemble import (
     VERIFIED_THRESHOLD,
     WeightedVote,
 )
-from cua_overlay.verifier.kqueue_proc import KqueueProcObserver
-from cua_overlay.verifier.nsworkspace import NSWorkspaceObserver
+from basicctrl.verifier.kqueue_proc import KqueueProcObserver
+from basicctrl.verifier.nsworkspace import NSWorkspaceObserver
 
 __all__ = [
     "Aggregator",

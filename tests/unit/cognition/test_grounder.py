@@ -11,7 +11,7 @@ from unittest import mock
 from PIL import Image
 import io
 
-from cua_overlay.cognition.grounder import Grounder
+from basicctrl.cognition.grounder import Grounder
 
 
 class TestGrounder:
@@ -180,7 +180,7 @@ class TestGrounder:
     @pytest.mark.asyncio
     async def test_mlx_vlm_unavailable_returns_zero_bbox(self, grounder, sample_screenshot_bytes):
         """Test: mlx-vlm unavailable returns zero bbox gracefully."""
-        with mock.patch("cua_overlay.cognition.grounder.HAS_MLX_VLM", False):
+        with mock.patch("basicctrl.cognition.grounder.HAS_MLX_VLM", False):
             bbox, conf = await grounder.ground_ui_tars(sample_screenshot_bytes, "test")
 
         assert bbox == (0, 0, 0, 0)
@@ -189,7 +189,7 @@ class TestGrounder:
     @pytest.mark.asyncio
     async def test_uitag_unavailable_returns_zero_bbox(self, grounder, sample_screenshot_bytes):
         """Test: uitag unavailable returns zero bbox gracefully."""
-        with mock.patch("cua_overlay.cognition.grounder.HAS_UITAG", False):
+        with mock.patch("basicctrl.cognition.grounder.HAS_UITAG", False):
             bbox, conf = await grounder.fallback_to_uitag(sample_screenshot_bytes, "test")
 
         assert bbox == (0, 0, 0, 0)
@@ -199,7 +199,7 @@ class TestGrounder:
     async def test_ground_ui_tars_with_sanity_gate_integration(self, grounder, sample_screenshot_bytes):
         """Integration: ground_ui_tars applies sanity gate."""
         # Mock mlx-vlm availability
-        with mock.patch("cua_overlay.cognition.grounder.HAS_MLX_VLM", True):
+        with mock.patch("basicctrl.cognition.grounder.HAS_MLX_VLM", True):
             # Mock mlx-vlm to return center coords
             with mock.patch.object(
                 grounder,

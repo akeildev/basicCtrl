@@ -124,8 +124,8 @@ def fake_idempotency_store(tmp_path: Path):
     """In-memory IdempotencyTokenStore wired to a tmp SessionWriter for unit tests.
 
     Skips with importorskip if Wave-1 idempotency module not yet built."""
-    pytest.importorskip("cua_overlay.actions.idempotency")
-    from cua_overlay.actions.idempotency import IdempotencyTokenStore
-    from cua_overlay.persist.session_writer import SessionWriter
+    pytest.importorskip("basicctrl.actions.idempotency")
+    from basicctrl.actions.idempotency import IdempotencyTokenStore
+    from basicctrl.persist.session_writer import SessionWriter
     sw = SessionWriter(base=tmp_path)
     return IdempotencyTokenStore(sw)

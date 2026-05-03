@@ -17,7 +17,7 @@ import os
 
 import pytest
 
-from cua_overlay.actions.race_policy import RacePolicy
+from basicctrl.actions.race_policy import RacePolicy
 
 pytestmark = [
     pytest.mark.integration,
@@ -38,18 +38,18 @@ async def test_t4_t5_on_chess_e2_to_e4(chess_launcher) -> None:
     pid = chess_launcher
     assert pid > 0
 
-    from cua_overlay.actions import (
+    from basicctrl.actions import (
         DuplicateReceipt,
         IdempotencyTokenStore,
         RaceOrchestrator,
     )
-    from cua_overlay.actions.channel_registry import ChannelRegistry
-    from cua_overlay.ax.observer import AXEventBridge
-    from cua_overlay.persist import SessionWriter
-    from cua_overlay.profile.classifier import classify
-    from cua_overlay.translators.base import TargetSpec
-    from cua_overlay.translators.registry import TranslatorRegistry
-    from cua_overlay.verifier import (
+    from basicctrl.actions.channel_registry import ChannelRegistry
+    from basicctrl.ax.observer import AXEventBridge
+    from basicctrl.persist import SessionWriter
+    from basicctrl.profile.classifier import classify
+    from basicctrl.translators.base import TargetSpec
+    from basicctrl.translators.registry import TranslatorRegistry
+    from basicctrl.verifier import (
         Aggregator,
         AXObserverManager,
         L0Push,
@@ -59,8 +59,8 @@ async def test_t4_t5_on_chess_e2_to_e4(chess_launcher) -> None:
         NSWorkspaceObserver,
         WeightedVote,
     )
-    import cua_overlay.translators  # noqa: F401 — register on import
-    import cua_overlay.actions.channels  # noqa: F401 — register on import
+    import basicctrl.translators  # noqa: F401 — register on import
+    import basicctrl.actions.channels  # noqa: F401 — register on import
 
     loop = asyncio.get_running_loop()
     bridge = AXEventBridge(loop=loop)
@@ -95,7 +95,7 @@ async def test_t4_t5_on_chess_e2_to_e4(chess_launcher) -> None:
         # land off-target. Print dimensions on first invocation for operator
         # eye-verification per PHASE-2-DEMO.md SC #3 expected output.
         try:
-            from cua_overlay.translators.t4_vision import T4VisionTranslator
+            from basicctrl.translators.t4_vision import T4VisionTranslator
 
             t4 = T4VisionTranslator()
             screenshot_path = await t4._screenshot_to_path(pid)
@@ -124,7 +124,7 @@ async def test_t4_t5_on_chess_e2_to_e4(chess_launcher) -> None:
             print(f"[SC #3 first-run] uitag pre-flight skipped: {exc!r}")
 
         # Capture pre-screenshot dHash via L1 (Phase 1 cheap-diff path).
-        from cua_overlay.state.graph import Bbox, Source, UIElement
+        from basicctrl.state.graph import Bbox, Source, UIElement
         from datetime import datetime, timezone
 
         # Use a stub UIElement covering the full Chess window so L1.snapshot

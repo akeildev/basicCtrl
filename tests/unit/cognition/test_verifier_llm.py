@@ -4,11 +4,11 @@ Per D-06: V-Droid pattern, prefill-only, prefix-cached.
 """
 import pytest
 
-pytest.importorskip("cua_overlay.cognition.verifier_llm")
+pytest.importorskip("basicctrl.cognition.verifier_llm")
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from cua_overlay.cognition.verifier_llm import VerifierLLM
+from basicctrl.cognition.verifier_llm import VerifierLLM
 
 
 @pytest.mark.unit

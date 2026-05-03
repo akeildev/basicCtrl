@@ -30,10 +30,10 @@ from typing import Any, Callable, Literal, Optional
 import anyio
 import structlog
 
-from cua_overlay.actions.channels.base import ChannelOutcome
-from cua_overlay.actions.idempotency import IdempotencyTokenStore
-from cua_overlay.state.causal_dag import ActionCanonical
-from cua_overlay.translators.base import TranslatorTarget
+from basicctrl.actions.channels.base import ChannelOutcome
+from basicctrl.actions.idempotency import IdempotencyTokenStore
+from basicctrl.state.causal_dag import ActionCanonical
+from basicctrl.translators.base import TranslatorTarget
 
 
 _log = structlog.get_logger()
@@ -138,7 +138,7 @@ class C5CDPInputChannel:
         # per-fire socket handshake we used to pay with `async with CDPClient(...)`.
         # Stale-session retry happens inside daemon.call().
         try:
-            from cua_overlay.translators.cdp_daemon import get_or_create
+            from basicctrl.translators.cdp_daemon import get_or_create
 
             # `bundle_id` is best-effort — the daemon was already created by T2
             # under the real bundle_id, so this lookup hits the cache.

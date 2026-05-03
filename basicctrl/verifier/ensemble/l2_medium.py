@@ -9,7 +9,7 @@ Per VERIFY-06 + 01-RESEARCH.md "L2: Medium (50-200ms target)":
   presence.
 * **L2b AX depth-limited subtree** (~10-50 ms with rate-limit) —
   ``walk_subtree(..., max_depth=3, max_children=50, max_nodes=500)`` —
-  the ONLY sanctioned way to walk an AX hierarchy in cua-maximalist.
+  the ONLY sanctioned way to walk an AX hierarchy in basicCtrl.
   Reuses Plan 03's walker verbatim; never re-implements raw AX recursion
   (Pitfall P3 hard rule: full recursive AX = 15-20 s on Safari).
 
@@ -45,9 +45,9 @@ from typing import Any, Optional
 import anyio
 import structlog
 
-from cua_overlay.ax.rate_limit import TokenBucket
-from cua_overlay.ax.walker import walk_subtree
-from cua_overlay.state.graph import Bbox, UIElement
+from basicctrl.ax.rate_limit import TokenBucket
+from basicctrl.ax.walker import walk_subtree
+from basicctrl.state.graph import Bbox, UIElement
 
 
 @dataclass
@@ -223,7 +223,7 @@ class L2Medium:
                     kCGWindowListOptionOnScreenOnly,
                 )
 
-                from cua_overlay.verifier.ensemble.l1_cheap import L1Cheap
+                from basicctrl.verifier.ensemble.l1_cheap import L1Cheap
 
                 cx, cy = bbox.centroid
                 rect = CGRectMake(cx - 50, cy - 50, 100, 100)

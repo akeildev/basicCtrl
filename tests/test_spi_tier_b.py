@@ -9,14 +9,14 @@ import pytest
 from dataclasses import dataclass
 from unittest.mock import patch, MagicMock
 
-from cua_overlay.spi.cgs_display import CGSBridge, get_cgs_bridge
-from cua_overlay.spi.endpoint_security import (
+from basicctrl.spi.cgs_display import CGSBridge, get_cgs_bridge
+from basicctrl.spi.endpoint_security import (
     EndpointSecurityBridge,
     get_endpoint_security_bridge,
     is_sip_partial_off,
 )
-from cua_overlay.spi.dtrace import DTraceBridge, get_dtrace_bridge
-from cua_overlay.spi.probe import is_sip_partial_off as probe_is_sip_partial_off
+from basicctrl.spi.dtrace import DTraceBridge, get_dtrace_bridge
+from basicctrl.spi.probe import is_sip_partial_off as probe_is_sip_partial_off
 
 
 # Mock SPICapabilities for testing
@@ -123,7 +123,7 @@ class TestEndpointSecurityBridge:
 
     def test_es_bridge_init_available_sip_on(self):
         """EndpointSecurityBridge gracefully skips when SIP is on."""
-        with patch("cua_overlay.spi.endpoint_security.is_sip_partial_off", return_value=False):
+        with patch("basicctrl.spi.endpoint_security.is_sip_partial_off", return_value=False):
             bridge = EndpointSecurityBridge(available=True)
             # SIP is on; bridge should be marked unavailable
             assert bridge.available is False
@@ -135,7 +135,7 @@ class TestEndpointSecurityBridge:
     def test_es_bridge_init_available_sip_off(self):
         """EndpointSecurityBridge attempts to load when SIP partial-off."""
         # This test only runs on Macs with SIP partial-off
-        with patch("cua_overlay.spi.endpoint_security.is_sip_partial_off", return_value=True):
+        with patch("basicctrl.spi.endpoint_security.is_sip_partial_off", return_value=True):
             with patch("ctypes.CDLL") as mock_cdll:
                 # Simulate es_new_client symbol found
                 mock_libc = MagicMock()
@@ -171,7 +171,7 @@ class TestDTraceBridge:
 
     def test_dtrace_bridge_init_available_sip_on(self):
         """DTraceBridge gracefully skips when SIP is on."""
-        with patch("cua_overlay.spi.dtrace.is_sip_partial_off", return_value=False):
+        with patch("basicctrl.spi.dtrace.is_sip_partial_off", return_value=False):
             bridge = DTraceBridge(available=True)
             # SIP is on; bridge should be marked unavailable
             assert bridge.available is False
@@ -183,7 +183,7 @@ class TestDTraceBridge:
     def test_dtrace_bridge_init_available_sip_off(self):
         """DTraceBridge attempts to check dtrace when SIP partial-off."""
         # This test only runs on Macs with SIP partial-off
-        with patch("cua_overlay.spi.dtrace.is_sip_partial_off", return_value=True):
+        with patch("basicctrl.spi.dtrace.is_sip_partial_off", return_value=True):
             with patch("subprocess.run") as mock_run:
                 # Simulate dtrace -l working
                 mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -222,7 +222,7 @@ class TestBridgeFactories:
     async def test_get_cgs_bridge_caches(self):
         """get_cgs_bridge caches result across calls."""
         # Reset global state
-        import cua_overlay.spi.cgs_display as cgs_module
+        import basicctrl.spi.cgs_display as cgs_module
 
         cgs_module._bridge = None
 
@@ -239,7 +239,7 @@ class TestBridgeFactories:
     async def test_get_es_bridge_caches(self):
         """get_endpoint_security_bridge caches result across calls."""
         # Reset global state
-        import cua_overlay.spi.endpoint_security as es_module
+        import basicctrl.spi.endpoint_security as es_module
 
         es_module._bridge = None
 
@@ -256,7 +256,7 @@ class TestBridgeFactories:
     async def test_get_dtrace_bridge_caches(self):
         """get_dtrace_bridge caches result across calls."""
         # Reset global state
-        import cua_overlay.spi.dtrace as dtrace_module
+        import basicctrl.spi.dtrace as dtrace_module
 
         dtrace_module._bridge = None
 

@@ -23,9 +23,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from cua_overlay.ax.observer import AXEvent, AXEventBridge
-from cua_overlay.state.graph import Bbox, Source, UIElement
-from cua_overlay.verifier.axobserver import AXObserverManager
+from basicctrl.ax.observer import AXEvent, AXEventBridge
+from basicctrl.state.graph import Bbox, Source, UIElement
+from basicctrl.verifier.axobserver import AXObserverManager
 
 
 def _make_target(pid: int, bbox: Bbox, label: str = "Five") -> UIElement:

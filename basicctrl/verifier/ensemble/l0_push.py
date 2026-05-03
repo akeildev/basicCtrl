@@ -18,10 +18,10 @@ from typing import Any, Optional
 
 import structlog
 
-from cua_overlay.state.graph import UIElement
-from cua_overlay.verifier.axobserver import AXObserverManager
-from cua_overlay.verifier.kqueue_proc import KqueueProcObserver
-from cua_overlay.verifier.nsworkspace import NSWorkspaceObserver
+from basicctrl.state.graph import UIElement
+from basicctrl.verifier.axobserver import AXObserverManager
+from basicctrl.verifier.kqueue_proc import KqueueProcObserver
+from basicctrl.verifier.nsworkspace import NSWorkspaceObserver
 
 
 # Map AX notification names → signal-dict keys consumed by WeightedVote.

@@ -65,7 +65,7 @@ def fake_state_graph():
 @pytest.fixture
 def fake_failure_ctx(fake_state_graph):
     """Synthesize a FailureCtx as B3/B4 would receive from RecoveryOrchestrator."""
-    from cua_overlay.state.causal_dag import ActionCanonical
+    from basicctrl.state.causal_dag import ActionCanonical
 
     failed_action = ActionCanonical(
         id="act_test_1",
@@ -95,8 +95,8 @@ class TestB3RealPath:
     async def test_b3_attempts_replan_via_world_model_and_planner(
         self, has_anthropic_key, session_writer, idempotency_store, fake_failure_ctx
     ):
-        from cua_overlay.cognition import Planner, WorldModelPredictor
-        from cua_overlay.recovery.branches import B3_WorldReplan
+        from basicctrl.cognition import Planner, WorldModelPredictor
+        from basicctrl.recovery.branches import B3_WorldReplan
 
         planner = Planner()
         wmp = WorldModelPredictor()
@@ -159,8 +159,8 @@ class TestB4RealPath:
     async def test_b4_generates_candidates_and_critic_picks_winner(
         self, has_anthropic_key, session_writer, idempotency_store, fake_failure_ctx
     ):
-        from cua_overlay.cognition import Critic, Planner
-        from cua_overlay.recovery.branches import B4_PlannerRequery
+        from basicctrl.cognition import Critic, Planner
+        from basicctrl.recovery.branches import B4_PlannerRequery
 
         planner = Planner()
         critic = Critic()
@@ -226,7 +226,7 @@ def _sampling_ctx_returning(json_payload: str) -> MagicMock:
 def _planner_factory_using_ctx():
     """Mirror main.py's _planner_factory but skip the SDK Planner branch
     so the test exercises ONLY the sampling path."""
-    from cua_overlay.cognition import MCPSamplingPlanner
+    from basicctrl.cognition import MCPSamplingPlanner
 
     def factory(ctx):
         if ctx is not None and MCPSamplingPlanner.host_supports_sampling(ctx):
@@ -244,8 +244,8 @@ class TestB3SamplingPath:
     async def test_b3_replans_via_sampling_when_host_supports_it(
         self, session_writer, idempotency_store, fake_failure_ctx
     ):
-        from cua_overlay.cognition import WorldModelPredictor
-        from cua_overlay.recovery.branches import B3_WorldReplan
+        from basicctrl.cognition import WorldModelPredictor
+        from basicctrl.recovery.branches import B3_WorldReplan
 
         wmp = WorldModelPredictor()  # heuristic, no key
 
@@ -287,8 +287,8 @@ class TestB3SamplingPath:
     async def test_b3_emits_no_planner_available_when_host_lacks_sampling(
         self, session_writer, idempotency_store, fake_failure_ctx
     ):
-        from cua_overlay.cognition import WorldModelPredictor
-        from cua_overlay.recovery.branches import B3_WorldReplan
+        from basicctrl.cognition import WorldModelPredictor
+        from basicctrl.recovery.branches import B3_WorldReplan
 
         wmp = WorldModelPredictor()
 
@@ -319,8 +319,8 @@ class TestB4SamplingPath:
     async def test_b4_ranks_sampling_candidates(
         self, session_writer, idempotency_store, fake_failure_ctx
     ):
-        from cua_overlay.cognition import Critic
-        from cua_overlay.recovery.branches import B4_PlannerRequery
+        from basicctrl.cognition import Critic
+        from basicctrl.recovery.branches import B4_PlannerRequery
 
         critic = Critic()
 

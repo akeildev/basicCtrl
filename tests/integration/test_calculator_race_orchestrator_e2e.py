@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from cua_overlay.translators.base import TargetSpec
+from basicctrl.translators.base import TargetSpec
 
 
 pytestmark = [
@@ -79,31 +79,31 @@ def _build_orchestrator(session_dir: Path):
     Returns (race_orch, axmgr, bridge, ws, session) so the test can teardown
     + read the action_log_path.
     """
-    from cua_overlay.actions import (
+    from basicctrl.actions import (
         DuplicateReceipt,
         IdempotencyTokenStore,
         RaceOrchestrator,
     )
-    from cua_overlay.actions.channel_registry import ChannelRegistry
-    from cua_overlay.actions.channels import (
+    from basicctrl.actions.channel_registry import ChannelRegistry
+    from basicctrl.actions.channels import (
         C1SkyLightChannel,
         C2AXPressChannel,
         C3CGEventChannel,
         C4AppleScriptChannel,
         C5CDPInputChannel,
     )
-    from cua_overlay.ax.observer import AXEventBridge
-    from cua_overlay.persist import SessionWriter
-    from cua_overlay.profile.classifier import classify
-    from cua_overlay.translators import (
+    from basicctrl.ax.observer import AXEventBridge
+    from basicctrl.persist import SessionWriter
+    from basicctrl.profile.classifier import classify
+    from basicctrl.translators import (
         T1AXTranslator,
         T2CDPTranslator,
         T3AppleScriptTranslator,
         T4VisionTranslator,
         T5PixelTranslator,
     )
-    from cua_overlay.translators.registry import TranslatorRegistry
-    from cua_overlay.verifier import (
+    from basicctrl.translators.registry import TranslatorRegistry
+    from basicctrl.verifier import (
         Aggregator,
         AXObserverManager,
         L0Push,
@@ -165,8 +165,8 @@ async def _click_via_race(
 ):
     """Try each label alias until race_orch.execute returns. Returns the
     (action, post) tuple on first success or raises on total failure."""
-    from cua_overlay.actions.race_orchestrator import NoTargetResolvable
-    from cua_overlay.actions.race_policy import RacePolicy
+    from basicctrl.actions.race_orchestrator import NoTargetResolvable
+    from basicctrl.actions.race_policy import RacePolicy
 
     last_exc: Exception | None = None
     for label in label_aliases:

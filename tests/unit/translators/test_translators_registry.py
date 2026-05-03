@@ -4,8 +4,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from cua_overlay.state.graph import Bbox, UIElement
-from cua_overlay.translators import (
+from basicctrl.state.graph import Bbox, UIElement
+from basicctrl.translators import (
     TargetSpec,
     Translator,
     TranslatorRegistry,
