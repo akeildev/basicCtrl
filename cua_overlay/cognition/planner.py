@@ -195,13 +195,37 @@ class Planner:
     def _build_user_message(
         self, task_description: str, current_state: StateGraph
     ) -> str:
-        """Build user message with task + state context."""
+        """Build user message with task + state + per-app skills context."""
         state_summary = self._serialize_state(current_state)
-        return (
-            f"Task: {task_description}\n\n"
-            f"Current state:\n{state_summary}\n\n"
-            f"Generate a plan as JSON."
-        )
+        skills = self._load_skill_context(getattr(current_state, "app", ""))
+        parts = [f"Task: {task_description}"]
+        if skills:
+            parts.append(skills)
+        parts.append(f"Current state:\n{state_summary}")
+        parts.append("Generate a plan as JSON.")
+        return "\n\n".join(parts)
+
+    def _load_skill_context(self, app_bundle_id: str) -> str:
+        """α3: surface per-app skill markdown to the planner prompt.
+
+        Skills live at `cua_overlay/skills/<bundle_id>/*.md`. They were
+        previously dead code; this wires them in so the LLM has prior
+        knowledge about the target app instead of rediscovering it.
+        """
+        if not app_bundle_id or app_bundle_id in ("?", "unknown"):
+            return ""
+        try:
+            from cua_overlay.skills.loader import read_all_skills
+
+            blob = read_all_skills(app_bundle_id)
+        except Exception as exc:  # noqa: BLE001
+            log.debug("planner.skill_load_failed", error=str(exc))
+            return ""
+        if not blob:
+            return ""
+        if len(blob) > 3000:
+            blob = blob[:3000] + "\n\n[truncated]"
+        return f"App skill notes for {app_bundle_id}:\n\n{blob}"
 
     def _serialize_state(self, state: StateGraph) -> str:
         """Serialize StateGraph to compact string."""

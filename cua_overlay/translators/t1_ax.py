@@ -123,6 +123,7 @@ class T1AXTranslator:
         ax_app: Any,
         pid: int,
         bundle_id: str,
+        walk_root: Any = None,
     ) -> list[tuple[UIElement, Any]]:
         """Iterative BFS preserving ax_ref alongside each UIElement.
 
@@ -170,13 +171,20 @@ class T1AXTranslator:
         # double-count and explode the queue (Calculator emits 100+ duplicate
         # nodes when both seeds are queued).
         queue: list[tuple[Any, int, str]] = []
-        if await self._walk_bucket.acquire(pid):
-            windows = await asyncio.to_thread(_read_attr_sync, ax_app, "AXWindows") or []
-            for i, win in enumerate(windows[:10]):  # cap windows at 10 — apps with more are pathological
-                queue.append((win, 0, f"AXApplication/AXWindow[{i}]"))
-        if not queue:
-            # No windows visible (yet) — fall back to walking the app root.
-            queue.append((ax_app, 0, "AXApplication"))
+        if walk_root is not None:
+            # Phase H: caller (resolve) supplied the focused window ref.
+            # Walking only that subtree disambiguates multi-window apps
+            # (e.g. Chess.app with two restored game windows where T1 was
+            # otherwise grabbing the first AXButton match across windows).
+            queue.append((walk_root, 0, "AXApplication/AXFocusedWindow"))
+        else:
+            if await self._walk_bucket.acquire(pid):
+                windows = await asyncio.to_thread(_read_attr_sync, ax_app, "AXWindows") or []
+                for i, win in enumerate(windows[:10]):  # cap windows at 10 — apps with more are pathological
+                    queue.append((win, 0, f"AXApplication/AXWindow[{i}]"))
+            if not queue:
+                # No windows visible (yet) — fall back to walking the app root.
+                queue.append((ax_app, 0, "AXApplication"))
 
         while queue and len(out) < _MAX_NODES_T1:
             ax_elem, depth, this_path = queue.pop(0)
@@ -306,15 +314,25 @@ class T1AXTranslator:
             return None
 
         async def _walk():
-            return await self._walk_with_refs(ax_app, pid, bundle_id)
+            # Phase H: scope the walk to the focused window's subtree so
+            # multi-window apps don't ambiguate.
+            return await self._walk_with_refs(
+                ax_app, pid, bundle_id, walk_root=window
+            )
 
         async def _on_retry():
             # Stale AXUIElement handle — re-create the app element and let
             # the next iteration walk a fresh tree.
-            nonlocal ax_app
+            nonlocal ax_app, window
             fresh = await self._get_app_element(pid)
             if fresh is not None:
                 ax_app = fresh
+            try:
+                window = await ensure_real_window(
+                    pid, activate_if_not_frontmost=False
+                )
+            except Exception:  # noqa: BLE001
+                window = None
 
         try:
             nodes = await retry_on_stale_ax(_walk, on_retry=_on_retry)

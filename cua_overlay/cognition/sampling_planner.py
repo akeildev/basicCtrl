@@ -97,11 +97,21 @@ class MCPSamplingPlanner:
         )
         state_app = getattr(current_state, "app", "?")
         state_node_count = len(getattr(current_state, "nodes", []))
-        user_msg = (
-            f"Task: {task_description}\n\n"
-            f"Current state: app={state_app}, nodes={state_node_count}\n\n"
-            f"Generate a plan as JSON."
+
+        # α3: surface per-app skill markdown to the planner. Skills capture
+        # the durable shape of the target app (URL/window patterns, stable
+        # selectors, framework quirks, traps) — concrete prior knowledge the
+        # planner would otherwise have to rediscover from scratch.
+        skill_block = self._load_skill_context(state_app)
+
+        user_msg_parts = [f"Task: {task_description}"]
+        if skill_block:
+            user_msg_parts.append(skill_block)
+        user_msg_parts.append(
+            f"Current state: app={state_app}, nodes={state_node_count}"
         )
+        user_msg_parts.append("Generate a plan as JSON.")
+        user_msg = "\n\n".join(user_msg_parts)
 
         try:
             result = await self.ctx.session.create_message(
@@ -145,6 +155,33 @@ class MCPSamplingPlanner:
             success_criteria=list(plan_dict.get("success_criteria", [])),
             bounded=True,
         )
+
+    def _load_skill_context(self, app_bundle_id: str) -> str:
+        """Return per-app skill markdown for `app_bundle_id`, capped to a
+        reasonable size. Empty string when no skills are filed for the app.
+
+        Skills live at `cua_overlay/skills/<bundle_id>/*.md`. Originally
+        loader.py was dead code per its README — α3 wires it into planner
+        prompts so the planner has concrete prior knowledge about the app
+        (URL patterns, stable selectors, framework quirks, traps) instead
+        of rediscovering it from scratch.
+        """
+        if not app_bundle_id or app_bundle_id == "?":
+            return ""
+        try:
+            from cua_overlay.skills.loader import read_all_skills
+
+            blob = read_all_skills(app_bundle_id)
+        except Exception as exc:  # noqa: BLE001
+            log.debug("sampling_planner.skill_load_failed", error=str(exc))
+            return ""
+        if not blob:
+            return ""
+        # Cap at ~3K chars so planner prompts stay focused. Skills should be
+        # the *map*, not the diary — anything longer is a smell anyway.
+        if len(blob) > 3000:
+            blob = blob[:3000] + "\n\n[truncated]"
+        return f"App skill notes for {app_bundle_id}:\n\n{blob}"
 
     def _extract_json(self, text: str) -> dict[str, Any]:
         """Pull a JSON object out of a possibly-markdown-wrapped response."""

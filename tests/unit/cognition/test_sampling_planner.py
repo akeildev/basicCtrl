@@ -107,6 +107,50 @@ class TestPlanAction:
         assert plan.steps == [{"kind": "READ"}]
 
     @pytest.mark.asyncio
+    async def test_skill_markdown_threaded_into_user_message(self):
+        """α3: per-app skill markdown is concatenated into the planner
+        prompt so the LLM has prior knowledge about the app."""
+        ctx = _ctx_with_sampling(True)
+        captured: dict = {}
+
+        async def fake_create_message(messages, **kwargs):
+            captured["messages"] = messages
+            return MagicMock(
+                content=MagicMock(
+                    text='{"steps":[],"preconds":[],"success_criteria":[]}'
+                )
+            )
+
+        ctx.session.create_message = AsyncMock(side_effect=fake_create_message)
+
+        planner = MCPSamplingPlanner(ctx)
+        # com.apple.calculator has a skill file in cua_overlay/skills/.
+        state = MagicMock(app="com.apple.calculator", nodes=[])
+        await planner.plan_action("compute 17 times 23", state)
+        text = captured["messages"][0].content.text
+        assert "App skill notes for com.apple.calculator" in text, text[:300]
+
+    @pytest.mark.asyncio
+    async def test_skill_block_omitted_when_no_skills_filed(self):
+        ctx = _ctx_with_sampling(True)
+        captured: dict = {}
+
+        async def fake_create_message(messages, **kwargs):
+            captured["messages"] = messages
+            return MagicMock(
+                content=MagicMock(
+                    text='{"steps":[],"preconds":[],"success_criteria":[]}'
+                )
+            )
+
+        ctx.session.create_message = AsyncMock(side_effect=fake_create_message)
+        planner = MCPSamplingPlanner(ctx)
+        state = MagicMock(app="com.example.never-heard-of", nodes=[])
+        await planner.plan_action("test", state)
+        text = captured["messages"][0].content.text
+        assert "App skill notes" not in text
+
+    @pytest.mark.asyncio
     async def test_truncates_to_max_steps(self):
         ctx = _ctx_with_sampling(True)
         # 25 steps, max_steps=20 → should truncate

@@ -46,15 +46,7 @@ def fake_proxy_with_tools():
     from cua_overlay.state.causal_dag import ActionCanonical, HoarePost
 
     proxy = _FakeFastMCP()
-    upstream = MagicMock()
 
-    fake_session = MagicMock()
-    fake_session.session_id = "test-session-id"
-    deps = MagicMock()
-    deps.session = fake_session
-
-    # Mock race orchestrator that returns a deterministic (action, post) tuple
-    # AND records the policy + action_type it was called with.
     fake_action = ActionCanonical(
         id="action-id-1",
         step_idx=0,
@@ -76,6 +68,34 @@ def fake_proxy_with_tools():
         timestamp_ns=2000,
     )
 
+    # Upstream MCP client mock — `run_action_wrap` calls upstream.call_tool
+    # for the target-less key_combo / type-into-focused path. Returns a
+    # CallToolResult-shaped object whose .content[0].text is whatever
+    # cua-driver would have said.
+    upstream_result = SimpleNamespace(
+        content=[SimpleNamespace(text='{"raw":"ok"}')],
+        isError=False,
+    )
+    upstream = MagicMock()
+    upstream.call_tool = AsyncMock(return_value=upstream_result)
+
+    # ProxyDeps mock — `run_action_wrap` reads aggregator + session + durable.
+    fake_session = MagicMock()
+    fake_session.session_id = "test-session-id"
+    fake_session.append_action_log = MagicMock()
+    fake_aggregator = MagicMock()
+    fake_aggregator.verify = AsyncMock(return_value=fake_post)
+    fake_durable = MagicMock()
+    fake_durable.checkpoint = AsyncMock(return_value=None)
+
+    deps = SimpleNamespace(
+        session=fake_session,
+        aggregator=fake_aggregator,
+        durable=fake_durable,
+    )
+
+    # Mock race orchestrator that returns a deterministic (action, post) tuple
+    # AND records the policy + action_type it was called with.
     race_orch = MagicMock()
     race_orch.execute = AsyncMock(return_value=(fake_action, fake_post))
 
@@ -88,6 +108,7 @@ def fake_proxy_with_tools():
     return SimpleNamespace(
         proxy=proxy,
         deps=deps,
+        upstream=upstream,
         race_orch=race_orch,
         RacePolicy=RacePolicy,
     )
@@ -95,7 +116,8 @@ def fake_proxy_with_tools():
 
 def test_six_tools_registered(fake_proxy_with_tools) -> None:
     """D-29: 6 healing tools registered. Memory loop adds register_task_complete
-    (J1+ memory wire) so the registered set is now 7 by default."""
+    and β1 adds do_task (autonomous plan+execute), so the registered set is
+    now 8 by default."""
     expected = {
         "click_with_healing",
         "type_with_healing",
@@ -104,6 +126,7 @@ def test_six_tools_registered(fake_proxy_with_tools) -> None:
         "send_destructive",
         "key_combo_with_healing",
         "register_task_complete",
+        "do_task",
     }
     assert set(fake_proxy_with_tools.proxy.tools.keys()) == expected
 
@@ -223,37 +246,129 @@ async def test_send_destructive_always_single_channel(fake_proxy_with_tools) -> 
 
 
 @pytest.mark.asyncio
-async def test_key_combo_safe_race_combos_use_prefix_action_type(
+async def test_key_combo_routes_through_upstream_hotkey(
     fake_proxy_with_tools,
 ) -> None:
-    """D-12: cmd+c, cmd+v dispatch as action_type='key_combo:<combo>' so the
-    race_policy `key_combo:` prefix handler routes to RACE via SAFE_RACE_COMBOS."""
+    """α1 (target-less fix): key_combo bypasses race_orch entirely and
+    dispatches to cua-driver's `hotkey` upstream tool. Previously routed
+    through race_orch which let T4 vision win the resolve race against an
+    arbitrary rectangle and the keystroke landed off-target."""
     fo = fake_proxy_with_tools
     fn = fo.proxy.tools["key_combo_with_healing"]
-    for combo in ["cmd+c", "cmd+v"]:
+    for combo in ["cmd+c", "cmd+v", "cmd+s", "cmd+n", "return", "escape"]:
+        fo.upstream.call_tool.reset_mock()
         fo.race_orch.execute.reset_mock()
-        await fn(combo=combo, bundle_id="com.test", pid=1)
-        call_kwargs = fo.race_orch.execute.await_args.kwargs
-        assert call_kwargs["action_type"] == f"key_combo:{combo}", (
-            f"combo={combo} did not dispatch as key_combo:{combo}"
+        await fn(combo=combo, bundle_id="com.test", pid=42)
+        # race_orch.execute MUST NOT be called — keystrokes are target-less.
+        assert fo.race_orch.execute.await_count == 0, (
+            f"combo={combo} unexpectedly went through race_orch"
         )
+        # Upstream `hotkey` tool MUST be called with parsed key list.
+        call = fo.upstream.call_tool.await_args
+        assert call.args[0] == "hotkey"
+        kwargs = call.kwargs.get("arguments") or call.args[1]
+        assert kwargs["pid"] == 42
+        expected_keys = [
+            k for k in combo.lower().replace(" ", "").split("+") if k
+        ]
+        assert kwargs["keys"] == expected_keys
 
 
 @pytest.mark.asyncio
-async def test_key_combo_destructive_uses_prefix_action_type(
+async def test_do_task_returns_clear_error_without_sampling_host(
     fake_proxy_with_tools,
 ) -> None:
-    """D-11: cmd+s, cmd+enter, cmd+w, cmd+z dispatch as 'key_combo:<combo>' too;
-    the race_policy prefix handler routes them to SINGLE_CHANNEL via DESTRUCTIVE_COMBOS."""
+    """β1: do_task degrades cleanly when the host doesn't advertise sampling."""
     fo = fake_proxy_with_tools
-    fn = fo.proxy.tools["key_combo_with_healing"]
-    for combo in ["cmd+s", "cmd+enter", "cmd+w", "cmd+z"]:
-        fo.race_orch.execute.reset_mock()
-        await fn(combo=combo, bundle_id="com.test", pid=1)
-        call_kwargs = fo.race_orch.execute.await_args.kwargs
-        assert call_kwargs["action_type"] == f"key_combo:{combo}", (
-            f"combo={combo} did not dispatch as key_combo:{combo}"
+    fn = fo.proxy.tools["do_task"]
+    res = await fn(
+        description="add a calendar event tomorrow at 5pm",
+        app_bundle_id="com.apple.iCal",
+        pid=42,
+        ctx=None,
+    )
+    assert res["ok"] is False
+    assert "sampling" in res["reason"]
+
+
+@pytest.mark.asyncio
+async def test_do_task_plans_via_sampling_and_dispatches_steps(
+    fake_proxy_with_tools,
+) -> None:
+    """β1: when host supports sampling, do_task asks for a plan, parses
+    JSON, and dispatches each step to the right local tool."""
+    fo = fake_proxy_with_tools
+    fn = fo.proxy.tools["do_task"]
+
+    fake_plan = {
+        "steps": [
+            {"tool": "key_combo_with_healing", "args": {"combo": "cmd+n"}},
+            {"tool": "type_with_healing", "args": {"text": "hello"}},
+            {"tool": "key_combo_with_healing", "args": {"combo": "return"}},
+        ],
+        "success_criteria": ["event visible"],
+    }
+    import json as _json
+    ctx = MagicMock()
+    ctx.session.check_client_capability = MagicMock(return_value=True)
+    ctx.session.create_message = AsyncMock(
+        return_value=MagicMock(
+            content=MagicMock(text=_json.dumps(fake_plan))
         )
+    )
+
+    fo.upstream.call_tool.reset_mock()
+    res = await fn(
+        description="say hello via cmd+n",
+        app_bundle_id="com.test",
+        pid=42,
+        ctx=ctx,
+    )
+    assert res["ok"] is True
+    assert res["steps_planned"] == 3
+    assert res["steps_executed"] == 3
+    # All three steps are target-less → upstream.call_tool fires three times
+    # (hotkey, type_text, hotkey).
+    assert fo.upstream.call_tool.await_count == 3
+    tool_names = [c.args[0] for c in fo.upstream.call_tool.await_args_list]
+    assert tool_names == ["hotkey", "type_text", "hotkey"]
+
+
+@pytest.mark.asyncio
+async def test_type_with_healing_targetless_routes_to_upstream(
+    fake_proxy_with_tools,
+) -> None:
+    """α1: type_with_healing with no target_label dispatches via cua-driver's
+    `type_text` upstream — the keystrokes go to whatever has focus, no
+    translator resolution needed."""
+    fo = fake_proxy_with_tools
+    fn = fo.proxy.tools["type_with_healing"]
+    fo.upstream.call_tool.reset_mock()
+    fo.race_orch.execute.reset_mock()
+    await fn(text="hello", bundle_id="com.test", pid=42)
+    assert fo.race_orch.execute.await_count == 0
+    call = fo.upstream.call_tool.await_args
+    assert call.args[0] == "type_text"
+    kwargs = call.kwargs.get("arguments") or call.args[1]
+    assert kwargs["pid"] == 42
+    assert kwargs["text"] == "hello"
+
+
+@pytest.mark.asyncio
+async def test_type_with_healing_labelled_uses_race_orch(
+    fake_proxy_with_tools,
+) -> None:
+    """When `target_label` is set, type_with_healing keeps the existing
+    race+heal path — T1 grounds the field via AX walk, then race fires."""
+    fo = fake_proxy_with_tools
+    fn = fo.proxy.tools["type_with_healing"]
+    fo.upstream.call_tool.reset_mock()
+    fo.race_orch.execute.reset_mock()
+    await fn(text="hello", bundle_id="com.test", pid=42, target_label="username")
+    assert fo.race_orch.execute.await_count == 1
+    call_kwargs = fo.race_orch.execute.await_args.kwargs
+    assert call_kwargs["action_type"] == "type_into_focused"
+    assert call_kwargs["payload"]["target_label"] == "username"
 
 
 @pytest.mark.asyncio

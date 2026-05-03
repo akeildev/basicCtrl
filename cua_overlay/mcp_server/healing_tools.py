@@ -258,12 +258,38 @@ async def register_healing_tools(
             "note": "Phase 2 race orchestrator; D-29 click_with_healing extended",
         }
 
+    async def _targetless_upstream(
+        upstream_tool: str,
+        action_class: str,
+        kwargs: dict[str, Any],
+    ) -> tuple[Any, Any]:
+        """Run an upstream cua-driver tool through the action-class wrap WITHOUT
+        going through race_orch + translator resolution.
+
+        Used for target-less actions (key combos, type-into-focused) where
+        there is nothing for T1-T5 to resolve — the keystroke goes to the
+        focused field, not a specific element. Previously these called
+        race_orch which would let T4 vision win the resolve race against an
+        arbitrary rectangle and the keystroke would land off-target.
+        """
+        from cua_overlay.mcp_server.proxy import run_action_wrap
+
+        return await run_action_wrap(
+            upstream=upstream,
+            deps=deps,
+            tool_name=upstream_tool,
+            action_class=action_class,
+            kwargs=kwargs,
+        )
+
     @proxy.tool(
         name="type_with_healing",
         description=(
-            "Type text into a focused/labeled element. D-11: type is "
-            "single-channel by default (each channel inserts text → race = "
-            "duplicate chars)."
+            "Type text into a focused or labelled element. When `target_label` "
+            "is given the framework grounds it via T1 AX walk first; otherwise "
+            "the keystrokes are dispatched straight to the pid's focused field "
+            "via cua-driver's type_text (no translator resolution — keystrokes "
+            "are inherently target-less)."
         ),
     )
     async def type_with_healing(
@@ -274,8 +300,48 @@ async def register_healing_tools(
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
         ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
-        """D-11 — type_into_focused is single-channel."""
         t_start = time.monotonic()
+
+        # Target-less: type into whatever has focus. Skip race_orch entirely.
+        if not target_label:
+            result, post = await _targetless_upstream(
+                upstream_tool="type_text",
+                action_class="type",
+                kwargs={"pid": pid, "text": text},
+            )
+            latency_ms = (time.monotonic() - t_start) * 1000.0
+            # `result` is the raw upstream content; build a synthetic
+            # ActionCanonical-shaped record for parity with the race path.
+            from cua_overlay.state.causal_dag import ActionCanonical
+            import uuid as _uuid
+
+            synthetic_action = ActionCanonical(
+                id=_uuid.uuid4().hex,
+                step_idx=0,
+                kind="MUTATE",
+                target_key=f"focused::{bundle_id}",
+                action_type="type_into_focused",
+                payload={"text": text},
+                tier=None,
+                channel=None,
+                timestamp_ns=time.monotonic_ns(),
+                session_id=deps.session.session_id,
+            )
+            await _maybe_record_action(
+                learning_loop, synthetic_action, post, "keystroke"
+            )
+            return {
+                "result": result,
+                "session_id": deps.session.session_id,
+                "phase": 2,
+                "verified": post.verified,
+                "confidence": post.confidence,
+                "race": _build_race_outcome(synthetic_action, post, latency_ms),
+                "recovery": {"ran": False},
+                "note": "type_with_healing target-less → upstream type_text",
+            }
+
+        # Labelled target — keep the existing race+heal path.
         action, post = await race_orch.execute(
             bundle_id=bundle_id,
             pid=pid,
@@ -451,39 +517,54 @@ async def register_healing_tools(
         race_policy: Literal["auto", "race", "single_channel"] = "auto",
         ctx: Optional[Context] = None,
     ) -> dict[str, Any]:
-        """D-11/D-12 — orchestrator picks via resolve_race_policy.
+        """Press a system-wide key combo on `pid`.
 
-        Dispatches `action_type="key_combo:<combo>"` so the prefix handler at
-        race_policy._classify_intrinsic uses the SAFE_RACE_COMBOS / DESTRUCTIVE_COMBOS
-        tables directly. SAFE combos (cmd+c, cmd+v) get RACE; destructive combos
-        (cmd+s, cmd+enter, cmd+w, cmd+z) get SINGLE_CHANNEL automatically.
+        Key combos are inherently target-less — they go to whatever has focus.
+        We bypass race_orch + translator resolution entirely and dispatch via
+        cua-driver's `hotkey` upstream tool (which uses CGEvent.postToPid).
+        Previously this routed through the race orchestrator, which would let
+        T4 vision win the resolve race against an arbitrary rectangle and the
+        keystroke would land off-target.
         """
         combo_lower = combo.lower().strip()
+        keys = [k.strip() for k in combo_lower.replace(" ", "").split("+") if k.strip()]
         action_type = f"key_combo:{combo_lower}"
         t_start = time.monotonic()
-        action, post = await race_orch.execute(
-            bundle_id=bundle_id,
-            pid=pid,
-            target_spec=TargetSpec(),
-            action_type=action_type,
-            payload={"combo": combo_lower},
-            race_policy=_race_policy_from_string(race_policy),
-            session_id=deps.session.session_id,
+
+        result, post = await _targetless_upstream(
+            upstream_tool="hotkey",
+            action_class="type",
+            kwargs={"pid": pid, "keys": keys},
         )
         latency_ms = (time.monotonic() - t_start) * 1000.0
-        recovery_info = await _maybe_recover(
-            recovery_orch, bundle_id, action, post, action_type, ctx=ctx
+
+        from cua_overlay.state.causal_dag import ActionCanonical
+        import uuid as _uuid
+
+        synthetic_action = ActionCanonical(
+            id=_uuid.uuid4().hex,
+            step_idx=0,
+            kind="MUTATE",
+            target_key=f"focused::{bundle_id}",
+            action_type=action_type,
+            payload={"combo": combo_lower, "keys": keys},
+            tier=None,
+            channel=None,
+            timestamp_ns=time.monotonic_ns(),
+            session_id=deps.session.session_id,
         )
-        await _maybe_record_action(learning_loop, action, post, "keystroke")
+        await _maybe_record_action(
+            learning_loop, synthetic_action, post, "keystroke"
+        )
         return {
-            "result": None,
+            "result": result,
             "session_id": deps.session.session_id,
             "phase": 2,
             "verified": post.verified,
             "confidence": post.confidence,
-            "race": _build_race_outcome(action, post, latency_ms),
-            "recovery": recovery_info,
-            "note": f"Phase 2 key_combo_with_healing; combo={combo_lower}; type={action_type}",
+            "race": _build_race_outcome(synthetic_action, post, latency_ms),
+            "recovery": {"ran": False},
+            "note": f"key_combo_with_healing target-less → upstream hotkey; combo={combo_lower}",
         }
 
     @proxy.tool(
@@ -520,6 +601,183 @@ async def register_healing_tools(
             "step_count": result.step_count,
         }
 
+    @proxy.tool(
+        name="do_task",
+        description=(
+            "Autonomous: plan + execute a task end-to-end. The framework "
+            "asks the host LLM (via MCP sampling/createMessage) for a "
+            "step-by-step plan of healing-tool calls, executes each step "
+            "(self-healing happens inside the per-tool calls), then "
+            "synthesizes a Recipe into FAISS so future runs of the same "
+            "task short-circuit the planner (D-20). Requires a host that "
+            "advertises sampling capability."
+        ),
+    )
+    async def do_task(
+        description: str,
+        app_bundle_id: str,
+        pid: int,
+        task_class: str = "general",
+        max_steps: int = 15,
+        ctx: Optional[Context] = None,
+    ) -> dict[str, Any]:
+        from cua_overlay.cognition.sampling_planner import MCPSamplingPlanner
+        from cua_overlay.skills.loader import read_all_skills
+        from mcp import types as mcp_types
+        import json as _json
+
+        if ctx is None or not MCPSamplingPlanner.host_supports_sampling(ctx):
+            return {
+                "ok": False,
+                "reason": "host_does_not_advertise_sampling_capability",
+                "hint": (
+                    "Register cua-maximalist with an MCP host that supports "
+                    "sampling (e.g. Claude Code) so the framework can plan "
+                    "via sampling/createMessage."
+                ),
+            }
+
+        # Skill block: per-app prior knowledge from cua_overlay/skills/.
+        skill_blob = ""
+        try:
+            blob = read_all_skills(app_bundle_id) or ""
+            if blob:
+                skill_blob = "\n\n" + (blob[:3000] + "\n\n[truncated]" if len(blob) > 3000 else blob)
+        except Exception:  # noqa: BLE001
+            pass
+
+        system_prompt = (
+            "You are an agent driving a Mac app via cua-maximalist's healing "
+            "tools. Generate a JSON plan whose steps map directly to tool "
+            "calls. Available tools and arguments:\n"
+            "  click_with_healing  — args: {label: str (preferred), x?: int, y?: int}\n"
+            "  type_with_healing   — args: {text: str, target_label?: str}\n"
+            "  key_combo_with_healing — args: {combo: str, e.g. 'cmd+n', 'return'}\n"
+            "  scroll_with_healing — args: {direction: 'up'|'down'|'left'|'right', amount: int, action_kind?: 'absolute'|'delta'}\n"
+            "  set_value_with_healing — args: {target_label: str, value: str}\n"
+            "  send_destructive    — args: {target_label: str}  (for submit/send/delete)\n"
+            "Return ONLY JSON: {\"steps\": [{\"tool\": str, \"args\": dict}, ...], "
+            "\"success_criteria\": [str, ...]}. Keep plans short (≤" + str(max_steps) + " steps). "
+            "bundle_id and pid are auto-injected."
+        )
+        user_msg = (
+            f"Task: {description}\n"
+            f"app_bundle_id: {app_bundle_id}\n"
+            f"pid: {pid}"
+            + skill_blob
+            + "\n\nGenerate the plan as JSON."
+        )
+
+        try:
+            sampling_result = await ctx.session.create_message(
+                messages=[
+                    mcp_types.SamplingMessage(
+                        role="user",
+                        content=mcp_types.TextContent(type="text", text=user_msg),
+                    )
+                ],
+                max_tokens=2000,
+                system_prompt=system_prompt,
+                temperature=0.0,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "reason": "sampling_error", "error": str(exc)}
+
+        plan_text = getattr(sampling_result.content, "text", "") or ""
+        plan: dict[str, Any] = {}
+        # Tolerate markdown-fenced JSON.
+        candidates = [plan_text]
+        if "```json" in plan_text:
+            i = plan_text.find("```json") + 7
+            j = plan_text.find("```", i)
+            if j > i:
+                candidates.insert(0, plan_text[i:j].strip())
+        elif "```" in plan_text:
+            i = plan_text.find("```") + 3
+            j = plan_text.find("```", i)
+            if j > i:
+                candidates.insert(0, plan_text[i:j].strip())
+        for cand in candidates:
+            try:
+                plan = _json.loads(cand.strip())
+                break
+            except _json.JSONDecodeError:
+                continue
+        if not plan or not isinstance(plan.get("steps"), list):
+            return {
+                "ok": False,
+                "reason": "plan_parse_error",
+                "raw_plan": plan_text[:500],
+            }
+
+        # Execute each step. Tools are local closures (FastMCP @tool returns
+        # the function unchanged), so we dispatch by name.
+        dispatch = {
+            "click_with_healing": click_with_healing,
+            "type_with_healing": type_with_healing,
+            "scroll_with_healing": scroll_with_healing,
+            "set_value_with_healing": set_value_with_healing,
+            "key_combo_with_healing": key_combo_with_healing,
+            "send_destructive": send_destructive,
+        }
+        step_results: list[dict[str, Any]] = []
+        all_verified = True
+        for raw_step in plan["steps"][:max_steps]:
+            tool_name = (raw_step or {}).get("tool")
+            args = dict((raw_step or {}).get("args") or {})
+            args.setdefault("bundle_id", app_bundle_id)
+            args.setdefault("pid", pid)
+            # click_with_healing requires x, y — default to 0 for label-based.
+            if tool_name == "click_with_healing":
+                args.setdefault("x", 0)
+                args.setdefault("y", 0)
+            fn = dispatch.get(tool_name)
+            if fn is None:
+                step_results.append(
+                    {"tool": tool_name, "ok": False, "reason": "unknown_tool"}
+                )
+                all_verified = False
+                continue
+            try:
+                res = await fn(**args)
+            except Exception as exc:  # noqa: BLE001
+                step_results.append(
+                    {"tool": tool_name, "ok": False, "error": str(exc)}
+                )
+                all_verified = False
+                continue
+            verified = bool(res.get("verified")) if isinstance(res, dict) else False
+            step_results.append(
+                {"tool": tool_name, "args": args, "verified": verified, "result": res}
+            )
+            if not verified:
+                all_verified = False
+
+        # Memory: flush a recipe so a re-run hits FAISS instead of replanning.
+        flush_summary: dict[str, Any] = {"flushed": False, "reason": "no_loop"}
+        if learning_loop is not None and all_verified:
+            flush = await learning_loop.flush_to_recipe(
+                task_label=description[:100],
+                task_class=task_class,
+                app_bundle_id=app_bundle_id,
+            )
+            flush_summary = {
+                "flushed": flush.flushed,
+                "reason": flush.reason,
+                "recipe_name": flush.recipe_name,
+                "step_count": flush.step_count,
+            }
+
+        return {
+            "ok": True,
+            "all_verified": all_verified,
+            "steps_planned": len(plan["steps"]),
+            "steps_executed": len(step_results),
+            "results": step_results,
+            "memory": flush_summary,
+            "success_criteria": plan.get("success_criteria", []),
+        }
+
     _log.info(
         "healing_tools.registered",
         tools=[
@@ -530,6 +788,7 @@ async def register_healing_tools(
             "send_destructive",
             "key_combo_with_healing",
             "register_task_complete",
+            "do_task",
         ],
         phase=2,
         memory_loop=learning_loop is not None,
