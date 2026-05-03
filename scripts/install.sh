@@ -56,6 +56,46 @@ else
   exit 1
 fi
 
+# --- 2.5 Build cua-driver Swift sidecar -------------------------------------
+# The MCP server proxies the Swift cua-driver binary. Without it, only the 5
+# framework tools register; the 29 raw cua-driver primitives (launch_app,
+# screenshot, page, etc.) are missing and the proxy logs
+# upstream.cua_driver_not_found at boot.
+step "2.5 Build cua-driver Swift sidecar"
+CUA_DRIVER_SRC="$REPO_DIR/libs/cua-driver"
+ARCH="$(uname -m)"  # arm64 or x86_64
+CUA_DRIVER_BIN="$CUA_DRIVER_SRC/.build/${ARCH}-apple-macosx/release/cua-driver"
+if [[ -x "$CUA_DRIVER_BIN" ]]; then
+  skip "cua-driver binary ($CUA_DRIVER_BIN)"
+elif [[ ! -d "$CUA_DRIVER_SRC" ]]; then
+  warn "libs/cua-driver/ missing — vendored Swift source not present"
+  warn "  29 raw cua-driver tools won't load; 5 framework tools still work"
+elif ! command -v swift >/dev/null 2>&1; then
+  warn "swift not on PATH — install Xcode Command Line Tools: xcode-select --install"
+  warn "  Re-run installer after install. 5 framework tools still work without it."
+else
+  printf "  building cua-driver (release, ~30s)…\n"
+  if ( cd "$CUA_DRIVER_SRC" && swift build -c release ) >/tmp/basicctrl-swift-build.log 2>&1; then
+    if [[ -x "$CUA_DRIVER_BIN" ]]; then
+      ok "cua-driver built → $CUA_DRIVER_BIN"
+    else
+      fail "swift build succeeded but binary missing at $CUA_DRIVER_BIN"
+      sed 's/^/    /' /tmp/basicctrl-swift-build.log | tail -20
+      exit 1
+    fi
+  else
+    fail "swift build failed (see /tmp/basicctrl-swift-build.log):"
+    tail -20 /tmp/basicctrl-swift-build.log | sed 's/^/    /'
+    exit 1
+  fi
+fi
+# Pass the binary path to the MCP server via env (step 4 reads this var).
+# main.py:168 honors $CUA_DRIVER_BIN, so wiring it into the env block in
+# ~/.claude.json means the proxy finds it without any PATH munging in the
+# user's shell rc.
+export CUA_DRIVER_BIN_FOR_INSTALLER=""
+[[ -x "$CUA_DRIVER_BIN" ]] && export CUA_DRIVER_BIN_FOR_INSTALLER="$CUA_DRIVER_BIN"
+
 # --- 3. Verify imports ------------------------------------------------------
 step "3. Verify package imports"
 import_err="$(uv run --quiet python - <<'PY' 2>&1
@@ -89,38 +129,61 @@ fi
 step "4. Register MCP server in ~/.claude.json"
 [[ -f "$CLAUDE_JSON" ]] || echo '{}' > "$CLAUDE_JSON"
 
-mcp_result="$(REPO_DIR="$REPO_DIR" CLAUDE_JSON="$CLAUDE_JSON" python3 - <<'PY'
+mcp_result="$(REPO_DIR="$REPO_DIR" CLAUDE_JSON="$CLAUDE_JSON" \
+  CUA_DRIVER_BIN_FOR_INSTALLER="${CUA_DRIVER_BIN_FOR_INSTALLER:-}" python3 - <<'PY'
 import json, os, shutil, sys
 path = os.environ["CLAUDE_JSON"]
 repo = os.environ["REPO_DIR"]
 venv_py = f"{repo}/.venv/bin/python"
+# Pass cua-driver binary path via env so the proxy doesn't depend on PATH —
+# step 2.5 sets CUA_DRIVER_BIN_FOR_INSTALLER if the binary built successfully.
+env_block = {}
+cua_bin = os.environ.get("CUA_DRIVER_BIN_FOR_INSTALLER", "").strip()
+if cua_bin:
+    env_block["CUA_DRIVER_BIN"] = cua_bin
 desired = {
     "type": "stdio",
     "command": venv_py,
     "args": ["-m", "basicctrl.mcp_server"],
     "cwd": repo,
-    "env": {},
+    "env": env_block,
 }
 with open(path) as f:
     cfg = json.load(f)
-cfg.setdefault("projects", {})
-proj = cfg["projects"].setdefault(repo, {})
-proj.setdefault("mcpServers", {})
-existing = proj["mcpServers"].get("basicCtrl")
-if existing == desired:
+
+# User-scoped registration: top-level mcpServers loads in every Claude Code
+# session regardless of cwd. This is the right scope for a global skill that
+# the user invokes from any project.
+cfg.setdefault("mcpServers", {})
+existing = cfg["mcpServers"].get("basicCtrl")
+
+# Migration: if a previous installer wrote a project-scoped entry, drop it
+# so we don't have two registrations fighting.
+migrated_from = []
+for proj_key in list(cfg.get("projects", {}).keys()):
+    p = cfg["projects"][proj_key]
+    if isinstance(p, dict) and "mcpServers" in p and "basicCtrl" in p["mcpServers"]:
+        del p["mcpServers"]["basicCtrl"]
+        migrated_from.append(proj_key)
+
+if existing == desired and not migrated_from:
     print("ALREADY")
     sys.exit(0)
 shutil.copy2(path, path + ".bak")
-proj["mcpServers"]["basicCtrl"] = desired
+cfg["mcpServers"]["basicCtrl"] = desired
 with open(path, "w") as f:
     json.dump(cfg, f, indent=2)
-print("WROTE")
+if migrated_from:
+    print("MIGRATED " + ",".join(migrated_from))
+else:
+    print("WROTE")
 PY
 )"
 case "$mcp_result" in
-  ALREADY) skip "basicCtrl MCP entry under projects[$REPO_DIR]";;
-  WROTE)   ok "merged basicCtrl MCP entry → $CLAUDE_JSON (backup: $CLAUDE_JSON.bak)";;
-  *)       fail "unexpected result from JSON merge: $mcp_result"; exit 1;;
+  ALREADY)    skip "basicCtrl MCP entry under top-level mcpServers";;
+  WROTE)      ok "merged basicCtrl MCP entry → $CLAUDE_JSON (top-level mcpServers, backup: $CLAUDE_JSON.bak)";;
+  MIGRATED*)  ok "promoted basicCtrl from project-scoped → top-level mcpServers (${mcp_result#MIGRATED }; backup: $CLAUDE_JSON.bak)";;
+  *)          fail "unexpected result from JSON merge: $mcp_result"; exit 1;;
 esac
 
 # --- 5. Wire Stop hook into ~/.claude/settings.json -------------------------
@@ -294,7 +357,7 @@ cat <<EOF
 
   Repo            $REPO_DIR
   Venv python     $VENV_PYTHON
-  MCP entry       $CLAUDE_JSON  (under projects[$REPO_DIR].mcpServers.basicCtrl)
+  MCP entry       $CLAUDE_JSON  (top-level mcpServers.basicCtrl — loads in every session)
   Stop hook       $SETTINGS_JSON  (hooks.Stop[*]._basicCtrl=learn-reminder)
   Hook script     $HOOK_PATH
 
