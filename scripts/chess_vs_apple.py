@@ -24,6 +24,8 @@ import sys
 import time
 from pathlib import Path
 
+from typing import Optional
+
 import chess
 import chess.engine
 from mcp import ClientSession, StdioServerParameters
@@ -89,8 +91,9 @@ def parse_label_to_index(markdown: str) -> dict[str, int]:
     return out
 
 
-async def snapshot(pid: int, window_id: int) -> tuple[chess.Board, dict[str, int]]:
-    """Call cua-driver get_window_state. Returns (board, label→element_index)."""
+async def _snapshot_subprocess(pid: int, window_id: int) -> str:
+    """Subprocess fallback for the very first snapshot before the MCP
+    session exists (we need the initial board check)."""
     proc = await asyncio.create_subprocess_exec(
         "cua-driver",
         "call",
@@ -101,7 +104,54 @@ async def snapshot(pid: int, window_id: int) -> tuple[chess.Board, dict[str, int
     )
     stdout, _ = await proc.communicate()
     payload = json.loads(stdout)
-    md = payload.get("tree_markdown", "")
+    return payload.get("tree_markdown", "")
+
+
+async def _snapshot_session(
+    session: ClientSession, pid: int, window_id: int
+) -> str:
+    """Call get_window_state through the live MCP session so the upstream
+    cua-driver child process — the one that owns the element_index cache
+    used by proxied click() calls — sees the snapshot.
+
+    Note: through MCP, the upstream returns the rendered tree as
+    TextContent (markdown) plus an ImageContent screenshot. The
+    `cua-driver call` subprocess path returns a JSON envelope. We
+    handle both shapes — JSON unwrap when present, otherwise treat the
+    text as the markdown directly."""
+    res = await session.call_tool(
+        "get_window_state", {"pid": pid, "window_id": window_id}
+    )
+    for block in res.content or []:
+        text = getattr(block, "text", None)
+        if not text:
+            continue
+        stripped = text.lstrip()
+        if stripped.startswith("{"):
+            try:
+                payload = json.loads(stripped)
+                md = payload.get("tree_markdown")
+                if md:
+                    return md
+            except json.JSONDecodeError:
+                pass
+        if "AXButton" in text:
+            return text
+    return ""
+
+
+async def snapshot(
+    pid: int,
+    window_id: int,
+    session: Optional[ClientSession] = None,
+) -> tuple[chess.Board, dict[str, int]]:
+    """Return (board, label→element_index). When `session` is given, the
+    request flows through the proxy so the MCP server's cua-driver child
+    populates its element_index cache before the next click."""
+    if session is not None:
+        md = await _snapshot_session(session, pid, window_id)
+    else:
+        md = await _snapshot_subprocess(pid, window_id)
     return parse_board_from_markdown(md), parse_label_to_index(md)
 
 
@@ -140,36 +190,34 @@ async def wait_for_opponent_move(
 
 
 async def click_element(
-    session: ClientSession,  # kept for signature parity but unused — see note
+    session: ClientSession,
     pid: int,
     window_id: int,
     element_index: int,
 ) -> dict:
-    """Click a Chess.app square via cua-driver subprocess.
+    """Click a Chess.app square via the proxied `click` tool.
 
-    Why not via the proxied MCP session: cua_overlay.mcp_server.proxy wraps
-    every action-class tool with `_wrapped(**kwargs)`, and FastMCP infers
-    a Pydantic schema that rejects natural argument shapes from clients.
-    This is a framework bug — file under "TODO: proxy schema". For now we
-    talk to cua-driver directly. The autoplayer still keeps a live MCP
-    session open so click_with_healing / register_task_complete remain
-    callable for verification + memory wiring on other paths.
+    The proxy now builds a wrapper whose Python signature mirrors the
+    upstream tool's JSON Schema (cua_overlay.mcp_server.dynamic_wrapper),
+    so `session.call_tool("click", {pid, window_id, element_index})` works.
+    Action-class tools also run through the verifier wrap, so we get a
+    HoarePost confidence on every click.
     """
-    proc = await asyncio.create_subprocess_exec(
-        "cua-driver",
-        "call",
+    res = await session.call_tool(
         "click",
-        json.dumps({
+        arguments={
             "pid": pid,
             "window_id": window_id,
             "element_index": element_index,
-        }),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
+        },
     )
-    stdout, stderr = await proc.communicate()
-    text = stdout.decode("utf-8", errors="replace")
-    return {"raw": text.strip()[:200], "ok": "Performed AXPress" in text}
+    raw = ""
+    for block in res.content or []:
+        text = getattr(block, "text", None)
+        if text:
+            raw = text
+            break
+    return {"raw": raw[:200], "ok": "Performed AXPress" in raw}
 
 
 async def play_loop(
@@ -236,10 +284,11 @@ async def play_loop(
                     break
                 src_label, dst_label = agent.move_to_labels(white_move)
 
-                # Fresh snapshot so element_index is valid (cua-driver caches
-                # element_index per (pid, window_id, turn_id) — stale indices
-                # raise an error from cua-driver).
-                _, idx_map = await snapshot(pid, window_id)
+                # Fresh snapshot through the LIVE MCP session so the
+                # MCP server's cua-driver child populates its element_index
+                # cache (proxied `click` reads from THAT cache, not from
+                # any cua-driver process we spawned ourselves).
+                _, idx_map = await snapshot(pid, window_id, session=session)
                 src_idx = idx_map.get(src_label)
                 dst_idx = idx_map.get(dst_label)
                 if src_idx is None or dst_idx is None:

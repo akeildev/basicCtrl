@@ -35,6 +35,7 @@ from mcp.client.session import ClientSession
 from mcp.server.fastmcp import FastMCP
 from mcp.types import Tool
 
+from cua_overlay.mcp_server.dynamic_wrapper import build_dynamic_wrapper
 from cua_overlay.mcp_server.main import ProxyDeps
 from cua_overlay.state.causal_dag import ActionCanonical, HoarePost, HoarePre
 from cua_overlay.state.graph import Bbox, UIElement
@@ -137,17 +138,23 @@ async def register_proxied_tool(
     """
     tool_name = tool.name
 
+    # Build a wrapper whose Python signature mirrors the upstream tool's
+    # JSON Schema. FastMCP's auto-schema then produces an input model that
+    # accepts the natural argument shape — without this, `**kwargs` got
+    # exposed as a single `kwargs: dict` field and clients calling
+    # `session.call_tool("click", {"pid": ...})` saw "kwargs: Field required".
     if tool_name not in ACTION_CLASS_TOOLS:
-        # Non-action tool — straight passthrough. No verifier wrap because there
-        # is no UI mutation to verify.
-        async def _passthrough(**kwargs: Any) -> Any:
+        async def _passthrough_runner(kwargs: dict[str, Any]) -> Any:
             result = await upstream.call_tool(tool_name, arguments=kwargs)
             return result.content if hasattr(result, "content") else result
 
-        # Preserve the upstream tool's name + description so the proxy looks
-        # identical to the original from the host's perspective.
+        passthrough_fn = build_dynamic_wrapper(
+            tool_name=tool_name,
+            input_schema=getattr(tool, "inputSchema", None),
+            runner=_passthrough_runner,
+        )
         proxy.add_tool(
-            _passthrough,
+            passthrough_fn,
             name=tool_name,
             description=tool.description or "",
         )
@@ -157,7 +164,7 @@ async def register_proxied_tool(
     # Action-class wrap: PRE-snapshot, FIRE, POST-aggregate, LOG, CHECKPOINT.
     action_class = ACTION_CLASS_TOOLS[tool_name]
 
-    async def _wrapped(**kwargs: Any) -> Any:
+    async def _wrap_runner(kwargs: dict[str, Any]) -> Any:
         result, _post = await run_action_wrap(
             upstream=upstream,
             deps=deps,
@@ -167,8 +174,13 @@ async def register_proxied_tool(
         )
         return result.content if hasattr(result, "content") else result
 
+    wrapped_fn = build_dynamic_wrapper(
+        tool_name=tool_name,
+        input_schema=getattr(tool, "inputSchema", None),
+        runner=_wrap_runner,
+    )
     proxy.add_tool(
-        _wrapped,
+        wrapped_fn,
         name=tool_name,
         description=tool.description or "",
     )
