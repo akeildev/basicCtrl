@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Literal, Optional
 
 import chess
+import chess.engine
 
 # AX label format observed on Chess.app:
 #   Occupied: "<color> <piece>, <square>"   e.g. "white pawn, e2"
@@ -42,7 +43,7 @@ PIECE_NAME_TO_TYPE = {
 PIECE_TYPE_TO_NAME = {v: k for k, v in PIECE_NAME_TO_TYPE.items()}
 
 
-PickerMode = Literal["random_legal", "first_legal"]
+PickerMode = Literal["random_legal", "first_legal", "stockfish"]
 
 
 @dataclass
@@ -53,6 +54,22 @@ class ChessAgent:
     board: chess.Board = field(default_factory=chess.Board)
     move_history: list[tuple[str, str]] = field(default_factory=list)
     rng: random.Random = field(default_factory=random.Random)
+    # Stockfish config (used only when mode == "stockfish"). Path defaults
+    # to the brew-installed binary; think_time_s is per-move budget.
+    stockfish_path: str = "/opt/homebrew/bin/stockfish"
+    think_time_s: float = 0.2
+    _engine: Optional[chess.engine.SimpleEngine] = field(default=None, init=False, repr=False)
+
+    def close(self) -> None:
+        if self._engine is not None:
+            try:
+                self._engine.quit()
+            except Exception:  # noqa: BLE001
+                pass
+            self._engine = None
+
+    def __del__(self):
+        self.close()
 
     # ---- introspection ----
     @property
@@ -83,6 +100,32 @@ class ChessAgent:
         if m:
             sq = chess.parse_square(m.group("square").lower())
             return (None, sq)
+        return None
+
+    def find_opponent_move(self, observed: chess.Board) -> Optional[chess.Move]:
+        """Find the legal move on `self.board` that produces `observed`'s
+        piece placement.
+
+        Used after we've pushed our own move to detect what Chess.app's
+        engine played in response. Returns None when no legal move makes
+        the placements line up — the caller should then re-poll AX or
+        treat it as a temporary inconsistency.
+
+        Comparison ignores side-to-move / castling / en-passant metadata
+        (sync_from_ax can't recover those from labels alone) — only piece
+        placement matters.
+        """
+        target_map = {sq: observed.piece_at(sq) for sq in chess.SQUARES}
+        for move in self.board.legal_moves:
+            self.board.push(move)
+            try:
+                match = all(
+                    self.board.piece_at(sq) == target_map[sq] for sq in chess.SQUARES
+                )
+            finally:
+                self.board.pop()
+            if match:
+                return move
         return None
 
     def sync_from_ax(self, ax_labels: list[str]) -> chess.Board:
@@ -116,8 +159,21 @@ class ChessAgent:
             return None
         if self.mode == "first_legal":
             return moves[0]
+        if self.mode == "stockfish":
+            return self._pick_stockfish_move()
         # random_legal
         return self.rng.choice(moves)
+
+    def _pick_stockfish_move(self) -> Optional[chess.Move]:
+        """Lazy-spawn Stockfish over UCI; ask for the best move within the
+        per-call think-time budget."""
+        if self._engine is None:
+            self._engine = chess.engine.SimpleEngine.popen_uci(self.stockfish_path)
+        result = self._engine.play(
+            self.board,
+            chess.engine.Limit(time=self.think_time_s),
+        )
+        return result.move
 
     # ---- move → labels ----
     def move_to_labels(self, move: chess.Move) -> tuple[str, str]:

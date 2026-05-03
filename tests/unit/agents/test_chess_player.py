@@ -134,6 +134,29 @@ class TestMoveToLabels:
 
 
 @pytest.mark.unit
+class TestFindOpponentMove:
+    def test_finds_simple_pawn_response(self):
+        agent = ChessAgent()
+        # Our move: 1.e4. Opponent plays 1...e5.
+        agent.commit(chess.Move.from_uci("e2e4"))
+        observed = chess.Board()
+        observed.push(chess.Move.from_uci("e2e4"))
+        observed.push(chess.Move.from_uci("e7e5"))
+        move = agent.find_opponent_move(observed)
+        assert move is not None
+        assert move.uci() == "e7e5"
+
+    def test_returns_none_when_no_match(self):
+        agent = ChessAgent()
+        agent.commit(chess.Move.from_uci("e2e4"))
+        # Construct a bogus board (extra piece) — no legal move from agent's
+        # perspective produces this placement.
+        bogus = agent.board.copy()
+        bogus.set_piece_at(chess.D4, chess.Piece(chess.QUEEN, chess.WHITE))
+        assert agent.find_opponent_move(bogus) is None
+
+
+@pytest.mark.unit
 class TestCommit:
     def test_pushes_move_and_records_history(self):
         agent = ChessAgent()
