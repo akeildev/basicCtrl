@@ -437,6 +437,15 @@ async def main() -> None:
 
         register_form_fill_tool(proxy_server)
 
+        # Learn tool (mcp__basicCtrl__learn) — qualitative self-improve.
+        # Agent calls this to record non-obvious lessons (traps, app
+        # quirks, faster paths) into the right skill .md + auto-commit
+        # so they persist across /clear. Step lists go to FAISS via
+        # register_task_complete; lessons go here.
+        from basicctrl.mcp_server.learn_tool import register_learn_tool
+
+        register_learn_tool(proxy_server)
+
         log.info(
             "proxy.ready",
             session_id=session.session_id,
