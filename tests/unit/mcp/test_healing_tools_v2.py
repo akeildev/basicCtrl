@@ -335,6 +335,108 @@ async def test_do_task_plans_via_sampling_and_dispatches_steps(
 
 
 @pytest.mark.asyncio
+async def test_targetless_verifier_reads_upstream_iserror():
+    """Fix #1: when the verifier ladder returns confidence=0/verified=False
+    (target-less actions can't diff against a target element), the response
+    must use upstream.isError as the truth signal — `not isError` → verified.
+    """
+    from cua_overlay.actions.race_policy import RacePolicy
+    from cua_overlay.mcp_server.healing_tools import register_healing_tools
+    from cua_overlay.state.causal_dag import HoarePost
+
+    proxy = _FakeFastMCP()
+
+    # Verifier returns the worst case: zero confidence, unverified. This is
+    # the bug pre-fix — every keystroke "failed" even when it worked.
+    unhappy_post = HoarePost(
+        target_key="focused::com.test",
+        confidence=0.0,
+        tier_signals={"L0": 0.0, "L1": 0.0, "L2": None, "L3": None},
+        verified=False,
+        healed_to=None,
+        timestamp_ns=1000,
+    )
+
+    happy_upstream = SimpleNamespace(
+        content=[SimpleNamespace(text="✅ Pressed cmd+n")],
+        isError=False,
+    )
+
+    upstream = MagicMock()
+    upstream.call_tool = AsyncMock(return_value=happy_upstream)
+    fake_session = MagicMock()
+    fake_session.session_id = "s"
+    fake_session.append_action_log = MagicMock()
+    fake_agg = MagicMock()
+    fake_agg.verify = AsyncMock(return_value=unhappy_post)
+    fake_durable = MagicMock()
+    fake_durable.checkpoint = AsyncMock(return_value=None)
+    deps = SimpleNamespace(
+        session=fake_session, aggregator=fake_agg, durable=fake_durable
+    )
+    race_orch = MagicMock()
+    race_orch.execute = AsyncMock(return_value=(None, unhappy_post))
+
+    await register_healing_tools(proxy, upstream, deps, race_orch)
+
+    fn = proxy.tools["key_combo_with_healing"]
+    res = await fn(combo="cmd+n", bundle_id="com.test", pid=1)
+    # Pre-fix: verified=False even though upstream said it worked.
+    # Post-fix: verifier ladder is overridden by upstream.isError=False.
+    assert res["verified"] is True, (
+        "target-less action with isError=False must report verified=True"
+    )
+    assert res["confidence"] >= 0.5, (
+        "trusted-upstream confidence should be reasonable, not 0"
+    )
+
+
+@pytest.mark.asyncio
+async def test_targetless_verifier_respects_upstream_iserror_true():
+    """Inverse: when upstream.isError=True, do NOT silently mark verified.
+    The override only fires on the success path — failures still surface."""
+    from cua_overlay.actions.race_policy import RacePolicy
+    from cua_overlay.mcp_server.healing_tools import register_healing_tools
+    from cua_overlay.state.causal_dag import HoarePost
+
+    proxy = _FakeFastMCP()
+    unhappy_post = HoarePost(
+        target_key="focused::com.test",
+        confidence=0.0,
+        tier_signals={"L0": 0.0, "L1": 0.0, "L2": None, "L3": None},
+        verified=False,
+        healed_to=None,
+        timestamp_ns=1000,
+    )
+    failed_upstream = SimpleNamespace(
+        content=[SimpleNamespace(text="❌ no such pid")],
+        isError=True,
+    )
+
+    upstream = MagicMock()
+    upstream.call_tool = AsyncMock(return_value=failed_upstream)
+    fake_session = MagicMock()
+    fake_session.session_id = "s"
+    fake_session.append_action_log = MagicMock()
+    fake_agg = MagicMock()
+    fake_agg.verify = AsyncMock(return_value=unhappy_post)
+    fake_durable = MagicMock()
+    fake_durable.checkpoint = AsyncMock(return_value=None)
+    deps = SimpleNamespace(
+        session=fake_session, aggregator=fake_agg, durable=fake_durable
+    )
+    race_orch = MagicMock()
+    race_orch.execute = AsyncMock(return_value=(None, unhappy_post))
+
+    await register_healing_tools(proxy, upstream, deps, race_orch)
+
+    fn = proxy.tools["key_combo_with_healing"]
+    res = await fn(combo="cmd+n", bundle_id="com.test", pid=1)
+    assert res["verified"] is False
+    assert res["confidence"] == 0.0
+
+
+@pytest.mark.asyncio
 async def test_type_with_healing_targetless_routes_to_upstream(
     fake_proxy_with_tools,
 ) -> None:

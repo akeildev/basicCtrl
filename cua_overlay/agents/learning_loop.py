@@ -53,6 +53,10 @@ class LearningLoop:
     embedder: Optional[Any] = None  # Embedder instance (duck-typed for tests)
     episodic: Optional[Any] = None  # EpisodicMemory (duck-typed for tests)
     synthesizer: Optional[Any] = None  # RecipeSynthesizer (duck-typed for tests)
+    skills_root: Optional[Any] = None  # Override for auto-write target dir.
+                                       # Production: `cua_overlay/skills/`.
+                                       # Tests pass `tmp_path` so auto-write
+                                       # doesn't pollute the real skills tree.
     _buffer: list[ObservedAction] = field(default_factory=list)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     _step_idx: int = 0
@@ -144,6 +148,21 @@ class LearningLoop:
             source_text=source_text,
         )
 
+        # Fix #5: also persist a human-readable recipe markdown alongside
+        # the FAISS row, so future planner prompts (which load
+        # skills/<bundle>/*.md via skills.loader.read_all_skills) get
+        # context about workflows we have already run successfully.
+        try:
+            self._auto_write_skill_md(
+                app_bundle_id=app_bundle_id,
+                task_class=task_class,
+                task_label=task_label,
+                actions=actions,
+            )
+        except Exception as exc:  # noqa: BLE001 — auto-write must never
+            # block the recipe-index commit on FAISS.
+            log.warning("learning_loop.skill_autowrite_failed", error=str(exc))
+
         log.info(
             "learning_loop.flushed",
             task_label=task_label,
@@ -161,3 +180,73 @@ class LearningLoop:
             state_fingerprint=state_fingerprint,
             step_count=len(actions),
         )
+
+    def _auto_write_skill_md(
+        self,
+        app_bundle_id: str,
+        task_class: str,
+        task_label: str,
+        actions: list[ObservedAction],
+    ) -> None:
+        """Append a recipe markdown to `<skills_root>/<bundle>/<task_class>.md`.
+
+        skills_root defaults to `cua_overlay/skills/` (production). Tests
+        override via `LearningLoop(skills_root=tmp_path)` so they don't
+        pollute the shipped skills tree.
+
+        The format mirrors the human-curated skills (intent, AX shape,
+        action sequence) so when the planner loads `read_all_skills(bundle)`
+        it sees both hand-written and auto-discovered patterns. Each call
+        appends a new run record so we don't clobber prior knowledge.
+        """
+        from datetime import datetime, timezone
+        from pathlib import Path
+
+        if self.skills_root is not None:
+            base = Path(self.skills_root)
+        else:
+            base = Path(__file__).resolve().parent.parent / "skills"
+        skills_dir = base / app_bundle_id
+        skills_dir.mkdir(parents=True, exist_ok=True)
+        path = skills_dir / f"{task_class}.md"
+
+        steps_md_lines = []
+        for i, obs in enumerate(actions, start=1):
+            a = obs.action
+            payload_summary = ""
+            if isinstance(a.payload, dict):
+                if "combo" in a.payload:
+                    payload_summary = f' combo={a.payload["combo"]!r}'
+                elif "text" in a.payload:
+                    text_preview = str(a.payload["text"])[:60]
+                    payload_summary = f' text={text_preview!r}'
+                elif "label" in a.payload:
+                    payload_summary = f' label={a.payload["label"]!r}'
+            steps_md_lines.append(
+                f"{i}. `{a.action_type}`{payload_summary}"
+            )
+
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        block = (
+            f"\n## Recipe: {task_label}\n\n"
+            f"> Auto-recorded {ts} after a successful run "
+            f"({len(actions)} step(s)).\n\n"
+            f"### Steps\n\n"
+            + "\n".join(steps_md_lines)
+            + "\n"
+        )
+
+        if path.exists():
+            existing = path.read_text(encoding="utf-8")
+            # Avoid duplicating identical recipes back-to-back.
+            if existing.rstrip().endswith(block.rstrip()):
+                return
+            path.write_text(existing + block, encoding="utf-8")
+        else:
+            header = (
+                f"# {app_bundle_id} — {task_class}\n\n"
+                f"> Auto-generated skill notes. Recipes below were captured "
+                f"after successful task runs by the learning loop. Hand-curated "
+                f"patterns may sit in sibling files in this directory.\n"
+            )
+            path.write_text(header + block, encoding="utf-8")

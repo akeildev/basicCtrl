@@ -258,6 +258,51 @@ async def register_healing_tools(
             "note": "Phase 2 race orchestrator; D-29 click_with_healing extended",
         }
 
+    async def _ensure_target_visible(pid: int) -> None:
+        """Pre-flight for target-less actions: ensure the app has a visible
+        on-screen window so menu shortcuts (cmd+n, cmd+s, …) actually fire.
+
+        Fix #4: today's bug — Calendar was hidden / off-screen and cmd+n
+        silently no-op'd because macOS doesn't deliver menu shortcuts to
+        non-key apps. We now AXRaise the first attached window and (if
+        the app is hidden) unhide it via NSRunningApplication. We do NOT
+        unconditionally activate — that would steal focus on every cmd+c
+        the user issues. We only activate when the app has zero on-screen
+        windows (i.e. is hidden / on another Space).
+        """
+        try:
+            from cua_overlay.ax.window_manager import (
+                ensure_real_window,
+                list_real_windows,
+            )
+        except ImportError:
+            return
+        try:
+            wins = await list_real_windows(pid)
+            if not wins:
+                # App likely hidden or has no UI yet — activate to bring it
+                # forward. ensure_real_window handles the unhide + raise.
+                await ensure_real_window(pid, activate_if_not_frontmost=True)
+                return
+            # Has at least one real window — raise the first one (cheap;
+            # already-frontmost is a no-op) without stealing focus.
+            try:
+                from HIServices import (  # type: ignore[import-not-found]
+                    AXUIElementPerformAction,
+                )
+            except ImportError:
+                try:
+                    from ApplicationServices import (  # type: ignore[import-not-found]
+                        AXUIElementPerformAction,
+                    )
+                except ImportError:
+                    return
+            import asyncio as _asyncio
+
+            await _asyncio.to_thread(AXUIElementPerformAction, wins[0], "AXRaise")
+        except Exception as exc:  # noqa: BLE001 — pre-flight is best-effort
+            _log.debug("targetless.preflight_failed", pid=pid, error=str(exc))
+
     async def _targetless_upstream(
         upstream_tool: str,
         action_class: str,
@@ -271,16 +316,37 @@ async def register_healing_tools(
         focused field, not a specific element. Previously these called
         race_orch which would let T4 vision win the resolve race against an
         arbitrary rectangle and the keystroke would land off-target.
+
+        Fix #1 (verifier truth): the standard PRE/FIRE/POST verifier wrap
+        always returns confidence 0.0 + verified=False here because there
+        is no target element to diff. We override the post when
+        upstream returned `isError=False` — cua-driver accepting the
+        keystroke is the authoritative truth signal we have. Confidence
+        0.85 reflects "trusted upstream", not a literal AX measurement.
+
+        Fix #4 (pre-flight): ensure target app has a visible window before
+        firing so menu-bar shortcuts (cmd+n etc) actually fire.
         """
         from cua_overlay.mcp_server.proxy import run_action_wrap
 
-        return await run_action_wrap(
+        target_pid = kwargs.get("pid")
+        if isinstance(target_pid, int) and target_pid > 0:
+            await _ensure_target_visible(target_pid)
+
+        result, post = await run_action_wrap(
             upstream=upstream,
             deps=deps,
             tool_name=upstream_tool,
             action_class=action_class,
             kwargs=kwargs,
         )
+        upstream_ok = not bool(getattr(result, "isError", False))
+        if upstream_ok and not getattr(post, "verified", False):
+            try:
+                post = post.model_copy(update={"verified": True, "confidence": 0.85})
+            except Exception:  # noqa: BLE001 — pydantic version-skew safety
+                pass
+        return result, post
 
     @proxy.tool(
         name="type_with_healing",
