@@ -39,13 +39,27 @@ pytestmark = [
 
 
 def _visualizer_binary_path() -> Path | None:
-    """Return path to cua-driver binary (contains visualizer) if it exists."""
-    # Primary location from architecture doc
+    """Return path to cua-driver binary (contains visualizer) if it exists.
+
+    Resolves the binary via two portable mechanisms (in order):
+      1. CUA_DRIVER_BIN env var (matches `mcp_server/main.py` override).
+      2. Repo-relative `libs/cua-driver/.build/<triple>/<config>/cua-driver`,
+         derived from this file's location.
+    """
+    env_path = os.environ.get("CUA_DRIVER_BIN")
+    if env_path:
+        p = Path(env_path).expanduser()
+        if p.exists():
+            return p
+
+    # Repo root: tests/integration/x.py → parents[2] is the repo root.
+    repo = Path(__file__).resolve().parents[2]
+    build_root = repo / "libs" / "cua-driver" / ".build"
     candidates = [
-        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/arm64-apple-macosx/debug/cua-driver"),
-        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/arm64-apple-macosx/release/cua-driver"),
-        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/x86_64-apple-macosx/debug/cua-driver"),
-        Path("/Users/akeilsmith/dev/basicCtrl/libs/cua-driver/.build/x86_64-apple-macosx/release/cua-driver"),
+        build_root / "arm64-apple-macosx" / "debug"   / "cua-driver",
+        build_root / "arm64-apple-macosx" / "release" / "cua-driver",
+        build_root / "x86_64-apple-macosx" / "debug"   / "cua-driver",
+        build_root / "x86_64-apple-macosx" / "release" / "cua-driver",
     ]
     for candidate in candidates:
         if candidate.exists():

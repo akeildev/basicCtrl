@@ -84,7 +84,10 @@ async def test_canary_multi_app_single_session() -> None:
     """Drive Calculator (AX) + Chromium (CDP) + Chess (Vision) in one session."""
     pytest.importorskip("mcp")
 
-    # Start the MCP server as a subprocess
+    # Start the MCP server as a subprocess. cwd resolves to the repo root
+    # via this file's path so the test runs on any clone, not just the
+    # original developer's machine.
+    repo_root = Path(__file__).resolve().parents[2]
     mcp_proc = subprocess.Popen(
         [
             sys.executable,
@@ -94,7 +97,7 @@ async def test_canary_multi_app_single_session() -> None:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd="/Users/akeilsmith/dev/basicCtrl",
+        cwd=str(repo_root),
     )
 
     try:
