@@ -1,4 +1,4 @@
-# Feature Research — cua-maximalist
+# Feature Research — basicCtrl
 
 **Domain:** Self-healing autonomous Mac CU framework (local-experimental)
 **Researched:** 2026-04-29
@@ -320,7 +320,7 @@ Polish, transparency, private SPI maximalism.
 
 ## Competitor Feature Analysis
 
-| Feature | Cowork (Anthropic) | cua-driver baseline | Codex Mac CU | Stagehand v3 | Skyvern 2.0 | **cua-maximalist** |
+| Feature | Cowork (Anthropic) | cua-driver baseline | Codex Mac CU | Stagehand v3 | Skyvern 2.0 | **basicCtrl** |
 |---|---|---|---|---|---|---|
 | Mac native | yes | yes | yes (2 wks) | no (web) | no (web) | **yes** |
 | Crash resume | no (issue #49498) | no | unknown | partial | partial | **yes (durable exec)** |
@@ -419,8 +419,8 @@ All 79 Active requirements covered. All Out-of-Scope items mapped to anti-featur
 ## Sources
 
 ### Primary (locked architecture + competitive verified)
-- `/Users/akeilsmith/dev/cua-maximalist/.planning/PROJECT.md` (requirements + decisions)
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` (THE blueprint, 200+ sources, HIGH confidence)
+- `/Users/akeilsmith/dev/basicCtrl/.planning/PROJECT.md` (requirements + decisions)
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` (THE blueprint, 200+ sources, HIGH confidence)
 - `~/thinker/vault/research/computer-use-alternatives-2026-04-29.md` (Apr 2026 verified landscape)
 
 ### Reference repos (read locally)
@@ -448,6 +448,6 @@ All 79 Active requirements covered. All Out-of-Scope items mapped to anti-featur
 - UI-TARS-1.5-7B (open): 27.5% OSWorld (NOT the 42.5% closed full model)
 
 ---
-*Feature research for: cua-maximalist self-healing autonomous Mac CU framework*
+*Feature research for: basicCtrl self-healing autonomous Mac CU framework*
 *Researched: 2026-04-29*
 *All 79 Active reqs from PROJECT.md covered + grouped by category, complexity, dependencies, phase.*

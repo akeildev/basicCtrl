@@ -1,4 +1,4 @@
-# Stack Research — cua-maximalist
+# Stack Research — basicCtrl
 
 **Domain:** Self-healing autonomous Mac CU framework — Python overlay above Swift driver
 **Researched:** 2026-04-29
@@ -216,7 +216,7 @@ class CassetteStep(BaseModel):
 ```python
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 checkpointer = await AsyncPostgresSaver.from_conn_string(
-    "postgresql://localhost:5432/cua_maximalist"
+    "postgresql://localhost:5432/basicctrl"
 ).__aenter__()
 await checkpointer.setup()
 ```
@@ -301,7 +301,7 @@ uv pip install -D pytest pytest-asyncio mypy ruff rich
 # Local infra
 brew install postgresql@16
 brew services start postgresql@16
-createdb cua_maximalist
+createdb basicctrl
 
 # Models (one-time download to ~/.cache/huggingface)
 huggingface-cli download mlx-community/UI-TARS-1.5-7B-4bit
@@ -437,7 +437,7 @@ xcodebuild -scheme CuaSidecar -configuration Release
 - [FAISS vs LanceDB vs Chroma comparison](https://slashdot.org/software/comparison/Faiss-vs-LanceDB-vs-chroma/) — embedded library vs server tradeoff (MEDIUM)
 
 ### Architecture references (locked, in vault)
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE blueprint
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — THE blueprint
 - `~/thinker/vault/research/cua-autonomous-self-healing-framework-2026-04-29.md` — driver registry context
 - `~/thinker/research-clones/trycua-cua/libs/cua-driver/` — Swift driver source
 - `~/thinker/research-clones/ghost-os/` — CGEvent tap reference (LearningRecorder.swift:62-88)
@@ -451,6 +451,6 @@ xcodebuild -scheme CuaSidecar -configuration Release
 
 ---
 
-*Stack research for: cua-maximalist (self-healing autonomous Mac CU)*
+*Stack research for: basicCtrl (self-healing autonomous Mac CU)*
 *Researched: 2026-04-29*
 *Architecture: locked. Versions: live-verified. Confidence: HIGH on libraries, MEDIUM on ShowUI MLX availability.*

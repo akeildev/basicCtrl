@@ -1,4 +1,4 @@
-# Domain Pitfalls — cua-maximalist
+# Domain Pitfalls — basicCtrl
 
 **Domain:** Self-healing autonomous Mac CU framework (Python overlay above trycua/cua Swift driver, full private-SPI, racing translators, deterministic ensemble verifier, 5-branch recovery)
 **Researched:** 2026-04-29
@@ -720,8 +720,8 @@ The locked architecture is maximalist. These pitfalls flag where MAXIMALIST patt
 ## Sources
 
 ### Primary architecture docs
-- `/Users/akeilsmith/dev/cua-maximalist/.planning/PROJECT.md` (the locked plan)
-- `/Users/akeilsmith/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` (THE locked architecture w/ counterevidence)
+- `/Users/akeilsmith/dev/basicCtrl/.planning/PROJECT.md` (the locked plan)
+- `/Users/akeilsmith/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` (THE locked architecture w/ counterevidence)
 - `/Users/akeilsmith/thinker/vault/research/self-healing-cua-driver-2026-04-29.md` (initial driver injection plan)
 
 ### Research papers (post-Oct 2024) — confidence: HIGH

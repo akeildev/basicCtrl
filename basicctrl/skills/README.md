@@ -1,4 +1,4 @@
-# cua_overlay/skills/ — per-app field knowledge
+# basicctrl/skills/ — per-app field knowledge
 
 > Borrowed wholesale from [browser-harness's `domain-skills/`](https://github.com/browser-use/browser-harness/tree/main/domain-skills)
 > pattern. Skills capture **the durable shape of an app** so future agents on

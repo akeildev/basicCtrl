@@ -12,7 +12,7 @@ test-full:
 
 lint:
 	uv run ruff check .
-	uv run mypy cua_overlay/
+	uv run mypy basicctrl/
 
 doctor:
 	uv run python scripts/doctor.py

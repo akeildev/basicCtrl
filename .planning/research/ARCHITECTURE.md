@@ -1,6 +1,6 @@
-# Architecture: cua-maximalist
+# Architecture: basicCtrl
 
-**Project:** cua-maximalist — Self-Healing Autonomous Mac CU Framework
+**Project:** basicCtrl — Self-Healing Autonomous Mac CU Framework
 **Researched:** 2026-04-29
 **Granularity:** standard (5–7 phases)
 **Confidence:** HIGH (grounded in 9-layer locked architecture + 4 reference clones)
@@ -10,7 +10,7 @@
 ## TL;DR
 
 ```
-.../cua-maximalist/
+.../basicCtrl/
   libs/cua-driver/Sources/        ← UNTOUCHED Swift driver from trycua
   overlay/                         ← Python overlay (~1500–2500 LOC)
   visualizer/Sources/              ← Swift glue (~300 LOC) — NSPanel + SkyLight bridges
@@ -501,7 +501,7 @@ The roadmap orchestrator maps the 11-sprint sequence into 5 phases by collapsing
 **Goal:** A Python overlay that can read state from any Mac app and verify a click using push events + cheap deterministic checks.
 
 **Scope:**
-- Fork trycua/cua → `~/dev/cua-maximalist/`
+- Fork trycua/cua → `~/dev/basicCtrl/`
 - `overlay/` scaffold with `ipc/swift_bridge.py` (JSONL stdio)
 - ToolRegistry.swift:55-97 emits structured event
 - `state/graph.py` + causal_dag + ring_buffer (in-memory)
@@ -632,9 +632,9 @@ If granularity were "complex" we'd split Phase 5 into two (visualizer alone, the
 
 ## Sources
 
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — 9-layer locked architecture (HIGH confidence)
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — 9-layer locked architecture (HIGH confidence)
 - `~/thinker/research-clones/trycua-cua/libs/cua-driver/Sources/CuaDriverCore/` — Swift module organization (HIGH)
 - `~/thinker/research-clones/browser-harness/src/browser_harness/` — flat Python overlay pattern (HIGH)
 - `~/thinker/research-clones/skyvern/skyvern/forge/sdk/` — deep package structure for production CU (HIGH)
 - `~/thinker/research-clones/ghost-os/Sources/GhostOS/` — Swift functional area split (HIGH)
-- `/Users/akeilsmith/dev/cua-maximalist/.planning/PROJECT.md` — locked requirements + decisions (HIGH)
+- `/Users/akeilsmith/dev/basicCtrl/.planning/PROJECT.md` — locked requirements + decisions (HIGH)

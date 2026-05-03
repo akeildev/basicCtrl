@@ -1,7 +1,7 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**cua-maximalist — Self-Healing Autonomous Mac CU Framework**
+**basicCtrl — Self-Healing Autonomous Mac CU Framework**
 
 A maximalist, self-healing, autonomous computer-use framework for macOS. Built as a Python overlay above `trycua/cua`'s Swift driver with full private-SPI access (SkyLight, Endpoint Security, DYLD injection). Drives any Mac app — native Cocoa, Electron, browser, Canvas, terminal, game — by automatically picking the right protocol per app, racing multiple action channels in parallel, verifying with deterministic ensembles before falling back to LLMs, and recovering from any failure via 5-branch parallel recovery. Local-only and experimental — no production, security, or App Store constraints.
 
@@ -231,7 +231,7 @@ When everything else fails, the system picks the next translator, races recovery
 - [Durable Execution Patterns for AI Agents (Zylos Feb 2026)](https://zylos.ai/research/2026-02-17-durable-execution-ai-agents) — Inngest vs LangGraph vs Restate (MEDIUM)
 - [FAISS vs LanceDB vs Chroma comparison](https://slashdot.org/software/comparison/Faiss-vs-LanceDB-vs-chroma/) — embedded library vs server tradeoff (MEDIUM)
 ### Architecture references (locked, in vault)
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE blueprint
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — THE blueprint
 - `~/thinker/vault/research/cua-autonomous-self-healing-framework-2026-04-29.md` — driver registry context
 - `~/thinker/research-clones/trycua-cua/libs/cua-driver/` — Swift driver source
 - `~/thinker/research-clones/ghost-os/` — CGEvent tap reference (LearningRecorder.swift:62-88)
@@ -323,7 +323,7 @@ Shortcuts:
 | Per-phase artifacts | `.planning/phases/NN-slug/` (created when phase starts) |
 
 ### Architecture canonical ref
-`~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE locked maximalist blueprint. Downstream agents MUST read before planning.
+`~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — THE locked maximalist blueprint. Downstream agents MUST read before planning.
 
 ### Hard rules for any agent on this project
 - **Never** edit Swift code under `libs/cua-driver/` — overlay only.

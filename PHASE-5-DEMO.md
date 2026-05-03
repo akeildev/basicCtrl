@@ -27,9 +27,9 @@ uv run pytest -q tests/unit/state/ tests/unit/actions/ tests/unit/translators/ t
 # Expected: all pass (no integration calls)
 
 # 5. Verify Phase 5 modules can import
-python3 -c "from cua_overlay.visualizer import VisualizerBus, ReplayEngine, Timeline3D; print('✓ Visualizer modules')"
-python3 -c "from cua_overlay.observability import SessionWriter; print('✓ Observability module')"
-python3 -c "from cua_overlay.replay import CounterfactualRenderer, SessionDiffer; print('✓ Replay modules')"
+python3 -c "from basicctrl.visualizer import VisualizerBus, ReplayEngine, Timeline3D; print('✓ Visualizer modules')"
+python3 -c "from basicctrl.observability import SessionWriter; print('✓ Observability module')"
+python3 -c "from basicctrl.replay import CounterfactualRenderer, SessionDiffer; print('✓ Replay modules')"
 
 # 6. Verify test collection
 pytest --collect-only -q tests/test_visualizer.py tests/test_replay.py tests/test_session_diff.py
@@ -66,7 +66,7 @@ test_ghost_cursor_lerp_timing PASSED
 
 **Manual verification (if Swift sidecar built):**
 ```bash
-# In cua_overlay/main.py or demo harness:
+# In basicctrl/main.py or demo harness:
 # 1. Open Calculator app
 # 2. Execute action: Action(action_type="click", target="button 5")
 # 3. Observe ghost cursor on screen:
@@ -293,7 +293,7 @@ Per Phase 5 design, verify correctness on your local Mac.
 
 ```bash
 python3 <<'PY'
-from cua_overlay.visualizer.models import GhostCursorCommand
+from basicctrl.visualizer.models import GhostCursorCommand
 import time
 
 # Test 3 distance scenarios
@@ -322,8 +322,8 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.visualizer.hud_driver import HUDDriver
-from cua_overlay.visualizer.models import ActionTier, ActionChannel, VerificationStatus
+from basicctrl.visualizer.hud_driver import HUDDriver
+from basicctrl.visualizer.models import ActionTier, ActionChannel, VerificationStatus
 import time
 
 driver = HUDDriver()
@@ -360,8 +360,8 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.replay.engine import ReplayEngine
-from cua_overlay.state.causal_dag import ActionCanonical
+from basicctrl.replay.engine import ReplayEngine
+from basicctrl.state.causal_dag import ActionCanonical
 import time
 import tempfile
 import os
@@ -413,7 +413,7 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.replay.timeline import Timeline3D, TimelineNode
+from basicctrl.replay.timeline import Timeline3D, TimelineNode
 import time
 
 # Create 100 action nodes
@@ -452,7 +452,7 @@ PY
 
 ```bash
 python3 <<'PY'
-from cua_overlay.replay.diff import lcs_alignment, DiffRow
+from basicctrl.replay.diff import lcs_alignment, DiffRow
 
 # Create two similar action sequences (as dicts)
 session_a = [

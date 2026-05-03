@@ -4,7 +4,7 @@
 
 ## When to use Safari vs Chrome
 
-For *cua-maximalist's own integration tests* prefer **Chrome** (the
+For *basicCtrl's own integration tests* prefer **Chrome** (the
 cdp-chromium e2e gate uses Chrome) because Safari does not expose CDP
 without the user manually enabling Develop menu → Allow Remote
 Automation. For real user workflows where the user *is* a Safari user,

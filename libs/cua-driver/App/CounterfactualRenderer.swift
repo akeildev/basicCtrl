@@ -90,7 +90,7 @@ struct CounterfactualPathBuilder {
 
 /// CounterfactualTimelineView — full counterfactual visualization.
 ///
-/// Integrates with Timeline3D from cua_overlay/replay/timeline.py to render
+/// Integrates with Timeline3D from basicctrl/replay/timeline.py to render
 /// both primary action path and counterfactual branches (losers from races).
 ///
 /// Usage:

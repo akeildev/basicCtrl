@@ -33,7 +33,7 @@ The tab number you see in the tab strip is the cmd+N you press —
 NOT the window_id. Use `list_windows(on_screen_only=true)` to confirm
 which tab landed after a switch.
 
-## CRITICAL: do NOT use `mcp__cua-maximalist__hotkey` + `type_text` to send keys to Ghostty tabs
+## CRITICAL: do NOT use `mcp__basicCtrl__hotkey` + `type_text` to send keys to Ghostty tabs
 
 Race condition: `hotkey(["cmd","1"])` issues the tab switch via
 CGEvent, but `type_text` immediately after still resolves AX against
@@ -231,5 +231,5 @@ the only path that lands cleanly inside a terminal pane.
 - **Inside a Claude Code tab** → this skill (Ghostty key delivery).
 - **Inside a Chrome/Safari tab where Claude.ai is open** →
   browser-harness (CDP-driven; clean DOM access).
-- **Inside Claude Desktop app** → cua-driver / cua-maximalist
+- **Inside Claude Desktop app** → cua-driver / basicCtrl
   with AX (it's an Electron app, AXTextArea works).

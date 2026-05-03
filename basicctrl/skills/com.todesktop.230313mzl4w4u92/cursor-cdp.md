@@ -25,7 +25,7 @@ Cursor has multiple page targets (one per editor window, plus the
 extension host). Filter by URL prefix `vscode-`:
 
 ```python
-# cua_overlay/translators/t2_cdp.py:_pick_workspace_target
+# basicctrl/translators/t2_cdp.py:_pick_workspace_target
 if bundle_id == "com.todesktop.230313mzl4w4u92":
     for t in target_infos:
         if t["type"] == "page" and t["url"].startswith("vscode-"):

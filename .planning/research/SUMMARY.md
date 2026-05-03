@@ -1,6 +1,6 @@
-# cua-maximalist — Research Summary
+# basicCtrl — Research Summary
 
-**Project:** cua-maximalist
+**Project:** basicCtrl
 **Domain:** Self-healing autonomous Mac CU framework (Python overlay above trycua/cua Swift driver)
 **Researched:** 2026-04-29
 **Confidence:** HIGH
@@ -240,8 +240,8 @@ SPIs LAST               → every SPI needs public fallback
 ## Sources
 
 ### Primary (HIGH)
-- `/Users/akeilsmith/dev/cua-maximalist/.planning/PROJECT.md`
-- `~/thinker/vault/research/cua-maximalist-self-healing-framework-2026-04-29.md` — THE locked architecture
+- `/Users/akeilsmith/dev/basicCtrl/.planning/PROJECT.md`
+- `~/thinker/vault/research/basicCtrl-self-healing-framework-2026-04-29.md` — THE locked architecture
 - `~/thinker/vault/research/computer-use-alternatives-2026-04-29.md`
 - `~/thinker/research-clones/trycua-cua/`, `browser-harness/`, `ghost-os/`, `skyvern/`, `stagehand/`
 
@@ -267,7 +267,7 @@ SPIs LAST               → every SPI needs public fallback
 - Cowork #49498 — session loss
 
 ### Detail docs (this folder)
-- /Users/akeilsmith/dev/cua-maximalist/.planning/research/STACK.md
-- /Users/akeilsmith/dev/cua-maximalist/.planning/research/FEATURES.md
-- /Users/akeilsmith/dev/cua-maximalist/.planning/research/ARCHITECTURE.md
-- /Users/akeilsmith/dev/cua-maximalist/.planning/research/PITFALLS.md
+- /Users/akeilsmith/dev/basicCtrl/.planning/research/STACK.md
+- /Users/akeilsmith/dev/basicCtrl/.planning/research/FEATURES.md
+- /Users/akeilsmith/dev/basicCtrl/.planning/research/ARCHITECTURE.md
+- /Users/akeilsmith/dev/basicCtrl/.planning/research/PITFALLS.md
