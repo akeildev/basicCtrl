@@ -411,6 +411,22 @@ async def main() -> None:
 
         register_browser_tool(proxy_server)
 
+        # Electron tool (mcp__basicCtrl__electron) — CDP for Electron
+        # desktop apps. Third routing bucket alongside browser + AX.
+        # Per-app daemon, auto-launch with --remote-debugging-port,
+        # surfaces <webview> targets that the browser tool hides.
+        from basicctrl.mcp_server.electron_tool import register_electron_tool
+
+        register_electron_tool(proxy_server)
+
+        # Keystroke tool (mcp__basicCtrl__keystroke_with_healing) —
+        # for terminal-class apps where AX text-insert lands wrong.
+        # Codifies activate-once + verify-before-send + title-flip-verify
+        # learned the hard way driving Ghostty Claude Code tabs.
+        from basicctrl.mcp_server.keystroke_tool import register_keystroke_tool
+
+        register_keystroke_tool(proxy_server)
+
         log.info(
             "proxy.ready",
             session_id=session.session_id,

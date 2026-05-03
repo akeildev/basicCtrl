@@ -44,6 +44,35 @@ The `key_combo_with_healing` + `type_with_healing` healing wrappers
 have the same race for terminal apps because the healing layer's AX
 ladder caches focus.
 
+## CRITICAL: do NOT call `tell app "Ghostty" to activate` between verify-tab and send-keystroke
+
+Field-tested 2026-05-03 (basicCtrl repo). The `activate` AppleScript
+verb re-promotes whichever window macOS WindowServer thinks was
+"last user-interacted with" — and that can drift in milliseconds.
+Symptom: you cmd+N to switch to tab 4, list_windows confirms tab 4
+is on-screen, you re-fire `tell app to activate` (out of habit) and
+then `keystroke` — keystroke lands in tab 1 (or wherever the user
+was actually looking) because activate flipped focus back during
+the in-flight bash call.
+
+Pattern that works (load-bearing rule):
+
+```
+1. `tell app "Ghostty" to activate`        ← ONCE at session start
+2. cmd+<N> to switch tab                    (osascript keystroke)
+3. settle (~0.6s)
+4. list_windows on_screen_only OR
+   System Events: get title of front window  ← VERIFY here
+5. keystroke "<text>"                        ← NO re-activate
+6. key code 36                               (return)
+7. Poll title for ✳ → spinner flip          ← VERIFY landed
+```
+
+This pattern is now codified in `mcp__basicCtrl__keystroke_with_healing`
+and the Python helper `basicctrl.browser.keystroke_heal.keystroke_to_window`.
+Use those instead of hand-rolling the osascript dance — they enforce
+the activate-once rule and the title-flip post-verify automatically.
+
 ## The pattern that works: osascript via System Events
 
 `osascript` keystroke goes through the macOS HID input pipeline

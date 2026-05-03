@@ -2,6 +2,32 @@
 
 > Field-tested 2026-04-30 against macOS 26 Slack 4.40+ (Electron 30).
 
+## Routing: use `mcp__basicCtrl__electron`
+
+Slack is in the Electron registry (`com.tinyspeck.slackmacgap` →
+default port 9222). Connect via:
+
+```
+mcp__basicCtrl__electron(action="connect",
+                         bundle_id="com.tinyspeck.slackmacgap")
+```
+
+If Slack is already running without `--remote-debugging-port` (the
+common case), the tool returns `needs_user_action=true` — ASK the
+user before passing `quit_first=true`. Slack drops unsent message
+drafts on quit; never auto-quit silently.
+
+After connect, list workspace targets:
+
+```
+mcp__basicCtrl__electron(action="list_tabs",
+                         bundle_id="com.tinyspeck.slackmacgap")
+# Picks both pages and webviews. Filter by ".slack.com" in URL.
+```
+
+Switch to the workspace target, then run `js` / `click_xy` /
+`type_text` against the selectors below.
+
 ## Workspace renderer selection
 
 Slack opens MULTIPLE CDP page targets — one per workspace, plus the

@@ -282,13 +282,28 @@ def capture_screenshot(path=None, full=False, max_dim=None):
 
 
 # --- tabs ---
-def list_tabs(include_chrome=True):
+def list_tabs(include_chrome=True, include_webview=False):
+    """List page (and optionally webview) targets.
+
+    include_webview=True is for Electron apps: <webview> elements in
+    Slack / Cursor / VS Code show up as separate CDP targets with
+    type="webview". The browser tool keeps the default False so its
+    behavior is unchanged.
+    """
+    allowed_types = {"page"}
+    if include_webview:
+        allowed_types.add("webview")
     out = []
     for t in cdp("Target.getTargets")["targetInfos"]:
-        if t["type"] != "page": continue
+        if t["type"] not in allowed_types: continue
         url = t.get("url", "")
         if not include_chrome and url.startswith(INTERNAL): continue
-        out.append({"targetId": t["targetId"], "title": t.get("title", ""), "url": url})
+        out.append({
+            "targetId": t["targetId"],
+            "title": t.get("title", ""),
+            "url": url,
+            "type": t["type"],
+        })
     return out
 
 def current_tab():

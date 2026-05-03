@@ -3,6 +3,31 @@
 > bundle_id: `com.todesktop.230313mzl4w4u92`
 > Field-tested 2026-04-29 against Cursor 0.40+ (Electron 30, VS Code base).
 
+## Routing: use `mcp__basicCtrl__electron`
+
+Cursor is in the Electron registry (default port 9225). Connect via:
+
+```
+mcp__basicCtrl__electron(action="connect",
+                         bundle_id="com.todesktop.230313mzl4w4u92")
+```
+
+If Cursor is already running without `--remote-debugging-port`, the
+tool returns `needs_user_action=true`. Ask the user to save unsaved
+files, then retry with `quit_first=true`.
+
+The Cursor AI sidebar runs in a webview — surface it via:
+
+```
+mcp__basicCtrl__electron(action="list_tabs",
+                         bundle_id="com.todesktop.230313mzl4w4u92",
+                         include_webview=True)
+```
+
+Two targets typically appear: `vscode-file://...` (main editor) and
+`vscode-webview://...` (the AI sidebar). Pick by URL and switch via
+`action="switch_tab"`.
+
 ## Relaunch with --remote-debugging-port
 
 Cursor (like all Electron apps) ignores `--remote-debugging-port`
